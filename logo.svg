@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="15mm"
+   height="15mm"
+   viewBox="0 0 15 15"
+   version="1.1"
+   id="svg217019"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs217016">
+    <linearGradient
+       xlink:href="#linearGradient202393"
+       id="linearGradient202212"
+       gradientUnits="userSpaceOnUse"
+       x1="17.301931"
+       y1="45.303802"
+       x2="17.256826"
+       y2="40.0784"
+       gradientTransform="matrix(1.9512533,0,0,1.9719089,63.104688,12.052373)" />
+    <linearGradient
+       id="linearGradient202393">
+      <stop
+         style="stop-color:#00d1bc;stop-opacity:1"
+         offset="0"
+         id="stop202389" />
+      <stop
+         style="stop-color:#feff82;stop-opacity:1"
+         offset="1"
+         id="stop202391" />
+    </linearGradient>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-89.060482,-85.425015)">
+    <path
+       id="path5910-3-9"
+       style="fill:url(#linearGradient202212);fill-opacity:1;fill-rule:nonzero;stroke:#009081;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 92.190761,86.195433 c 0.03808,4.011338 0.03866,8.02271 0.03866,12.034166 0.01891,1.394934 1.731688,1.791921 3.115568,0.972781 1.383883,-0.819141 2.359684,-1.740502 3.246462,-1.574875 0.870635,0.162605 2.160639,2.215347 2.160639,2.215347 0.003,-3.645563 0,-10.264826 0,-10.264826 0.003,-1.094072 -1.749189,-1.07053 -1.753716,0 l -0.02196,5.192489 c -3.015246,-2.620584 -5.246118,-5.897131 -6.785653,-8.575082 z m 2.47061,6.405837 c 0.443505,0.589608 2.325437,3.005073 2.325437,3.005073 0.347532,0.491913 0.279143,0.787607 -0.267821,1.096867 0,0 -1.726114,0.966826 -2.255554,1.216463 -0.503532,0.272045 -0.719911,-0.368215 -0.717159,-0.783473 0.0028,-0.415259 -0.01182,-3.508542 -0.0089,-4.217686 0.0029,-0.709144 0.480508,-0.906854 0.924014,-0.317244 z" />
+  </g>
+</svg>

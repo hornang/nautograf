@@ -1,0 +1,6 @@
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://www.github.com/microsoft/vcpkg
+[submodule "oesenc"]
+	path = oesenc
+	url = https://www.github.com/hornang/oesenc

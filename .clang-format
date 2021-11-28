@@ -1,0 +1,13 @@
+BasedOnStyle: WebKit
+Standard: Cpp11
+ColumnLimit: 0
+PointerBindsToType: false
+BreakBeforeBinaryOperators: NonAssignment
+AlignAfterOpenBracket: true
+AlwaysBreakTemplateDeclarations: true
+SortIncludes: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: true
+    AfterFunction: true
+    AfterStruct: true

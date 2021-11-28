@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource prefix="/qml">
+    <file>main.qml</file>
+    <file>Viewer.qml</file>
+    <file>ChartSelector.qml</file>
+    <file>OverlayText.qml</file>
+    <file>StatusBar.qml</file>
+</qresource>
+</RCC>

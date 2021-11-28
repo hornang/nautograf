@@ -1,0 +1,73 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      buildDir: '${{ github.workspace }}/build'
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v1
+        with:
+          path: ${{ runner.workspace }}/Qt
+          key: ${{ runner.os }}-QtCache-6.2.0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.2.0'
+          arch: 'win64_msvc2019_64'
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+
+      - name: Install CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Restore artifacts, or setup vcpkg (do not install any package)
+        uses: lukka/run-vcpkg@v7.4
+        id: runvcpkg
+        with:
+          setupOnly: true
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          appendedCacheKey: ${{ hashFiles( 'vcpkg.json' ) }}
+          vcpkgTriplet: 'x64-windows'
+          additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.3
+
+      - name: Install choco dependencies
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install chocolatey.config -y --no-progress
+
+      - name: Run CMake with vcpkg.json manifest
+        uses: lukka/run-cmake@v3.4
+        with:
+          cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
+          cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
+          useVcpkgToolchainFile: true
+          buildDirectory: '${{ env.buildDir }}'
+          cmakeAppendedArgs: '
+          -GNinja
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DVERBOSE_CONFIGURE=ON
+          -DCMAKE_CXX_COMPILER=cl
+          -DCMAKE_C_COMPILER=cl'
+          buildWithCMake: true
+

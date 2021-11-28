@@ -1,0 +1,39 @@
+find_package(CapnProto CONFIG REQUIRED)
+find_package(polyclipping CONFIG REQUIRED)
+
+capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS chartdata.capnp)
+
+add_library(tilefactory
+    include/tilefactory/itilesource.h
+    include/tilefactory/mercator.h
+    include/tilefactory/georect.h
+    include/tilefactory/oesenctilesource.h
+    include/tilefactory/tilefactory.h
+    include/tilefactory/chart.h
+    include/tilefactory/chartclipper.h
+    include/tilefactory/pos.h
+    chart.cpp
+    georect.cpp
+    chartclipper.cpp
+    mercator.cpp
+    oesenctilesource.cpp
+    tilefactory.cpp
+    pos.cpp
+    ${CAPNP_SRCS}
+    ${CAPNP_HDRS}
+)
+
+include(GenerateExportHeader)
+generate_export_header(tilefactory)
+
+target_include_directories(tilefactory PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(tilefactory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+target_link_libraries(tilefactory
+    CapnProto::kj
+    CapnProto::capnp
+    CapnProto::capnpc
+    CapnProto::kj-gzip
+    polyclipping::polyclipping
+    oesenc
+)

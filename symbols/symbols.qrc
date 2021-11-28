@@ -1,0 +1,17 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource prefix="/symbols">
+    <file>buoys/barrel.svg</file>
+    <file>buoys/can.svg</file>
+    <file>buoys/conical.svg</file>
+    <file>buoys/pillar.svg</file>
+    <file>buoys/spar_port.svg</file>
+    <file>buoys/spar_starboard.svg</file>
+    <file>buoys/spherical.svg</file>
+    <file>buoys/super_buoy.svg</file>
+    <file>beacons/beacon_norwegian.svg</file>
+    <file>underwater_rocks/always_submerged.svg</file>
+    <file>underwater_rocks/awash.svg</file>
+    <file>underwater_rocks/cover_and_uncovers.svg</file>
+</qresource>
+</RCC>
