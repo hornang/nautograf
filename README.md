@@ -61,7 +61,7 @@ Since tile creation can take some time it runs in multiple threads provided via 
 
 Oesenc chart data comes in many files that covers different areas with different resolutions. Some files may cover thousands of kilometers with low vector resolution while other files cover only a small harbour area in high resolution. There is no connection between a polygon representing a real object from one chart file to another. You could say that the data is already broken from the start as the splitted data limits the computers understanding of the real objects. Creating a seamless map out of scattered chart data is therefore solved graphically (for human perception).
 
-Selecting the correct chart(s) for a particular region of interest is not straight forward. For a particular tile the application by default renders all tile intersecting charts onto a single tile. It is rendered with the highest resolution chart on top. There are also some other rules applied to minimize uneccessary tile generation and rendering efforts - most of them [defined here](https://github.com/hornang/nautograf/blob/7dc72c63134278c038693055e9819990722660b4/src/tilefactory/tilefactory.cpp#L97-L131).
+Selecting the correct chart(s) for a particular region of interest is not straight forward. For a particular tile the application by default renders all tile intersecting charts onto a single tile. It is rendered with the highest resolution chart on top. There are also some other rules applied to minimize uneccessary tile generation and rendering efforts - most of them [defined here](https://github.com/hornang/nautograf/blob/1630d56ee4c1b8193759dd271a9d5d3d3158e4bb/src/tilefactory/tilefactory.cpp#L97-L131).
 
 ### Internal tile format
 
