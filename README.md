@@ -35,20 +35,14 @@ To build it you will need CMake, Visual Studio 2019, Qt and vcpkg. If you are fa
 
 A basic recipe for manual build in a cmd window follows here: (adjust paths as neccessary):
 
-* Make Visual Studio compiler available:
-  * `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"`
-* Verify that `cmake.exe` is in the path. If not you can add the cmake bundled with Qt: `set PATH=%PATH%;C:\Qt\Tools\CMake_64\bin`
-* Bootstrap the vcpkg executable.
-  * `cd vcpkg`
-  * `bootstrap-vcpkg.bat`
-* Create a build directory at the root of the repository:
-  * `mkdir build`
-* In the `build` directory configure `cmake` with with `ninja`, choose release mode and refer to the `vcpkg` toolchain file and your Qt install:
-  * `cd build`
-  *  `cmake -S .. -GNinja -DCMAKE_BUILD_TYPE=release -DCMAKE_TOOLCHAIN_FILE=..\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_PREFIX_PATH=C:\Qt\6.2.0\msvc2019_64`
-* Build it: `cmake --build .`
+* Make Visual Studio compiler available. This should also make `cmake` available.
+  * `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"`.
+* Run cmake configure with with the preset `ninja-multi-vcpkg` from `CMakePresets.json`.
+  * `cmake --preset ninja-multi-vcpkg`
+* Build it: `cmake --build --preset win-release`.
+* Enter the build folder: `cd builds\ninja-multi-vcpkg\RelWithDebInfo`
 * Use the `windeployqt` to bring in the required Qt DLLs and resources into the build folder: 
-  * `C:\Qt\6.2.0\msvc2019_64\bin\windeployqt.exe -qmldir ../qml nautograf.exe`
+  * `C:\Qt\6.2.0\msvc2019_64\bin\windeployqt.exe -qmldir ..\..\..\qml nautograf.exe`
 * Run it: `nautograf.exe`
 
 ## How it works and why

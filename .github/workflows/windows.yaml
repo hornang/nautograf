@@ -37,14 +37,7 @@ jobs:
         uses: lukka/get-cmake@latest
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
-        uses: lukka/run-vcpkg@v7.4
-        id: runvcpkg
-        with:
-          setupOnly: true
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          appendedCacheKey: ${{ hashFiles( 'vcpkg.json' ) }}
-          vcpkgTriplet: 'x64-windows'
-          additionalCachedPaths: ${{ env.buildDir }}/vcpkg_installed
+        uses: lukka/run-vcpkg@v10
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.3
@@ -55,19 +48,7 @@ jobs:
           args: install chocolatey.config -y --no-progress
 
       - name: Run CMake with vcpkg.json manifest
-        uses: lukka/run-cmake@v3.4
+        uses: lukka/run-cmake@v10
         with:
-          cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-          cmakeListsTxtPath: '${{ github.workspace }}/CMakeLists.txt'
-          useVcpkgToolchainFile: true
-          buildDirectory: '${{ env.buildDir }}'
-          cmakeAppendedArgs: '
-          -GNinja
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo
-          -DVERBOSE_CONFIGURE=ON
-          -DCMAKE_CXX_COMPILER=cl
-          -DCMAKE_C_COMPILER=cl'
-          buildWithCMake: true
-
+          configurePreset: 'ninja-multi-vcpkg'
+          buildPreset: 'win-release'

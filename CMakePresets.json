@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ninja-multi-vcpkg",
+      "displayName": "Ninja Multi-Config",
+      "description": "Configure with vcpkg toolchain and generate Ninja project files for all configurations",
+      "binaryDir": "${sourceDir}/builds/${presetName}",
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "type": "FILEPATH",
+          "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        },
+        "CMAKE_PREFIX_PATH": {
+          "type": "FILEPATH",
+          "value": "C:/Qt/6.2.0/msvc2019_64"
+        }
+      }
+    },
+    {
+      "name": "ninja-multi-vcpkg-linux",
+      "inherits": "ninja-multi-vcpkg",
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": {
+          "type": "FILEPATH",
+          "value": "$env{HOME}/Qt/6.2.0/gcc_64"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "win-debug",
+      "configurePreset": "ninja-multi-vcpkg",
+      "configuration": "Debug"
+    },
+    {
+      "name": "win-release",
+      "configurePreset": "ninja-multi-vcpkg",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "linux-debug",
+      "configurePreset": "ninja-multi-vcpkg-linux",
+      "configuration": "Debug"
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "ninja-multi-vcpkg-linux",
+      "configuration": "RelWithDebInfo"
+    }
+  ]
+}
