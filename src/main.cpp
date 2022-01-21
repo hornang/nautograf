@@ -58,6 +58,18 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
+    QString aboutFile = QStringLiteral(QML_DIR) + "/about.md";
+    if (aboutFile.startsWith("qrc")) {
+        aboutFile = aboutFile.right(aboutFile.length() - 3);
+    }
+
+    QFile file(aboutFile);
+    if (file.open(QIODevice::ReadOnly)) {
+        auto aboutText = file.readAll();
+        engine.rootContext()->setContextProperty("AboutText", aboutText);
+        file.close();
+    }
+
     engine.load(QStringLiteral(QML_DIR) + "/main.qml");
 
     int result = application.exec();

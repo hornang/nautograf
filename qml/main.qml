@@ -76,6 +76,11 @@ ApplicationWindow {
             }
 
             MenuItem {
+                text: qsTr("About")
+                onTriggered: aboutLoader.active = true
+            }
+
+            MenuItem {
                 text: qsTr("Close")
                 onTriggered: Qt.quit()
             }
@@ -138,6 +143,46 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.margins: 20
             model: ChartModel
+        }
+    }
+
+    Loader {
+        id: aboutLoader
+        active: false
+        anchors.centerIn: parent
+        sourceComponent: Component {
+            Item {
+                Rectangle {
+                    color: "#fff"
+                    opacity: 0.8
+                    border.width: 1
+                    radius: 5
+                    border.color: "#666"
+                    anchors.margins: -20
+                    anchors.fill: aboutText
+
+                    Button {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        flat: true
+                        onClicked: aboutLoader.active = false
+                        text: "❌"
+                    }
+                }
+
+                TextEdit {
+                    id: aboutText
+                    wrapMode: Text.WordWrap
+                    textFormat: Text.MarkdownText
+                    selectByMouse: true
+                    width: 550
+                    anchors.centerIn: parent
+                    onLinkActivated: function(url) {
+                        Qt.openUrlExternally(url);
+                    }
+                    text: AboutText
+                }
+            }
         }
     }
 }
