@@ -13,12 +13,10 @@ find_package(Qt6
 
 find_program(BASH_EXECUTABLE
     NAMES bash
-    PATHS "C:/Program Files/Git/bin"
 )
 
 find_program(IMAGEMAGICK
     NAMES magick convert
-    HINTS "C:/Program Files/ImageMagick-7.1.0-Q16-HDRI"
 )
 
 find_program(RSVG-CONVERT
@@ -27,7 +25,6 @@ find_program(RSVG-CONVERT
 
 find_program(BASH
     NAMES bash
-    HINTS "C:\\Program Files\\Git\\bin"
 )
 
 add_subdirectory(oesenc)
