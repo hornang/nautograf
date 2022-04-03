@@ -184,6 +184,18 @@ void ChartModel::loadNextFromQueue()
     m_loadingCharts = true;
     m_currentChartBeeingLoaded = m_chartsToLoad.dequeue();
 
+    QString key;
+    CryptReader::ChartType type = CryptReader::ChartType::Unknown;
+
+    const QFileInfo fileInfo(m_currentChartBeeingLoaded);
+    if (fileInfo.suffix() == "oesu") {
+        key = QString::fromStdString(m_keyListReader.key(fileInfo.baseName().toStdString()));
+        type = CryptReader::ChartType::Oesu;
+    } else if (fileInfo.suffix() == "oesenc") {
+        key = readUserKey(QDir(m_dir).filePath("Chartinfo.txt"));
+        type = CryptReader::ChartType::Oesenc;
+    }
+
     const QString chartFile = QDir(m_dir).filePath(m_currentChartBeeingLoaded);
 
     if (m_cryptReaderError) {
@@ -191,7 +203,7 @@ void ChartModel::loadNextFromQueue()
         // Let the event loop update UI
         QMetaObject::invokeMethod(this, &ChartModel::loadNextFromQueue, Qt::QueuedConnection);
     } else {
-        m_cryptReader.read(QDir(m_dir).filePath(m_currentChartBeeingLoaded), m_key);
+        m_cryptReader.read(QDir(m_dir).filePath(m_currentChartBeeingLoaded), key, type);
     }
 }
 
@@ -213,7 +225,7 @@ void ChartModel::populateModel(const QString &dir)
     m_tileManager->clear();
     m_chartsToLoad.clear();
 
-    m_chartsToLoad.append(QDir(dir).entryList({ "*oesenc" },
+    m_chartsToLoad.append(QDir(dir).entryList({ "*.oesenc", "*.oesu" },
                                               QDir::NoFilter,
                                               QDir::Size | QDir::Reversed));
 
@@ -260,6 +272,13 @@ void ChartModel::setDir(const QString &dir)
     emit dirChanged();
 
     m_key = readUserKey(QDir(dir).filePath("Chartinfo.txt"));
+
+    for (const auto &xmlFile : QDir(dir).entryList({ "*.xml" }, QDir::Files)) {
+        if (m_keyListReader.load(QDir(dir).filePath(xmlFile).toStdString()) != oesenc::KeyListReader::Status::Failed) {
+            break;
+        }
+    }
+
     populateModel(dir);
 
     QSettings settings(orgName, appName);

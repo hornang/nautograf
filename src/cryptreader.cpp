@@ -1,6 +1,8 @@
 #include <chrono>
 
+#include <QDir>
 #include <QLocalSocket>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include "cryptreader.h"
@@ -9,7 +11,6 @@ using namespace std::chrono_literals;
 
 static const QString pipeName = QStringLiteral("ocpn_pipe");
 static const QString windowsSocketFormat = QStringLiteral(R"(\\.\pipe\%1)");
-static const QString oeserverdPathWindows = QStringLiteral(R"(C:\Program Files (x86)\OpenCPN\plugins\oesenc_pi\oeserverd.exe)");
 static const std::chrono::duration waitConnectTime = 200ms;
 
 CryptReader::CryptReader()
@@ -41,7 +42,7 @@ CryptReader::~CryptReader()
         message.append(static_cast<char>(command));
         add256String(message, QString());
         add256String(message, QString());
-        add256String(message, QString());
+        add512String(message, QString());
         m_localSocket.write(message);
 
         if (m_oeserverd.waitForFinished(2000)) {
@@ -63,9 +64,14 @@ void CryptReader::startOeserverd()
         return;
     }
 
-    qInfo() << "Starting oeserverd";
+    qInfo() << "Starting oexserverd";
+    const auto appDataFolder = QStandardPaths::locate(QStandardPaths::HomeLocation,
+                                                      "AppData",
+                                                      QStandardPaths::LocateDirectory);
 
-    m_oeserverd.setProgram(oeserverdPathWindows);
+    const auto oexserverdPath = QDir(appDataFolder).filePath("Local/opencpn/plugins/oexserverd.exe");
+
+    m_oeserverd.setProgram(oexserverdPath);
     m_oeserverd.setArguments({ "-p", pipeName });
     m_oeserverd.start();
 }
@@ -87,6 +93,18 @@ void CryptReader::add256String(QByteArray &data, const QString &string)
     data.push_back(fifoName);
 }
 
+void CryptReader::add512String(QByteArray &data, const QString &string)
+{
+    if (string.size() > 512) {
+        qWarning() << "Too long string";
+        return;
+    }
+
+    QByteArray fifoName(512, 0x00);
+    fifoName.replace(0, string.size(), string.toLocal8Bit());
+    data.push_back(fifoName);
+}
+
 QByteArray CryptReader::constructMessage(CryptReader::OesencServiceCommand command,
                                          const QString &socket,
                                          const QString &filename,
@@ -96,11 +114,11 @@ QByteArray CryptReader::constructMessage(CryptReader::OesencServiceCommand comma
     message.append(static_cast<char>(command));
     add256String(message, socket);
     add256String(message, filename);
-    add256String(message, key);
+    add512String(message, key);
     return message;
 }
 
-void CryptReader::read(const QString &fileName, const QString &key)
+void CryptReader::read(const QString &fileName, const QString &key, ChartType type)
 {
     if (m_state != State::Ready) {
         qWarning() << "Not ready to read";
@@ -109,6 +127,7 @@ void CryptReader::read(const QString &fileName, const QString &key)
     m_state = State::WaitForReading;
     m_fileName = fileName;
     m_key = key;
+    m_type = type;
 
     connectToPipe();
 }
@@ -118,7 +137,7 @@ bool CryptReader::ready() const
     return m_ready;
 }
 
-bool CryptReader::readFile(const QString &fileName, const QString &key)
+bool CryptReader::readFile(const QString &fileName, const QString &key, ChartType type)
 {
     if (fileName.isEmpty()) {
         qCritical() << "Trying to read with zero filename";
@@ -130,10 +149,20 @@ bool CryptReader::readFile(const QString &fileName, const QString &key)
         return false;
     }
 
-    const QByteArray message = constructMessage(CryptReader::OesencServiceCommand::ReadChart,
-                                                QString(),
-                                                fileName,
-                                                key);
+    CryptReader::OesencServiceCommand command;
+
+    switch (type) {
+    case ChartType::Oesenc:
+        command = CryptReader::OesencServiceCommand::ReadOesenc;
+        break;
+    case ChartType::Oesu:
+        command = CryptReader::OesencServiceCommand::ReadOesu;
+        break;
+    default:
+        return false;
+    }
+
+    const auto message = constructMessage(command, QString(), fileName, key);
 
     m_localSocket.write(message);
     m_localSocket.waitForBytesWritten();
@@ -166,7 +195,7 @@ void CryptReader::stateChanged(QLocalSocket::LocalSocketState socketState)
             m_state = State::Ready;
             m_localSocket.close();
         } else if (m_state == State::WaitForReading) {
-            readFile(m_fileName, m_key);
+            readFile(m_fileName, m_key, m_type);
         }
     }
 }

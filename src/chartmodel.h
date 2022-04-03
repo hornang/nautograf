@@ -6,6 +6,8 @@
 #include <QQueue>
 #include <QUrl>
 
+#include <oesenc/keylistreader.h>
+
 #include "cryptreader.h"
 #include "tilefactorywrapper.h"
 #include "tilefactory/tilefactory.h"
@@ -83,6 +85,7 @@ private:
     QString m_currentChartBeeingLoaded;
     QString m_dir;
     QByteArray m_key;
+    oesenc::KeyListReader m_keyListReader;
     int m_initalQueueSize = 0;
     float m_loadingProgress = 1;
     bool m_loadingCharts = false;

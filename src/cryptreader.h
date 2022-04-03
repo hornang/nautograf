@@ -8,10 +8,16 @@ class CryptReader : public QObject
 {
     Q_OBJECT
 public:
+    enum class ChartType {
+        Unknown,
+        Oesenc,
+        Oesu,
+    };
+
     CryptReader();
     ~CryptReader();
     void start();
-    void read(const QString &fileName, const QString &key);
+    void read(const QString &fileName, const QString &key, ChartType type);
     bool ready() const;
 
 public slots:
@@ -25,13 +31,14 @@ signals:
 
 private:
     void testPipe();
-    bool readFile(const QString &fileName, const QString &key);
+    bool readFile(const QString &fileName, const QString &key, ChartType type);
 
     enum class OesencServiceCommand {
-        ReadChart = 0,
+        ReadOesenc = 0,
         TestAvailability = 1,
         Exit = 2,
         ReadChartHeader = 3,
+        ReadOesu = 8,
     };
 
     enum class State {
@@ -45,6 +52,7 @@ private:
     void connectToPipe();
     void startOeserverd();
     static void add256String(QByteArray &data, const QString &string);
+    static void add512String(QByteArray &data, const QString &string);
     static QByteArray constructMessage(CryptReader::OesencServiceCommand command,
                                        const QString &socket,
                                        const QString &filename,
@@ -55,5 +63,6 @@ private:
     QByteArray m_receivedData;
     QString m_fileName;
     QString m_key;
+    ChartType m_type = ChartType::Unknown;
     QLocalSocket m_localSocket;
 };
