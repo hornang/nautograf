@@ -131,7 +131,7 @@ private:
     static inline void fromCapnPolygons(std::vector<Polygon> &dst,
                                         const ::capnp::List<ChartData::Polygon>::Reader &src);
     static inline void fromOesencPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
-                                          const std::vector<oesenc::Polygon> &src);
+                                          const std::vector<oesenc::S57::MultiGeometry> &src);
     static inline void toCapnPosition(ChartData::Position::Builder &dst, const Pos &src);
     static inline void toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
                                       const std::vector<Polygon> &src);

@@ -930,16 +930,16 @@ void Chart::toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
 }
 
 void Chart::fromOesencPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
-                               const std::vector<oesenc::Polygon> &src)
+                               const std::vector<oesenc::S57::MultiGeometry> &src)
 {
     int polygonIndex = 0;
 
-    for (const oesenc::Polygon &srcPolygon : src) {
+    for (const auto &srcPolygon : src) {
         ChartData::Polygon::Builder p = dst[polygonIndex];
-        auto dstPositions = p.initPositions((unsigned int)srcPolygon.positions().size());
+        auto dstPositions = p.initPositions((unsigned int)srcPolygon.size());
 
         int positionIndex = 0;
-        for (const oesenc::Position &pos : srcPolygon.positions()) {
+        for (const auto &pos : srcPolygon) {
             auto dstPos = dstPositions[positionIndex];
             dstPos.setLatitude(pos.latitude());
             dstPos.setLongitude(pos.longitude());
