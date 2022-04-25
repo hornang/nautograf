@@ -24,13 +24,14 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ${{ runner.workspace }}/Qt
-          key: ${{ runner.os }}-QtCache-6.2.0
+          key: ${{ runner.os }}-QtCache-6.2.1
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: '6.2.0'
+          version: '6.2.1'
           arch: 'win64_msvc2019_64'
+          modules: "qtshadertools"
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Install CMake
