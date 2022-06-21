@@ -17,9 +17,6 @@
           "type": "FILEPATH",
           "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
         },
-        "CMAKE_PREFIX_PATH": {
-          "value": "C:/Qt/6.2.0/msvc2019_64;C:/Program Files/Git/bin;C:/Program Files/ImageMagick-7.1.0-Q16-HDRI;C:/Program Files/Git/bin"
-        },
         "BUILD_TESTING": false
       }
     },

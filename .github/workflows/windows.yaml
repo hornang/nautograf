@@ -49,6 +49,8 @@ jobs:
 
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
+        env:
+          CMAKE_PREFIX_PATH: C:/Qt/6.2.0/msvc2019_64;C:/Program Files/Git/bin;C:/Program Files/ImageMagick-7.1.0-Q16-HDRI
         with:
           configurePreset: 'ninja-multi-vcpkg'
           buildPreset: 'win-release'
