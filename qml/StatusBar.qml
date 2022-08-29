@@ -5,7 +5,7 @@ Rectangle {
     id: root
     property real pixelsPerLongitude: 0
     property point position
-    property alias oeserverdError: errorText.visible
+    property string cryptReaderStatus
     color: "#00000000"
     radius: 0
     height: 40
@@ -21,7 +21,7 @@ Rectangle {
         OverlayText  {
             id: errorText
             Layout.rightMargin: 20
-            text: "⚠️ oeserverd error"
+            text: "oexserverd: " + root.cryptReaderStatus
         }
 
         OverlayText {

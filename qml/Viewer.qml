@@ -305,7 +305,7 @@ Item {
 
     StatusBar {
         id: statusBar
-        oeserverdError: ChartModel.cryptReaderError
+        cryptReaderStatus: ChartModel.cryptReaderStatus
         pixelsPerLongitude: root.viewport.z
         anchors {
             bottom: parent.bottom

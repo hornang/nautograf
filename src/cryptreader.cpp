@@ -17,8 +17,16 @@ CryptReader::CryptReader()
     : m_oeserverd()
 {
     connect(&m_localSocket, &QLocalSocket::stateChanged, this, &CryptReader::stateChanged, Qt::QueuedConnection);
+    connect(&m_localSocket, &QLocalSocket::errorOccurred, this, [&]() {
+        m_state = State::ServiceNotResponding;
+        updateStatusString();
+    });
     connect(&m_oeserverd, &QProcess::started, this, &CryptReader::oeserverdStarted);
-    connect(&m_oeserverd, &QProcess::errorOccurred, this, &CryptReader::error);
+    connect(&m_oeserverd, &QProcess::errorOccurred, this, [&](QProcess::ProcessError errorCode) {
+        emit error();
+        m_processError = errorCode;
+        updateStatusString();
+    });
 }
 
 void CryptReader::start()
@@ -70,6 +78,12 @@ void CryptReader::startOeserverd()
                                                       QStandardPaths::LocateDirectory);
 
     const auto oexserverdPath = QDir(appDataFolder).filePath("Local/opencpn/plugins/oexserverd.exe");
+
+    if (!QFile::exists(oexserverdPath)) {
+        m_state = State::ServiceNotInstalled;
+        emit error();
+        return;
+    }
 
     m_oeserverd.setProgram(oexserverdPath);
     m_oeserverd.setArguments({ "-p", pipeName });
@@ -180,7 +194,7 @@ bool CryptReader::readFile(const QString &fileName, const QString &key, ChartTyp
 void CryptReader::stateChanged(QLocalSocket::LocalSocketState socketState)
 {
     if (socketState == QLocalSocket::LocalSocketState::UnconnectedState) {
-        if (m_state == State::Unknown) {
+        if (m_state == State::Unknown || m_state == State::ServiceNotResponding) {
             startOeserverd();
         } else if (m_state == State::WaitForReading) {
             m_state = State::Ready;
@@ -192,13 +206,52 @@ void CryptReader::stateChanged(QLocalSocket::LocalSocketState socketState)
             emit readyChanged(true);
         }
     } else if (socketState == QLocalSocket::LocalSocketState::ConnectedState) {
-        if (m_state == State::Unknown) {
+        if (m_state == State::Unknown || m_state == State::ServiceNotResponding) {
             m_state = State::Ready;
             m_localSocket.close();
         } else if (m_state == State::WaitForReading) {
             readFile(m_fileName, m_key, m_type);
         }
     }
+
+    updateStatusString();
+}
+
+void CryptReader::updateStatusString()
+{
+    if (m_processError != QProcess::UnknownError) {
+        switch (m_processError) {
+        case QProcess::FailedToStart:
+            m_statusString = "Failed to start";
+            break;
+        case QProcess::Crashed:
+            m_statusString = "Crashed";
+            break;
+        default:
+            m_statusString = "Unknown error";
+            break;
+        }
+    } else {
+        switch (m_state) {
+        case State::Unknown:
+            m_statusString = "Connecting";
+            break;
+        case State::ServiceNotInstalled:
+            m_statusString = "Not installed";
+            break;
+        case State::ServiceNotResponding:
+            m_statusString = "Unable to connect";
+            break;
+        case State::Ready:
+            m_statusString = "Ready";
+            break;
+        case State::WaitForReading:
+            m_statusString = "Reading";
+            break;
+        }
+    }
+
+    emit statusStringChanged(m_statusString);
 }
 
 void CryptReader::connectToPipe()
@@ -206,5 +259,8 @@ void CryptReader::connectToPipe()
     if (m_localSocket.state() == QLocalSocket::LocalSocketState::ConnectedState) {
         return;
     }
+
+    qDebug() << "Trying to connect...";
+
     m_localSocket.connectToServer(windowsSocketFormat.arg(pipeName));
 }

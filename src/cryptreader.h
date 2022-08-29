@@ -19,6 +19,7 @@ public:
     void start();
     bool read(const QString &fileName, const QString &key, ChartType type);
     bool ready() const;
+    QString statusString() const;
 
 public slots:
     void stateChanged(QLocalSocket::LocalSocketState socketState);
@@ -26,12 +27,14 @@ public slots:
 
 signals:
     void readyChanged(bool ready);
+    void statusStringChanged(const QString &statusString);
     void fileDecrypted(const QByteArray &data);
     void error();
 
 private:
     void testPipe();
     bool readFile(const QString &fileName, const QString &key, ChartType type);
+    void updateStatusString();
 
     enum class OesencServiceCommand {
         ReadOesenc = 0,
@@ -43,6 +46,8 @@ private:
 
     enum class State {
         Unknown,
+        ServiceNotInstalled,
+        ServiceNotResponding,
         Ready,
         WaitForReading
     };
@@ -59,10 +64,12 @@ private:
                                        const QString &key);
 
     State m_state = State::Unknown;
+    QString m_statusString;
     bool m_ready = false;
     QByteArray m_receivedData;
     QString m_fileName;
     QString m_key;
+    QProcess::ProcessError m_processError = QProcess::UnknownError;
     ChartType m_type = ChartType::Unknown;
     QLocalSocket m_localSocket;
 };

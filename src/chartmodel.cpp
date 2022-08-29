@@ -45,6 +45,11 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileManager)
         populateModel(m_dir);
     });
 
+    connect(&m_cryptReader, &CryptReader::statusStringChanged, this, [&](const QString status) {
+        m_cryptReaderStatus = status;
+        emit cryptReaderStatusChanged();
+    });
+
     QSettings settings(orgName, appName);
     setDir(settings.value("ChartDir").toString());
 
@@ -398,4 +403,9 @@ float ChartModel::loadingProgress() const
 bool ChartModel::cryptReaderError() const
 {
     return m_cryptReaderError;
+}
+
+QString ChartModel::cryptReaderStatus() const
+{
+    return m_cryptReaderStatus;
 }

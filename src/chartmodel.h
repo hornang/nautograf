@@ -21,6 +21,7 @@ class ChartModel : public QAbstractListModel
     Q_PROPERTY(bool allEnabled READ allEnabled NOTIFY allEnabledChanged)
     Q_PROPERTY(float loadingProgress READ loadingProgress NOTIFY loadingProgressChanged)
     Q_PROPERTY(bool cryptReaderError READ cryptReaderError NOTIFY cryptReaderErrorChanged)
+    Q_PROPERTY(QString cryptReaderStatus READ cryptReaderStatus NOTIFY cryptReaderStatusChanged)
     Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
 
 public:
@@ -49,6 +50,7 @@ public:
     float loadingProgress() const;
 
     bool cryptReaderError() const;
+    QString cryptReaderStatus() const;
 
 public slots:
     void populateModel(const QString &dir);
@@ -66,6 +68,7 @@ signals:
     void dirChanged();
     void loadingProgressChanged();
     void cryptReaderErrorChanged();
+    void cryptReaderStatusChanged();
 
 private:
     void readUnencrypted(const QString &fileName);
@@ -85,6 +88,7 @@ private:
     QString m_currentChartBeeingLoaded;
     QString m_dir;
     QByteArray m_key;
+    QString m_cryptReaderStatus;
     oesenc::KeyListReader m_keyListReader;
     int m_initalQueueSize = 0;
     float m_loadingProgress = 1;
