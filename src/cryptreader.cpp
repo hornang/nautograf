@@ -118,11 +118,11 @@ QByteArray CryptReader::constructMessage(CryptReader::OesencServiceCommand comma
     return message;
 }
 
-void CryptReader::read(const QString &fileName, const QString &key, ChartType type)
+bool CryptReader::read(const QString &fileName, const QString &key, ChartType type)
 {
     if (m_state != State::Ready) {
         qWarning() << "Not ready to read";
-        return;
+        return false;
     }
     m_state = State::WaitForReading;
     m_fileName = fileName;
@@ -130,6 +130,7 @@ void CryptReader::read(const QString &fileName, const QString &key, ChartType ty
     m_type = type;
 
     connectToPipe();
+    return true;
 }
 
 bool CryptReader::ready() const

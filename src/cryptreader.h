@@ -17,7 +17,7 @@ public:
     CryptReader();
     ~CryptReader();
     void start();
-    void read(const QString &fileName, const QString &key, ChartType type);
+    bool read(const QString &fileName, const QString &key, ChartType type);
     bool ready() const;
 
 public slots:

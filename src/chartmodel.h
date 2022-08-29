@@ -73,7 +73,7 @@ private:
     QHash<QString, bool> readVisibleCharts();
     void addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled, bool encrypted);
     void updateAllEnabled();
-    void loadNextFromQueue();
+    bool loadNextFromQueue();
     QQueue<QString> m_chartsToLoad;
     CryptReader m_cryptReader;
     std::shared_ptr<TileFactory> m_tileManager;

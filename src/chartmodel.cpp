@@ -167,13 +167,13 @@ void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, 
     endInsertRows();
 }
 
-void ChartModel::loadNextFromQueue()
+bool ChartModel::loadNextFromQueue()
 {
     if (m_chartsToLoad.isEmpty()) {
         m_loadingCharts = false;
         m_loadingProgress = 1;
         emit loadingProgressChanged();
-        return;
+        return true;
     }
 
     if (m_initalQueueSize > 0) {
@@ -202,9 +202,10 @@ void ChartModel::loadNextFromQueue()
         readUnencrypted(chartFile);
         // Let the event loop update UI
         QMetaObject::invokeMethod(this, &ChartModel::loadNextFromQueue, Qt::QueuedConnection);
-    } else {
-        m_cryptReader.read(QDir(m_dir).filePath(m_currentChartBeeingLoaded), key, type);
+        return true;
     }
+
+    return m_cryptReader.read(QDir(m_dir).filePath(m_currentChartBeeingLoaded), key, type);
 }
 
 void ChartModel::populateModel(const QString &dir)
@@ -221,7 +222,6 @@ void ChartModel::populateModel(const QString &dir)
     m_sourceCache.clear();
     endResetModel();
 
-    m_dirBeeingLoaded = dir;
     m_tileManager->clear();
     m_chartsToLoad.clear();
 
@@ -233,10 +233,8 @@ void ChartModel::populateModel(const QString &dir)
     emit loadingProgressChanged();
     m_initalQueueSize = m_chartsToLoad.size();
 
-    if (m_loadingCharts) {
-        m_loadingCharts = false;
-    } else {
-        loadNextFromQueue();
+    if (loadNextFromQueue()) {
+        m_dirBeeingLoaded = dir;
     }
 }
 
