@@ -34,12 +34,14 @@ Rectangle {
 
         OverlayText {
             Layout.alignment: Qt.AlignVCenter
+            Layout.preferredWidth: 130
             text: Number(root.position.y).toLocaleString(Qt.locale(), 'f', 7)
         }
 
         OverlayText{
             Layout.alignment: Qt.AlignVCenter
             Layout.rightMargin: 20
+            Layout.preferredWidth: 130
             text: Number(root.position.x).toLocaleString(Qt.locale(), 'f', 7)
         }
     }
