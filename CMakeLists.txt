@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.21)
 
 project(nautograf LANGUAGES CXX)
 
@@ -108,3 +108,34 @@ target_link_libraries(nautograf
     Qt::Gui
     tilefactory
 )
+
+if(WIN32)
+    find_program(WINDEPLOYQT windeployqt HINTS "${_qt_bin_dir}")
+    get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
+
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/AppxManifest.xml.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/AppxManifest.xml")
+
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/deploy-qt-windows.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/deploy-qt-windows.cmake"
+        @ONLY)
+
+
+    set(CPACK_PRE_BUILD_SCRIPTS
+        ${CMAKE_CURRENT_BINARY_DIR}/deploy-qt-windows.cmake
+    )
+
+    install(IMPORTED_RUNTIME_ARTIFACTS nautograf
+        RUNTIME_DEPENDENCY_SET dependency_set
+    )
+
+    install(RUNTIME_DEPENDENCY_SET dependency_set
+        PRE_INCLUDE_REGEXES "tinyxml"
+        PRE_EXCLUDE_REGEXES ".*"
+    )
+
+    set(CPACK_GENERATOR "ZIP")
+    include(CPACK)
+endif()

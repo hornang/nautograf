@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
+  <Identity Name="@MSIX_IDENTITY_NAME@" Version="@MSIX_VERSION@" Publisher="@MSIX_PUBLISHER_SUBJECT@" ProcessorArchitecture="x64"/>
+    <Resources>
+      <Resource Language="EN-US" />
+    </Resources>
+    <Properties>
+      <DisplayName>Nautograf</DisplayName>
+      <PublisherDisplayName>@MSIX_PUBLISHER_NAME@</PublisherDisplayName>
+      <Logo>logo_44.png</Logo>
+    </Properties>
+    <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.20000.0" />
+    <PackageDependency Name="Microsoft.VCLibs.140.00.UWPDesktop" MinVersion="14.0.27323.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+    </Dependencies>
+    <Capabilities>
+      <rescap:Capability Name="runFullTrust"/>
+    </Capabilities>
+    <Applications>
+   <Application
+         EntryPoint="Windows.FullTrustApplication"
+         Executable="bin/nautograf.exe" Id="nautograf.exe">
+      <uap:VisualElements
+         BackgroundColor="transparent"
+         DisplayName="Nautograf"
+         Description="Tile-based nautical chart viewer"
+         Square44x44Logo="logo_44.png"
+         Square150x150Logo="logo_150.png">
+      </uap:VisualElements>
+  </Application>
+</Applications>
+  </Package>

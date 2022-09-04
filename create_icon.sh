@@ -10,7 +10,7 @@ FILENAME=$(basename -- "$INPUT")
 EXTENSION="${FILENAME##*.}"
 FILENAME="${FILENAME%.*}"
 
-for WIDTH in 16 32 64 128 256
+for WIDTH in 16 32 44 64 128 150 256
 do
     rsvg-convert --output="${FILENAME}_${WIDTH}.png" -w $WIDTH "$INPUT"
 done
