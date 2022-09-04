@@ -43,7 +43,7 @@
     {
       "name": "win-release",
       "configurePreset": "ninja-multi-vcpkg",
-      "configuration": "RelWithDebInfo"
+      "configuration": "Release"
     },
     {
       "name": "linux-debug",

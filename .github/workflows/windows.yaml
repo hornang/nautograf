@@ -52,3 +52,14 @@ jobs:
         with:
           configurePreset: 'ninja-multi-vcpkg'
           buildPreset: 'win-release'
+
+      - name: Run cpack
+        run: cd builds/ninja-multi-vcpkg; cpack -C Release
+
+      - name: Upload package
+        uses: actions/upload-artifact@v3
+        with:
+          name: package
+          path: |
+            builds/ninja-multi-vcpkg/_CPack_Packages/win64/ZIP
+            !builds/ninja-multi-vcpkg/_CPack_Packages/win64/ZIP/*.zip
