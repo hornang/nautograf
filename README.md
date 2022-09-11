@@ -5,17 +5,21 @@
 
 ## Introduction
 
-This software is a tile-based nautical chart (map) viewer that does not require web infrastructure. It is designed as a standalone desktop application and has been tested on Windows and Linux. The application is compatible with **oesenc** charts from [o-charts.org](https://www.o-charts.org). You can therefore view the same oesenc charts as you already have in OpenCPN.
+Nautograf is a chart viewer for marine chart data. It combines reading of such data with tiling techniques found in online map services. The ambition is to provide a similar user experience to the existing online map services without being dependent on web infrastructure.
 
-Nautograf is derivative works of [OpenCPN](https://www.opencpn.org), but most of the code is written from scratch. The C++ standard library, [Cap'n Proto](https://capnproto.org/) and [Clipper](http://www.angusj.com/delphi/clipper.php) are used for tile generation. [Qt 6](https://www.qt.io/) is used for rendering and user interface.
+The application is designed as a desktop application that can be installed alongside OpenCPN and read its [o-charts.org](https://www.o-charts.org) charts. The o-charts.org chart format is a wrapper around S-57 data which is the standard format used by hydrographic offices. Nautograf can only read charts from o-charts.org, but presumably not much effort should be needed to support pure S-57 format.
 
-There is currently no pre-built binaries available. Windows 10 as target system has been the primary focus, but the application also builds and runs on Linux. Pinch zoom and panning for tablet devices is implemented.
+Nautograf can be considered derivative works of [OpenCPN](https://www.opencpn.org), but most of the code is written from scratch.
+
+The C++ standard library, [Cap'n Proto](https://capnproto.org/) and [Clipper](http://www.angusj.com/delphi/clipper.php) are used for tile generation. [Qt 6](https://www.qt.io/) is used for rendering and user interface.
+
+A Windows build is available in the [Microsoft Store](https://apps.microsoft.com/store/detail/nautograf/9NP97HF6LW08).
 
 ## Features
 
-The feature set is very limited and absolutely **not sufficient for nautical navigation**. The focus so far has been on creating a framework for producing tiles from OpenCPN's chart.
+The feature set is very limited and absolutely **not sufficient for nautical navigation**. The focus so far has been on creating a framework for producing tiles from OpenCPN's/o-charts.org chart format.
 
-The following S-57 objects are supported (at varying completeness):
+The following S-57 objects are supported (at varying degree):
 
 * [Coverage](http://www.s-57.com/Object.asp?nameAcr=M_COVR)
 * [Land area](http://www.s-57.com/Object.asp?nameAcr=LNDARE)
@@ -27,9 +31,19 @@ The following S-57 objects are supported (at varying completeness):
 * [Underwater rocks](http://www.s-57.com/Object.asp?nameAcr=UWTROC): ![](symbols/underwater_rocks/awash.svg) ![](symbols/underwater_rocks/always_submerged.svg) ![](symbols/underwater_rocks/cover_and_uncovers.svg)
 * [Buoys, lateral](http://www.s-57.com/Object.asp?nameAcr=BOYLAT): ![](symbols/buoys/spar_starboard.svg) ![](symbols/buoys/spar_port.svg) ![](symbols/buoys/can.svg) etc.
 
-Reading of encrypted oesenc files is only supported on Windows.
+Charts from o-charts.org are encrypted. Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt charts on the fly, but it is only implemented on Windows. Read more about this in my other repository [oesenc-export](https://github.com/hornang/oesenc-export).
 
-### Windows build instructions
+### Roadmap
+
+Current rendering implementation uses QPainter to draw on QImages that are displayed on screen. There is little hardware acceleration possible with this approach and it is also very memory intensive. Some of the planned improvements are:
+
+* Replace QPainter based rendering with Qt's scene graph.
+  * Replace current text rendering with signed distance fields font atlas.
+  * Replace current polygon rendering with triangles in scene graph.
+* Pre-built binaries for Linux.
+* Increase S-57 completeness.
+
+## Windows build instructions
 
 To build it you will need CMake, Visual Studio 2019, Qt and vcpkg. If you are familiar with QtCreator that is the easiest way to get it built and debug any problems. You can also have a look on how it [builds with Github Actions](.github/workflows/windows.yaml).
 
@@ -47,13 +61,13 @@ A basic recipe for manual build in a cmd window follows here: (adjust paths as n
 
 ## How it works and why
 
-Most tile based map viewers are based on [tiled web maps](https://en.wikipedia.org/wiki/Tiled_web_map). The goal for this project was to create a tile based nautical chart viewer that does not depend on web infrastructure. Once you get the application independent chart data you do not need Internet. A large part of the code base revolves around a [tilefactory](src/tilefactory) that generates and serves chart tiles internally. The tilefactory is written in plain C++ and is not dependant on Qt.
+Most tile based map viewers are based on [tiled web maps](https://en.wikipedia.org/wiki/Tiled_web_map). The goal for this project was to create a tile based nautical chart viewer that does not depend on web infrastructure. Once you get the application independent chart data you do not need Internet. A large part of the code base revolves around a [tilefactory](src/tilefactory) that generates and serves chart tiles internally. The tilefactory is written in plain C++ and is not dependent on Qt.
 
-Since tile creation can take some time it runs in multiple threads provided via the `QtConurrent` module. Each tile beeing rendered is put in a queue and waits for the next available thread. Already generated tile data is cached to disk. This means that each time you navigate to a *new area* it will take some time before the area shows. Keeping this delay as low as possible is a key factor to improve usability of the application. Polygon clipping is by far the most time consuming operation.
+Since tile creation can take some time it runs in multiple threads provided via the `QtConurrent` module. Each tile being rendered is put in a queue and waits for the next available thread. Already generated tile data is cached to disk. This means that each time you navigate to a *new area* it will take some time before the area shows. Keeping this delay as low as possible is a key factor to improve usability of the application. Polygon clipping is by far the most time consuming operation.
 
 ### Chart data management
 
-Oesenc chart data comes in many files that covers different areas with different resolutions. Some files may cover thousands of kilometers with low vector resolution while other files cover only a small harbour area in high resolution. There is no connection between a polygon representing a real object from one chart file to another. You could say that the data is already broken from the start as the splitted data limits the computers understanding of the real objects. Creating a seamless map out of scattered chart data is therefore solved graphically (for human perception).
+oesu chart data comes in many files that covers different areas with different resolutions. Some files may cover thousands of kilometers with low vector resolution while other files cover only a small harbor area in high resolution. There is no connection between a polygon representing a real object from one chart file to another. You could say that the data is already broken from the start as the split data limits the computers understanding of the real objects. Creating a seamless map out of scattered chart data is therefore solved graphically (for human perception).
 
 Selecting the correct chart(s) for a particular region of interest is not straight forward. For a particular tile the application by default renders all tile intersecting charts onto a single tile. It is rendered with the highest resolution chart on top. There are also some other rules applied to minimize uneccessary tile generation and rendering efforts - most of them [defined here](https://github.com/hornang/nautograf/blob/1630d56ee4c1b8193759dd271a9d5d3d3158e4bb/src/tilefactory/tilefactory.cpp#L97-L131).
 
@@ -75,6 +89,6 @@ Electronic nautical charts have historically not been given much attention to by
 
 Access to free nautical chart data is also still quite limited and depends on authorities' willingness to provide map data to the public. The lack of free public nautical data creates a burden for non-profit research and innovation at sea.
 
-The only fully featured open source navigation tool for nautical maps today is [OpenCPN](www.opencpn.org). To resolve the lack of map data OpenCPN vendors in 2013 created the o-charts.org store where you can buy charts in OpenCPN's custom charts format. o-charts receive data from hydrological offices and adds an end user encryption that gets decrypted in the closed source part of the OpenCPN's plugin [oesenc_pi](https://github.com/bdbcat/oesenc_pi).
+The only fully featured open source navigation tool for nautical maps today is [OpenCPN](www.opencpn.org). To resolve the lack of map data OpenCPN vendors in 2013 created the o-charts.org store where you can buy charts in OpenCPN's custom charts format. o-charts receive data from hydrographic offices and adds an end user encryption that gets decrypted in the closed source part of the OpenCPN's plugin [o-charts_pi](https://github.com/bdbcat/o-charts_pi) (previously called oesenc_pi).
 
 Nautograf was created to modernize the archaic world of nautical charts.
