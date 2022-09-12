@@ -11,10 +11,6 @@ find_package(Qt6
     CMAKE_FIND_ROOT_PATH_BOTH
 )
 
-find_program(BASH_EXECUTABLE
-    NAMES bash
-)
-
 find_program(IMAGEMAGICK
     NAMES magick convert
 )
@@ -23,9 +19,7 @@ find_program(RSVG-CONVERT
     NAMES rsvg-convert
 )
 
-find_program(BASH
-    NAMES bash
-)
+find_package(UnixCommands)
 
 add_subdirectory(oesenc)
 add_subdirectory(src/tilefactory)
@@ -37,8 +31,7 @@ if(NOT ${RESOURCE_DEV})
     qt_add_resources(SYMBOL_RESOURCES symbols/symbols.qrc)
 endif()
 
-
-if (NOT ${BASH_EXECUTABLE} STREQUAL "BASH_EXECUTABLE-NOTFOUND"
+if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
         AND NOT ${IMAGEMAGICK} STREQUAL "IMAGEMAGICK-NOTFOUND"
         AND NOT ${RSVG-CONVERT} STREQUAL "RSVG-CONVERT-NOTFOUND")
     configure_file(
