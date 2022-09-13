@@ -45,6 +45,7 @@ public:
     ::capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return m_message->getRoot<ChartData>().getDepthAreas().asReader(); }
     ::capnp::List<ChartData::BuiltUpArea>::Reader builtUpAreas() const { return m_message->getRoot<ChartData>().getBuiltUpAreas().asReader(); }
     ::capnp::List<ChartData::BuiltUpPoint>::Reader builtUpPoints() const { return root().getBuiltUpPoints(); }
+    ::capnp::List<ChartData::LandRegion>::Reader landRegions() const { return root().getLandRegions(); }
     ::capnp::List<ChartData::Sounding>::Reader soundings() const { return m_message->getRoot<ChartData>().getSoundings().asReader(); }
     ::capnp::List<ChartData::Beacon>::Reader beacons() const { return m_message->getRoot<ChartData>().getBeacons().asReader(); }
     ::capnp::List<ChartData::UnderwaterRock>::Reader underwaterRocks() const { return m_message->getRoot<ChartData>().getUnderwaterRocks().asReader(); }
@@ -63,6 +64,7 @@ private:
     static void loadDepthAreas(ChartData::Builder &root, S57Vector &objs);
     static void loadBuiltUpAreas(ChartData::Builder &root, S57Vector &objs);
     static void loadSoundings(ChartData::Builder &root, S57Vector &objs);
+    static void loadLandRegions(ChartData::Builder &root, S57Vector &objs);
     static void loadBeacons(ChartData::Builder &root, S57Vector &objs);
     static void loadUnderwaterRocks(ChartData::Builder &root, S57Vector &objs);
     static void loadRoads(ChartData::Builder &root, S57Vector &objs);

@@ -35,6 +35,7 @@ Chart::Chart(const std::vector<oesenc::S57> &objects,
     root.setName(name);
     loadCoverage(root, sortedObjects[oesenc::S57::Type::Coverage]);
     loadLandAreas(root, sortedObjects[oesenc::S57::Type::LandArea]);
+    loadLandRegions(root, sortedObjects[oesenc::S57::Type::LandRegion]);
     loadDepthAreas(root, sortedObjects[oesenc::S57::Type::DepthArea]);
     loadBuiltUpAreas(root, sortedObjects[oesenc::S57::Type::BuiltUpArea]);
     loadSoundings(root, sortedObjects[oesenc::S57::Type::Sounding]);
@@ -211,6 +212,17 @@ Chart Chart::clipped(ChartClipper::Config config) const
             return root.initBuiltUpPoints(length);
         },
         [](ChartData::BuiltUpPoint::Builder &dst, const ChartData::BuiltUpPoint::Reader &src) {
+            dst.setName(src.getName());
+            dst.setPosition(src.getPosition());
+        });
+
+    clipPointItems<ChartData::LandRegion>(
+        landRegions(),
+        config,
+        [&](unsigned int length) {
+            return root.initLandRegions(length);
+        },
+        [](ChartData::LandRegion::Builder &dst, const ChartData::LandRegion::Reader &src) {
             dst.setName(src.getName());
             dst.setPosition(src.getPosition());
         });
@@ -567,6 +579,24 @@ void Chart::loadDepthAreas(ChartData::Builder &root, S57Vector &src)
             dstArea.setDepth(depth.value());
         }
         fromOesencPolygons(dstPolygons, obj->polygons());
+    }
+}
+
+void Chart::loadLandRegions(ChartData::Builder &root, S57Vector &src)
+{
+    auto dst = root.initLandRegions(static_cast<unsigned int>(src.size()));
+    unsigned int i = 0;
+    for (const auto &obj : src) {
+        auto dstElement = dst[i++];
+        auto name = obj->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
+        auto point = obj->pointGeometry();
+
+        if (point.has_value() && name.has_value()) {
+            dstElement.setName(name.value());
+            auto pos = dstElement.getPosition();
+            pos.setLatitude(point.value().latitude());
+            pos.setLongitude(point.value().longitude());
+        }
     }
 }
 
