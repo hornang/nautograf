@@ -326,11 +326,8 @@ Item {
         let lockPosition = mapTile.offsetPosition(topLeft,
                                                   root.viewport.z,
                                                   zoomOrigin);
-        if (newPixelsPerLongitude > 80000) {
-            newPixelsPerLongitude = 80000;
-        } else if (newPixelsPerLongitude < 50) {
-            newPixelsPerLongitude = 50;
-        }
+
+        newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude, 50), 100000);
 
         const newTopLeft = mapTile.offsetPosition(lockPosition,
                                                   newPixelsPerLongitude,
