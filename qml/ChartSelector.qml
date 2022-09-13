@@ -9,6 +9,7 @@ ColumnLayout {
 
     CheckBox {
         text: "All"
+        Layout.fillWidth: true
         nextCheckState: function() { return checkState }
         checked: root.model.allEnabled
         onClicked: root.model.setAllChartsEnabled(!checked)
