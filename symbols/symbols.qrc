@@ -1,6 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
 <qresource prefix="/symbols">
+    <file>test_symbol.svg</file>
     <file>buoys/barrel.svg</file>
     <file>buoys/can.svg</file>
     <file>buoys/conical.svg</file>
