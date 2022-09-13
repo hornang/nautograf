@@ -38,7 +38,6 @@ private:
         The actual ChartFile will not be opened until the first call to this function
     */
     std::shared_ptr<Chart> generateTile(const GeoRect &boundingBox, int pixelsPerLongitude);
-    Chart::SoundingCache m_soundingCache;
     std::unique_ptr<Chart> m_entireChart;
     std::unordered_map<std::string, std::shared_ptr<std::mutex>> m_tileMutexes;
     std::mutex m_tileMutexesMutex;

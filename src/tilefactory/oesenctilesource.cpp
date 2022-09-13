@@ -179,5 +179,5 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
     clipConfig.longitudeResolution = longitudeResolution;
     clipConfig.latitudeResolution = latitudeResolution;
     clipConfig.maxPixelsPerLongitude = pixelsPerLongitude;
-    return std::make_shared<Chart>(m_entireChart->clipped(clipConfig, &m_soundingCache));
+    return std::make_shared<Chart>(m_entireChart->clipped(clipConfig));
 }

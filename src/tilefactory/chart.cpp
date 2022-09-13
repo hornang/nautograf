@@ -143,7 +143,7 @@ bool Chart::pointsAround(const capnp::List<ChartData::Position>::Reader &positio
     return left && right && above && below;
 }
 
-Chart Chart::clipped(ChartClipper::Config config, SoundingCache *soundingCache) const
+Chart Chart::clipped(ChartClipper::Config config) const
 {
     // Ugly to add this here
     config.chartBoundingBox = m_boundingBox;
@@ -225,22 +225,16 @@ Chart Chart::clipped(ChartClipper::Config config, SoundingCache *soundingCache) 
             dst.setDepth(src.getDepth());
         });
 
-    std::vector<Sounding> decimated;
-
-    if (soundingCache) {
-        soundingCache->mutex.lock();
-        auto it = soundingCache->soundings.find(config.maxPixelsPerLongitude);
-        if (it != soundingCache->soundings.end()) {
-            decimated = it->second;
-        } else {
-            decimated = decimateSoundings(config.maxPixelsPerLongitude);
-        }
-        soundingCache->soundings[config.maxPixelsPerLongitude] = decimated;
-        soundingCache->mutex.unlock();
-    } else {
-        decimated = decimateSoundings(config.maxPixelsPerLongitude);
-    }
-    clipAndInsertSoundings(root, decimated, config);
+    clipPointItems<ChartData::Sounding>(
+        soundings(),
+        config,
+        [&](unsigned int length) {
+            return root.initSoundings(length);
+        },
+        [](ChartData::Sounding::Builder &dst, const ChartData::Sounding::Reader &src) {
+            dst.setPosition(src.getPosition());
+            dst.setDepth(src.getDepth());
+        });
 
     clipPointItems<ChartData::Beacon>(
         beacons(),
@@ -292,40 +286,6 @@ Chart Chart::clipped(ChartClipper::Config config, SoundingCache *soundingCache) 
 
     Chart clipped(std::move(message));
     return clipped;
-}
-
-void Chart::clipAndInsertSoundings(ChartData::Builder &root,
-                                   const std::vector<Sounding> &src,
-                                   const ChartClipper::Config &config)
-{
-    const GeoRect &box = config.box;
-
-    GeoRect clipRect(box.top() + config.latitudeMargin,
-                     box.bottom() - config.latitudeMargin,
-                     box.left() - config.longitudeMargin,
-                     box.right() + config.longitudeMargin);
-
-    std::vector<Sounding> clipped;
-
-    for (const auto &sounding : src) {
-        if (!sounding.hasValue) {
-            continue;
-        }
-        if (clipRect.contains(sounding.pos.lat(), sounding.pos.lon())) {
-            clipped.push_back(sounding);
-        }
-    }
-
-    auto dst = root.initSoundings(static_cast<unsigned int>(clipped.size()));
-
-    int i = 0;
-    for (const auto &sounding : clipped) {
-        auto dstItem = dst[i++];
-        auto pos = dstItem.getPosition();
-        pos.setLatitude(sounding.pos.lat());
-        pos.setLongitude(sounding.pos.lon());
-        dstItem.setDepth(sounding.depth);
-    }
 }
 
 template <typename T>
@@ -972,57 +932,4 @@ void Chart::toCapnPosition(ChartData::Position::Builder &dst, const Pos &src)
 {
     dst.setLatitude(src.lat());
     dst.setLongitude(src.lon());
-}
-
-std::vector<Chart::Sounding> Chart::decimateSoundings(int maxPixelsPerLongitude) const
-{
-    const GeoRect &box = m_boundingBox;
-    const double latitudeStep = box.top() - Mercator::mercatorHeightInverse(box.top(), 80, maxPixelsPerLongitude);
-    const double longitudeStep = Mercator::mercatorWidthInverse(box.left(), 80, maxPixelsPerLongitude) - box.left();
-
-    int horizBins = box.lonSpan() / longitudeStep;
-    int vertBins = box.latSpan() / latitudeStep;
-
-    // Risk of integer overflow. Convert to floating point.
-    if (static_cast<double>(horizBins) * vertBins > 100000) {
-        std::vector<Sounding> all;
-        for (const auto &sounding : soundings()) {
-            all.push_back(Sounding { { sounding.getPosition().getLatitude(),
-                                       sounding.getPosition().getLongitude() },
-                                     sounding.getDepth(),
-                                     true });
-        }
-        return all;
-    } else if (horizBins <= 0 || vertBins <= 0) {
-        // Charts needs just one bin (probably zoomed way out)
-        horizBins = 1;
-        vertBins = 1;
-    }
-
-    std::vector<Sounding> bins;
-    bins.resize(vertBins * horizBins);
-
-    for (const auto &srcSounding : soundings()) {
-        double lat = srcSounding.getPosition().getLatitude();
-        double lon = srcSounding.getPosition().getLongitude();
-
-        int horizontalBin = (lon - box.left()) / (box.right() - box.left()) * horizBins;
-        int verticalBin = (lat - box.bottom()) / (box.top() - box.bottom()) * vertBins;
-
-        horizontalBin = std::clamp(horizontalBin, 0, horizBins);
-        verticalBin = std::clamp(verticalBin, 0, vertBins);
-
-        Sounding sounding { { lat, lon }, srcSounding.getDepth(), true };
-
-        int bin = horizontalBin + verticalBin * horizBins;
-        if (bins[bin].hasValue) {
-            if (sounding.depth < bins[bin].depth) {
-                bins[bin] = sounding;
-            }
-        } else {
-            bins[bin] = sounding;
-        }
-    }
-
-    return bins;
 }

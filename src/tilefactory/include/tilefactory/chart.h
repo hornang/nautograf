@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <memory>
-#include <mutex>
 
 #include "chartdata.capnp.h"
 #include <capnp/dynamic.h>
@@ -25,12 +24,6 @@ public:
         bool hasValue = false;
     };
 
-    struct SoundingCache
-    {
-        std::mutex mutex;
-        std::unordered_map<int, std::vector<Sounding>> soundings;
-    };
-
     Chart(std::unique_ptr<capnp::MallocMessageBuilder> messageBuilder);
     Chart();
     ~Chart();
@@ -42,7 +35,7 @@ public:
           int scale);
 
     static uint64_t typeId() { return ChartData::_capnpPrivate::typeId; }
-    Chart clipped(ChartClipper::Config config, SoundingCache *soundingCache = nullptr) const;
+    Chart clipped(ChartClipper::Config config) const;
     capnp::MallocMessageBuilder &messageBuilder();
     ::ChartData::Reader root() const { return m_message->getRoot<ChartData>().asReader(); }
     int nativeScale() const { return m_message->getRoot<ChartData>().getNativeScale(); }
@@ -135,10 +128,6 @@ private:
     static inline void toCapnPosition(ChartData::Position::Builder &dst, const Pos &src);
     static inline void toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
                                       const std::vector<Polygon> &src);
-    static void clipAndInsertSoundings(ChartData::Builder &root,
-                                       const std::vector<Sounding> &src,
-                                       const ChartClipper::Config &config);
-    std::vector<Chart::Sounding> decimateSoundings(int maxPixelsPerLongitude) const;
 
     GeoRect m_boundingBox;
     std::unique_ptr<::capnp::MallocMessageBuilder> m_message;
