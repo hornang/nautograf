@@ -169,16 +169,6 @@ void MapTile::renderFinished()
     }
 }
 
-double MapTile::scaledNumber(double minSize,
-                             double maxSize,
-                             int minPixelsPerLon,
-                             int pixelsPerLon,
-                             double factor)
-{
-    float ratio = 1. + factor * static_cast<double>(pixelsPerLon - minPixelsPerLon) / minPixelsPerLon;
-    return std::clamp(ratio * minSize, minSize, maxSize);
-}
-
 QPair<QImage, std::vector<std::shared_ptr<Chart>>> MapTile::renderTile(TileFactoryWrapper *tileFactory,
                                                                            RenderConfig renderConfig,
                                                                            const GeoRect &boundingBox,
@@ -220,24 +210,6 @@ QPair<QImage, std::vector<std::shared_ptr<Chart>>> MapTile::renderTile(TileFacto
         clipAroundCoverage(chartData->coverage(), renderConfig, &painter);
         resultPainter.drawImage(QRectF({ 0, 0 }, size), image);
     }
-
-    QHash<QString, QPair<int, Pos>> labels;
-
-    for (const auto &chartData : chartDatas) {
-        if (renderConfig.hiddenCharts.contains(QString::fromStdString(chartData->name()))) {
-            continue;
-        }
-        readPointNames<ChartData::BuiltUpPoint>(chartData->builtUpPoints(), renderConfig, labels);
-        readAreaNames<ChartData::LandArea>(chartData->landAreas(), renderConfig, labels);
-        readAreaNames<ChartData::BuiltUpArea>(chartData->builtUpAreas(), renderConfig, labels);
-
-        paintSoundings(chartData->soundings(), renderConfig, &resultPainter);
-        paintUnderwaterRocks(chartData->underwaterRocks(), renderConfig, &resultPainter);
-        paintLateralBuoys(chartData->lateralBuoys(), renderConfig, &resultPainter);
-        paintBeacons(chartData->beacons(), renderConfig, &resultPainter);
-    }
-
-    paintLabels(labels, &resultPainter, renderConfig);
 
     return QPair<QImage, std::vector<std::shared_ptr<Chart>>>(result, chartDatas);
 }
@@ -366,152 +338,6 @@ void MapTile::paint(QPainter *painter)
     }
 }
 
-void MapTile::paintSoundings(const capnp::List<ChartData::Sounding>::Reader &soundings,
-                             const RenderConfig &renderConfig,
-                             QPainter *painter)
-{
-
-    const double pointSize = scaledNumber(10, 14, 30000, renderConfig.pixelsPerLongitude, 0.5);
-    const QFont soundingFont = QFont(soundingFontFamily, pointSize);
-
-    QPen pen(soundingColor);
-    painter->setPen(pen);
-    painter->setFont(soundingFont);
-
-    for (const auto &sounding : soundings) {
-        const QPointF position = toMercator(renderConfig.topLeft,
-                                            renderConfig.pixelsPerLongitude,
-                                            sounding.getPosition().getLatitude(),
-                                            sounding.getPosition().getLongitude())
-            + renderConfig.offset;
-
-        const float depth = sounding.getDepth();
-        int precision = 0;
-        if (depth < 30) {
-            precision = 1;
-        }
-        const QString formatted = QString::number(depth, 'f', precision);
-        painter->drawText(position, formatted);
-    }
-}
-
-void MapTile::paintBeacons(const capnp::List<ChartData::Beacon>::Reader &beacons,
-                           const RenderConfig &renderConfig,
-                           QPainter *painter)
-{
-    if (renderConfig.pixelsPerLongitude < 3000) {
-        return;
-    }
-
-    const double fontSize = scaledNumber(14, 20, 20000, renderConfig.pixelsPerLongitude);
-    const QFont font = QFont(beaconFontFamily, fontSize);
-    const QFontMetrics fontMetrics(font);
-    painter->setFont(font);
-
-    painter->setPen(QPen(QColor(Qt::black)));
-    painter->setBrush(QColor(255, 255, 255, 100));
-
-    for (const auto &beacon : beacons) {
-        const QPointF position = toMercator(renderConfig.topLeft,
-                                            renderConfig.pixelsPerLongitude,
-                                            beacon.getPosition().getLatitude(),
-                                            beacon.getPosition().getLongitude())
-            + renderConfig.offset;
-        const QImage image = renderConfig.chartSymbols->beacon(beacon.getShape());
-        painter->drawImage(position - QPointF(image.width() / 2, image.height() / 2),
-                           image);
-
-        const QString text = QString::fromStdString(beacon.getName());
-        const QRectF &textRect = fontMetrics.boundingRect(text);
-        QPointF textPosition = position + QPointF(-textRect.width() / 2, image.height() + beaconLabelMargin);
-        painter->drawText(textPosition, text);
-    }
-}
-
-void MapTile::paintUnderwaterRocks(const capnp::List<ChartData::UnderwaterRock>::Reader &underwaterRocks,
-                                   const RenderConfig &renderConfig,
-                                   QPainter *painter)
-{
-    if (renderConfig.pixelsPerLongitude < 11000) {
-        return;
-    }
-
-    painter->setPen(QPen(QColor(Qt::black)));
-    const double pointSize = scaledNumber(10, 14, 20000, renderConfig.pixelsPerLongitude, 0.5);
-    bool drawDepth = true;
-    if (pointSize == 10) {
-        drawDepth = false;
-    }
-    const QFont font(underwaterRockFontFamily, pointSize, QFont::Normal, QFont::StyleItalic);
-    const QFontMetrics fontMetrics(font);
-    painter->setFont(font);
-
-    for (const auto &rock : underwaterRocks) {
-        const QPointF position = toMercator(renderConfig.topLeft,
-                                            renderConfig.pixelsPerLongitude,
-                                            rock.getPosition().getLatitude(),
-                                            rock.getPosition().getLongitude())
-            + renderConfig.offset;
-
-        QImage image = renderConfig.chartSymbols->underwaterRock(rock.getWaterlevelEffect());
-        painter->drawImage(position - QPointF(image.width() / 2, image.height() / 2), image);
-
-        if (!drawDepth) {
-            continue;
-        }
-
-        int precision = 0;
-        if (rock.getDepth() < 30) {
-            precision = 1;
-        }
-
-        const QString depth = QString::number(rock.getDepth(), 'f', precision);
-        const int textWidth = fontMetrics.boundingRect(depth).width();
-        const int textHeight = fontMetrics.boundingRect(depth).height();
-        QPointF textPosition = position + QPointF(-textWidth / 2, image.height() + textHeight / 2);
-        painter->drawText(textPosition, depth);
-    }
-}
-
-void MapTile::paintLateralBuoys(const capnp::List<ChartData::BuoyLateral>::Reader &items,
-                                const RenderConfig &renderConfig,
-                                QPainter *painter)
-{
-    if (!renderConfig.chartSymbols || renderConfig.pixelsPerLongitude < 5000) {
-        return;
-    }
-
-    painter->setPen(Qt::black);
-    const double pointSize = scaledNumber(10, 14, 30000, renderConfig.pixelsPerLongitude, 0.5);
-    bool drawColorAcronym = true;
-    if (pointSize == 10) {
-        drawColorAcronym = false;
-    }
-
-    const QFont font = QFont(lateralBuoysFontFamily, pointSize, QFont::Medium);
-    const QFontMetrics fontMetrics(font);
-    painter->setFont(font);
-
-    for (const auto &item : items) {
-        const QPointF position = toMercator(renderConfig.topLeft,
-                                            renderConfig.pixelsPerLongitude,
-                                            item.getPosition().getLatitude(),
-                                            item.getPosition().getLongitude())
-            + renderConfig.offset;
-
-        QImage image = renderConfig.chartSymbols->lateralBuoy(item.getShape(),
-                                                              item.getCategory(),
-                                                              item.getColor());
-        painter->drawImage(position - QPointF(image.width() / 2, image.height() * 0.9), image);
-
-        if (drawColorAcronym) {
-            const QString acronym = renderConfig.chartSymbols->colorAcronym(item.getColor());
-            painter->drawText(position + QPointF(-2 - (fontMetrics.averageCharWidth() * acronym.length()) / 2, fontMetrics.height()),
-                              acronym);
-        }
-    }
-}
-
 void MapTile::clipAroundCoverage(const ::capnp::List<ChartData::Area>::Reader &areas,
                                  const RenderConfig &renderConfig,
                                  QPainter *painter)
@@ -603,34 +429,6 @@ void MapTile::paintLandArea(const ::capnp::List<ChartData::LandArea>::Reader &ar
             painterPath.closeSubpath();
         }
         painter->drawPath(painterPath);
-    }
-}
-
-void MapTile::paintLabels(const QHash<QString, QPair<int, Pos>> &labels,
-                          QPainter *painter,
-                          const RenderConfig &renderConfig)
-{
-    double fontSize = scaledNumber(13, 20, 5000, renderConfig.pixelsPerLongitude);
-
-    const QFont landFont = QFont(QStringLiteral("Times New Roman"), fontSize);
-    const QFontMetrics landFontMetric(landFont);
-
-    painter->setFont(landFont);
-    painter->setBrush(Qt::black);
-    painter->setPen(Qt::black);
-
-    for (const auto &key : labels.keys()) {
-        QString name = key;
-        const Pos &position = labels[key].second;
-        const QPointF pos = toMercator(renderConfig.topLeft,
-                                       renderConfig.pixelsPerLongitude,
-                                       position.lat(),
-                                       position.lon())
-            + renderConfig.offset;
-
-        const QRectF &textRect = landFontMetric.boundingRect(name);
-        QPointF textPosition = pos + QPointF(-textRect.width() / 2, 0);
-        painter->drawText(textPosition, name);
     }
 }
 
@@ -734,47 +532,6 @@ void MapTile::paintRoads(const capnp::List<ChartData::Road>::Reader &roads,
 
         painter->setPen(pen);
         painter->drawPath(painterPath);
-    }
-}
-
-template <typename T>
-void MapTile::readPointNames(const typename capnp::List<T>::Reader &elements,
-                             const RenderConfig &renderConfig,
-                             QHash<QString, QPair<int, Pos>> &names)
-{
-    for (const auto &element : elements) {
-        const QString name = QString::fromUtf8(element.getName().cStr());
-        if (names.contains(name)) {
-            QPair<int, Pos> existingElement = names.value(name);
-            if (renderConfig.scale > existingElement.first) {
-                break;
-            }
-        }
-        const auto &pos = element.getPosition();
-        Pos newPos(pos.getLatitude(), pos.getLongitude());
-        names[name] = QPair<int, Pos>(renderConfig.scale, newPos);
-    }
-}
-
-template <typename T>
-void MapTile::readAreaNames(const typename capnp::List<T>::Reader &areas,
-                            const RenderConfig &renderConfig,
-                            QHash<QString, QPair<int, Pos>> &names)
-{
-    for (const auto &area : areas) {
-        if (area.getName().size() > 0) {
-            Pos c(area.getCentroid().getLatitude(), area.getCentroid().getLongitude());
-            auto name = QString::fromUtf8(area.getName().cStr());
-            if (names.contains(name)) {
-                QPair<int, Pos> existingElement = names.value(name);
-                if (renderConfig.scale > existingElement.first) {
-                    break;
-                }
-            }
-            const auto &pos = area.getCentroid();
-            Pos newPos(pos.getLatitude(), pos.getLongitude());
-            names[name] = QPair<int, Pos>(renderConfig.scale, newPos);
-        }
     }
 }
 

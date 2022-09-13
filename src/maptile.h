@@ -111,10 +111,6 @@ private:
                                    const RenderConfig &renderConfig,
                                    QPainter *painter);
 
-    static void paintSoundings(const capnp::List<ChartData::Sounding>::Reader &soundings,
-                               const RenderConfig &renderConfig,
-                               QPainter *painter);
-
     static inline QPointF toMercator(const Pos &topLeft,
                                      qreal pixelsPerLongitude,
                                      const Pos &position);
@@ -124,44 +120,15 @@ private:
                                      const double &lat,
                                      const double &lon);
 
-    static void paintBeacons(const capnp::List<ChartData::Beacon>::Reader &beacons,
-                             const RenderConfig &renderConfig,
-                             QPainter *painter);
-
-    static void paintUnderwaterRocks(const capnp::List<ChartData::UnderwaterRock>::Reader &underwaterRocks,
-                                     const RenderConfig &renderConfig,
-                                     QPainter *painter);
-
-    static void paintLateralBuoys(const capnp::List<ChartData::BuoyLateral>::Reader &lateralBuoys,
-                                  const RenderConfig &renderConfig,
-                                  QPainter *painter);
-
     static void paintRoads(const capnp::List<ChartData::Road>::Reader &roads,
                            const RenderConfig &renderConfig,
                            QPainter *painter);
-
-    static void paintLabels(const QHash<QString, QPair<int, Pos>> &labels,
-                            QPainter *painter,
-                            const RenderConfig &renderConfig);
-
-    template <typename T>
-    static void readPointNames(const typename capnp::List<T>::Reader &elements,
-                               const RenderConfig &renderConfig,
-                               QHash<QString, QPair<int, Pos>> &names);
-    template <typename T>
-    static void readAreaNames(const typename capnp::List<T>::Reader &elements,
-                              const RenderConfig &renderConfig,
-                              QHash<QString, QPair<int, Pos>> &names);
 
     static QSizeF sizeFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
     static QPointF positionFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
     static void rasterClip(const QRectF &outer, const QRectF &inner, QPainter *painter);
     static QColor depthColor(qreal depth);
-    static double scaledNumber(double minSize,
-                               double maxSize,
-                               int minPixelsPerLon,
-                               int pixelsPerLon,
-                               double factor = 1.0);
+
     void updateGeometry();
 
     QImage m_image;
