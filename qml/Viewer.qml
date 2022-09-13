@@ -39,7 +39,6 @@ Item {
         id: mapRoot
         anchors.fill:parent
         color: "#eee"
-        property bool zoomAnimation: true
 
         onWidthChanged: updateViewport()
         onHeightChanged: updateViewport()
@@ -58,7 +57,6 @@ Item {
             anchors.fill: parent
             onPinchStarted: function (event){
                 startPos = Qt.point(root.viewport.x, root.viewport.y);
-                mapRoot.zoomAnimation = false;
                 startPixelsPerLongitude = root.viewport.z;
 
             }
@@ -70,7 +68,6 @@ Item {
                            Qt.point(event.center.x, event.center.y),
                            offset);
             }
-            onPinchFinished: mapRoot.zoomAnimation = true;
 
             MouseArea {
                 id: mouseArea
@@ -86,7 +83,6 @@ Item {
                     startPos = Qt.point(root.viewport.x, root.viewport.y);
                     mouseStartPos = Qt.point(mouse.x, mouse.y);
                     mouse.accept = false;
-                    mapRoot.zoomAnimation = true;
                     statusBar.position = mapTile.offsetPosition(startPos, root.viewport.z, Qt.point(mouse.x, mouse.y));
                 }
 
@@ -153,58 +149,10 @@ Item {
                 }
 
                 onNewGeometry: function (x_, y_, w, h) {
-                    widthAnimation.to = w
-                    heightAnimation.to = h
-                    xAnimation.to = x_
-                    yAnimation.to = y_
-
-                    if (mapRoot.zoomAnimation) {
-                        if (parallelAnimation.running) {
-                            parallelAnimation.stop()
-                        }
-                        parallelAnimation.start();
-                    } else {
-                        tile.x = x_;
-                        tile.y = y_;
-                        tile.width = w;
-                        tile.height = h;
-                    }
-                }
-
-                ParallelAnimation {
-                    id: parallelAnimation
-                    PropertyAnimation {
-                        id: xAnimation
-                        target: tile
-                        property: "x"
-                        to: 50
-                        easing.type: Easing.InOutQuad
-                        duration: 200
-                    }
-                    PropertyAnimation {
-                        id: yAnimation
-                        target: tile
-                        property: "y"
-                        to: 50
-                        easing.type: Easing.InOutQuad
-                        duration: 200
-                    }
-                    PropertyAnimation {
-                        id: widthAnimation
-                        target: tile
-                        property: "width"
-                        to: 50
-                        easing.type: Easing.InOutQuad
-                        duration: 200
-                    }
-                    PropertyAnimation {
-                        id: heightAnimation
-                        target: tile
-                        property: "height"
-                        to: 50
-                        easing.type: Easing.InOutQuad
-                        duration: 200
-                    }
+                    tile.x = x_;
+                    tile.y = y_;
+                    tile.width = w;
+                    tile.height = h;
                 }
 
                 Item {
