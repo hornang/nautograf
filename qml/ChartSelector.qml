@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Universal 2.12
 
 ColumnLayout {
     id: root
@@ -44,7 +45,7 @@ ColumnLayout {
                     }
                     text: symbol + model.name
                 }
-                Text {
+                Label {
                     visible: model.ok
                     text: "1:" + model.scale
                 }

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls.Universal 2.12
 import Qt.labs.platform 1.0
 import org.seatronomy.nautograf 1.0
 
@@ -14,6 +15,7 @@ ApplicationWindow {
     width: UserSettings.geometry.width
     height: UserSettings.geometry.height
     visibility: UserSettings.windowState
+    Universal.theme: Universal.System
 
     onVisibilityChanged: function(visibility) {
         UserSettings.windowState = visibility;
@@ -112,10 +114,7 @@ ApplicationWindow {
             anchors.margins: 15
             spacing: 5
             Text {
-                style: Text.Outline
                 Layout.alignment: Qt.AlignHCenter
-                color: "white"
-                styleColor: "black"
                 font {
                     bold: true
                     pixelSize: 20
