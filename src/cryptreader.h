@@ -32,7 +32,6 @@ signals:
     void error();
 
 private:
-    void testPipe();
     bool readFile(const QString &fileName, const QString &key, ChartType type);
     void updateStatusString();
 

@@ -34,11 +34,6 @@ void CryptReader::start()
     connectToPipe();
 }
 
-void CryptReader::testPipe()
-{
-    connectToPipe();
-}
-
 CryptReader::~CryptReader()
 {
     connectToPipe();
@@ -92,7 +87,7 @@ void CryptReader::startOeserverd()
 
 void CryptReader::oeserverdStarted()
 {
-    QTimer::singleShot(waitConnectTime, this, [&]() { testPipe(); });
+    QTimer::singleShot(waitConnectTime, this, [&]() { connectToPipe(); });
 }
 
 void CryptReader::add256String(QByteArray &data, const QString &string)
