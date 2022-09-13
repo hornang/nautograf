@@ -412,9 +412,6 @@ void MapTile::paintBeacons(const capnp::List<ChartData::Beacon>::Reader &beacons
     painter->setBrush(QColor(255, 255, 255, 100));
 
     for (const auto &beacon : beacons) {
-        if (beacon.getName().startsWith("BRAMA")) {
-            int a = 0;
-        }
         const QPointF position = toMercator(renderConfig.topLeft,
                                             renderConfig.pixelsPerLongitude,
                                             beacon.getPosition().getLatitude(),
