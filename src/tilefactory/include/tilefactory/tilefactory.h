@@ -67,7 +67,7 @@ public:
 
 private:
     void insertSorted(const TileFactory::Source &source);
-    bool hasSource(const std::string &id) const;
+    bool hasSource(const std::string &id);
     static std::vector<GeoRect> tilesInViewport(const GeoRect &rect, int zoom);
     static std::string tileId(const GeoRect &rectBox, int pixelsPerLongitude);
     std::function<void(void)> m_updateCallback;

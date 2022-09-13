@@ -44,13 +44,14 @@ std::string TileFactory::tileId(const GeoRect &rectBox, int pixelsPerLongitude)
 
 void TileFactory::clear()
 {
-    m_sourcesMutex.lock();
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
     m_sources.clear();
-    m_sourcesMutex.unlock();
 }
 
 void TileFactory::setChartEnabled(const std::string &name, bool enabled)
 {
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+
     for (auto &source : m_sources) {
         if (source.name == name) {
             if (source.enabled == enabled) {
@@ -68,6 +69,8 @@ std::vector<int> TileFactory::setAllChartsEnabled(bool enabled)
 {
     std::vector<GeoRect> rects;
     std::vector<int> indexes;
+
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
 
     int i = 0;
     for (auto &source : m_sources) {
@@ -95,6 +98,8 @@ std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
     m_sourcesMutex.unlock();
 
     for (const auto &source : sources) {
+        assert(source.tileSource);
+
         if (!source.enabled) {
             continue;
         }
@@ -154,6 +159,8 @@ std::vector<TileFactory::Tile> TileFactory::tiles(const Pos &topLeft,
 
     std::vector<TileFactory::Tile> tiles;
 
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+
     for (const auto &tileRect : tileLocations) {
         for (const auto &source : m_sources) {
             if (tileRect.intersects(source.tileSource->extent())) {
@@ -210,8 +217,9 @@ std::vector<GeoRect> TileFactory::tilesInViewport(const GeoRect &rect, int zoom)
     return tiles;
 }
 
-bool TileFactory::hasSource(const std::string &name) const
+bool TileFactory::hasSource(const std::string &name)
 {
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
     for (const auto &source : m_sources) {
         if (source.name == name) {
             return true;
@@ -222,7 +230,7 @@ bool TileFactory::hasSource(const std::string &name) const
 
 void TileFactory::insertSorted(const TileFactory::Source &source)
 {
-
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
     auto upper = std::upper_bound(m_sources.begin(),
                                   m_sources.end(),
                                   source, [](const TileFactory::Source &a, const TileFactory::Source &b) -> bool {
