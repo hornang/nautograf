@@ -296,14 +296,9 @@ void Chart::clipPointItems(const typename capnp::List<T>::Reader &src,
 {
     std::vector<ClippedPointItem<T>> clipped;
 
-    GeoRect clipRect(config.box.top() + config.latitudeMargin,
-                     config.box.bottom() - config.latitudeMargin,
-                     config.box.left() - config.longitudeMargin,
-                     config.box.right() + config.longitudeMargin);
-
     for (const auto &element : src) {
         const Pos pos(element.getPosition().getLatitude(), element.getPosition().getLongitude());
-        if (clipRect.contains(pos.lat(), pos.lon())) {
+        if (config.box.contains(pos.lat(), pos.lon())) {
             clipped.push_back(ClippedPointItem<T> { pos, element });
         }
     }
