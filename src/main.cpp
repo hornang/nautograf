@@ -8,6 +8,7 @@
 #include "maptilemodel.h"
 #include "oesenc/chartfile.h"
 #include "tilefactorywrapper.h"
+#include "scene/scene.h"
 #include "tilefactory/tilefactory.h"
 #include "usersettings.h"
 
@@ -44,6 +45,8 @@ int main(int argc, char *argv[])
     UserSettings userSettings;
 
     qmlRegisterType<MapTile>("org.seatronomy.nautograf", 1, 0, "MapTile");
+    qmlRegisterType<Scene>("org.seatronomy.nautograf", 1, 0, "Scene");
+
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "MapTileModel", &mapTileModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "TileFactory", &tileFactoryWrapper);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "ChartModel", &chartModel);

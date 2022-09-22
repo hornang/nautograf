@@ -248,6 +248,14 @@ Item {
                 }
             }
         }
+
+        Scene {
+            id: overlay
+            anchors.fill: parent
+            tileFactory: TileFactory
+            viewport: root.viewport
+            tileModel: MapTileModel
+        }
     }
 
     StatusBar {

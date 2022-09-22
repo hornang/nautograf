@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6
     COMPONENTS
-    REQUIRED Gui Core Network Concurrent Quick Svg QuickControls2
+    REQUIRED Gui Core Network Concurrent Quick Svg QuickControls2 ShaderTools
     CMAKE_FIND_ROOT_PATH_BOTH
 )
 
@@ -72,13 +72,35 @@ add_executable(nautograf WIN32
     src/chartmodel.h
     src/usersettings.cpp
     src/usersettings.h
+    src/scene/annotationmaterial.cpp
+    src/scene/annotationmaterial.h
+    src/scene/annotationnode.cpp
+    src/scene/annotationnode.h
+    src/scene/annotationshader.cpp
+    src/scene/annotationshader.h
     src/scene/fontimage.cpp
     src/scene/fontimage.h
+    src/scene/rootnode.cpp
+    src/scene/rootnode.h
+    src/scene/scene.cpp
+    src/scene/scene.h
     src/scene/symbolimage.cpp
     src/scene/symbolimage.h
+    src/scene/tessellator.cpp
+    src/scene/tessellator.h
+    src/scene/tilenode.cpp
+    src/scene/tilenode.h
     ${QML_RESOURCES}
     ${SYMBOL_RESOURCES}
     ${APP_ICON_RESOURCE_WINDOWS}
+)
+
+qt6_add_shaders(nautograf "shaders"
+    PREFIX
+        "/"
+    FILES
+        "src/scene/annotation.vert"
+        "src/scene/annotation.frag"
 )
 
 if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
