@@ -159,7 +159,7 @@ if(WIN32)
     )
 
     install(RUNTIME_DEPENDENCY_SET dependency_set
-        PRE_INCLUDE_REGEXES "tinyxml"
+        PRE_INCLUDE_REGEXES "tinyxml" "freetype" "bz2" "brotli" "libpng" "zlib"
         PRE_EXCLUDE_REGEXES ".*"
     )
 
