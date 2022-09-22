@@ -47,7 +47,6 @@ private:
     std::string m_name;
     oesenc::ChartFile m_oesencChart;
     oesenc::Rect m_extent;
-    std::vector<std::byte> m_data;
     std::mutex m_chartMutex;
     int m_scale = 0;
     bool m_valid = false;
