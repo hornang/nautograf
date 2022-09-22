@@ -16,6 +16,8 @@ find_package(Qt6
 set(MSDFGEN_BUILD_STANDALONE false)
 add_subdirectory(msdfgen)
 
+find_package(freetype-gl CONFIG REQUIRED)
+
 find_program(IMAGEMAGICK
     NAMES magick convert
 )
@@ -72,6 +74,8 @@ add_executable(nautograf WIN32
     src/chartmodel.h
     src/usersettings.cpp
     src/usersettings.h
+    src/scene/fontimage.cpp
+    src/scene/fontimage.h
     src/scene/symbolimage.cpp
     src/scene/symbolimage.h
     ${QML_RESOURCES}
@@ -109,6 +113,7 @@ target_link_libraries(nautograf
     tilefactory
     msdfgen::msdfgen-core
     msdfgen::msdfgen-ext
+    freetype-gl
 )
 
 if(WIN32)
