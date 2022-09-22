@@ -4,3 +4,7 @@
 [submodule "oesenc"]
 	path = oesenc
 	url = https://www.github.com/hornang/oesenc
+
+[submodule "msdfgen"]
+	path = msdfgen
+	url = https://github.com/hornang/msdfgen

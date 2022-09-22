@@ -11,6 +11,11 @@ find_package(Qt6
     CMAKE_FIND_ROOT_PATH_BOTH
 )
 
+# Used for creating signed distance field for symbols. Only the traditional
+# single channel mode is used.
+set(MSDFGEN_BUILD_STANDALONE false)
+add_subdirectory(msdfgen)
+
 find_program(IMAGEMAGICK
     NAMES magick convert
 )
@@ -67,6 +72,8 @@ add_executable(nautograf WIN32
     src/chartmodel.h
     src/usersettings.cpp
     src/usersettings.h
+    src/scene/symbolimage.cpp
+    src/scene/symbolimage.h
     ${QML_RESOURCES}
     ${SYMBOL_RESOURCES}
     ${APP_ICON_RESOURCE_WINDOWS}
@@ -100,6 +107,8 @@ target_link_libraries(nautograf
     Qt6::Svg
     Qt::Gui
     tilefactory
+    msdfgen::msdfgen-core
+    msdfgen::msdfgen-ext
 )
 
 if(WIN32)

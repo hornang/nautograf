@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
     QCoreApplication::setApplicationName("Nautograf");
+    setlocale(LC_NUMERIC, "C");
 
     const QString iconPath = ":/icon.ico";
     application.setWindowIcon(QIcon(iconPath));
