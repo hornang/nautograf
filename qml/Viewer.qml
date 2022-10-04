@@ -129,7 +129,6 @@ Item {
                 viewport: root.viewport
                 tileFactory: TileFactory
                 tileRef: model.tileRef
-                symbols: ChartSymbols
 
                 onLoadingChanged: function(loading) {
                     if (loading) {

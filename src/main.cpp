@@ -4,7 +4,6 @@
 #include <QQuickWindow>
 
 #include "chartmodel.h"
-#include "chartsymbols.h"
 #include "maptile.h"
 #include "maptilemodel.h"
 #include "oesenc/chartfile.h"
@@ -16,10 +15,6 @@
 #define QML_DIR "qrc:/qml"
 #endif
 
-#ifndef SYMBOLS_DIR
-#define SYMBOLS_DIR ":/symbols"
-#endif
-
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
@@ -28,8 +23,6 @@ int main(int argc, char *argv[])
 
     const QString iconPath = ":/icon.ico";
     application.setWindowIcon(QIcon(iconPath));
-
-    ChartSymbols chartSymbols(SYMBOLS_DIR);
 
     std::shared_ptr<TileFactory> tileManager = std::make_shared<TileFactory>();
     MapTileModel mapTileModel(tileManager);
@@ -53,7 +46,6 @@ int main(int argc, char *argv[])
     qmlRegisterType<MapTile>("org.seatronomy.nautograf", 1, 0, "MapTile");
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "MapTileModel", &mapTileModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "TileFactory", &tileFactoryWrapper);
-    qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "ChartSymbols", &chartSymbols);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "ChartModel", &chartModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "UserSettings", &userSettings);
 

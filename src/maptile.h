@@ -9,7 +9,6 @@
 #include <QFont>
 
 class TileFactoryWrapper;
-class ChartSymbols;
 
 class MapTile : public QQuickPaintedItem
 {
@@ -22,7 +21,6 @@ class MapTile : public QQuickPaintedItem
     Q_PROPERTY(bool noData READ noData NOTIFY noDataChanged)
     Q_PROPERTY(bool error READ error NOTIFY errorChanged)
     Q_PROPERTY(QStringList charts READ charts NOTIFY chartsChanged)
-    Q_PROPERTY(ChartSymbols *symbols READ symbols WRITE setSymbols NOTIFY symbolsChanged)
 
 public:
 
@@ -51,8 +49,6 @@ public:
     void setTileFactory(TileFactoryWrapper *newTileFactory);
     bool loading() const;
     int margin() const;
-    ChartSymbols *symbols() const;
-    void setSymbols(ChartSymbols *newSymbols);
     void setViewport(const QVector3D &viewport);
     QStringList charts() const;
     bool chartVisible(int index) const;
@@ -79,7 +75,6 @@ private:
         QSizeF size;
         int scale = 0;
         QStringList hiddenCharts;
-        ChartSymbols *chartSymbols = nullptr;
     };
 
     void render(const QVector3D &viewport);
@@ -147,9 +142,6 @@ private:
     QVector3D m_updatedViewport;
 
     TileFactoryWrapper *m_tileFactory = nullptr;
-
-    ChartSymbols *m_symbols = nullptr;
-
     QStringList m_charts;
 
     QStringList m_hiddenCharts;

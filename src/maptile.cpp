@@ -5,7 +5,6 @@
 #include <QtConcurrent>
 #include <algorithm>
 
-#include "chartsymbols.h"
 #include "maptile.h"
 #include "tilefactorywrapper.h"
 #include "tilefactory/mercator.h"
@@ -100,7 +99,7 @@ void MapTile::setChartVisibility(const QString &name, bool visible)
 
 void MapTile::render(const QVector3D &viewport)
 {
-    if (m_renderResult.isRunning() || !m_symbols) {
+    if (m_renderResult.isRunning()) {
         m_pendingRender = true;
         return;
     }
@@ -112,7 +111,6 @@ void MapTile::render(const QVector3D &viewport)
     renderConfig.hiddenCharts = m_hiddenCharts;
     renderConfig.offset = QPointF(extraPixels.width() / 2, extraPixels.height() / 2);
     renderConfig.pixelsPerLongitude = viewport.z();
-    renderConfig.chartSymbols = m_symbols;
 
     if (m_chartDatas.empty()) {
         m_loading = true;
@@ -633,19 +631,6 @@ int MapTile::margin() const
     return tilePadding;
 }
 
-ChartSymbols *MapTile::symbols() const
-{
-    return m_symbols;
-}
-
-void MapTile::setSymbols(ChartSymbols *newSymbols)
-{
-    if (m_symbols == newSymbols)
-        return;
-    m_symbols = newSymbols;
-    emit symbolsChanged();
-    render(m_viewport);
-}
 
 bool MapTile::error() const
 {

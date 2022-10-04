@@ -62,8 +62,6 @@ add_executable(nautograf WIN32
     src/main.cpp
     src/cryptreader.cpp
     src/cryptreader.h
-    src/chartsymbols.cpp
-    src/chartsymbols.h
     src/maptile.h
     src/maptile.cpp
     src/maptilemodel.h
