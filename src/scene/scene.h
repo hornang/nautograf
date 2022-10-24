@@ -57,6 +57,7 @@ signals:
 
 private:
     static std::optional<TileFactoryWrapper::TileRecipe> parseTileRef(const QVariantMap &tileRef);
+    void addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int last);
     void updateBox();
     void getData();
 
@@ -70,7 +71,7 @@ private:
     QRectF m_box;
 
     TileFactoryWrapper *m_tileFactory = nullptr;
-    QAbstractListModel *m_tileModel;
+    QAbstractListModel *m_tileModel = nullptr;
     bool m_sourceDataChanged = false;
     bool m_tilesChanged = false;
 };

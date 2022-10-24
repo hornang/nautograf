@@ -166,8 +166,17 @@ void Scene::setModel(QAbstractListModel *newTileModel)
 {
     if (m_tileModel == newTileModel)
         return;
+
+    if (m_tileModel) {
+        disconnect(m_tileModel, nullptr, this, nullptr);
+    }
+
     m_tileModel = newTileModel;
     emit tileModelChanged();
+
+    if (!m_tileModel) {
+        return;
+    }
 
     connect(m_tileModel, &QAbstractListModel::rowsInserted,
             this, &Scene::rowsInserted);
@@ -177,9 +186,13 @@ void Scene::setModel(QAbstractListModel *newTileModel)
 
     connect(m_tileModel, &QAbstractListModel::dataChanged,
             this, &Scene::dataChanged);
+
+    if (m_tileModel->rowCount() > 0) {
+        addTilesFromModel(m_tileFactory, 0, m_tileModel->rowCount() - 1);
+    }
 }
 
-void Scene::rowsInserted(const QModelIndex &parent, int first, int last)
+void Scene::addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int last)
 {
     for (int i = first; i < last + 1; i++) {
         QVariant tileRefVariant = m_tileModel->data(m_tileModel->index(i, 0), 0);
@@ -193,6 +206,11 @@ void Scene::rowsInserted(const QModelIndex &parent, int first, int last)
             qWarning() << "Failed to parse tile ref";
         }
     }
+}
+
+void Scene::rowsInserted(const QModelIndex &parent, int first, int last)
+{
+    addTilesFromModel(m_tileFactory, first, last);
 }
 
 void Scene::dataChanged(const QModelIndex &topLeft,
