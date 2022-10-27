@@ -1,10 +1,10 @@
-@0x897b19df25f153be;
+@0xf23098abf4bc548e;
 
 struct ChartData {
     name @0: Text;
     coverageType @1: CoverageType;
     nativeScale @2: Int32;
-    coverage @3 :List(Area);
+    coverage @3 :List(CoverageArea);
     landAreas @4 :List(LandArea);
     builtUpAreas @5 :List(BuiltUpArea);
     builtUpPoints @6 :List(BuiltUpPoint);
@@ -22,7 +22,7 @@ struct ChartData {
         full @2;
     }
 
-    struct Area {
+    struct CoverageArea {
         polygons @0 :List(Polygon);
     }
 
@@ -54,7 +54,8 @@ struct ChartData {
     }
 
     struct Polygon {
-        positions @0 :List(Position);
+        main @0 :List(Position);
+        holes @1 :List(List(Position));
     }
 
     struct Position {

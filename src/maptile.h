@@ -102,7 +102,7 @@ private:
                                  const RenderConfig &renderConfig,
                                  QPainter *painter);
 
-    static void clipAroundCoverage(const ::capnp::List<ChartData::Area>::Reader &areas,
+    static void clipAroundCoverage(const capnp::List<ChartData::CoverageArea>::Reader &areas,
                                    const RenderConfig &renderConfig,
                                    QPainter *painter);
 
@@ -119,6 +119,10 @@ private:
                            const RenderConfig &renderConfig,
                            QPainter *painter);
 
+    static QPolygonF fromCapnpToPolygon(const capnp::List<ChartData::Position>::Reader src,
+                                        const RenderConfig &renderConfig);
+
+    static QPolygonF reversePolygon(const QPolygonF &input);
     static QSizeF sizeFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
     static QPointF positionFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
     static void rasterClip(const QRectF &outer, const QRectF &inner, QPainter *painter);

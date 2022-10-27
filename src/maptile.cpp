@@ -336,7 +336,35 @@ void MapTile::paint(QPainter *painter)
     }
 }
 
-void MapTile::clipAroundCoverage(const ::capnp::List<ChartData::Area>::Reader &areas,
+QPolygonF MapTile::fromCapnpToPolygon(const capnp::List<ChartData::Position>::Reader src,
+                                      const RenderConfig &renderConfig)
+{
+    QVector<QPointF> points;
+    for (const auto &position : src) {
+        const QPointF pos = toMercator(renderConfig.topLeft,
+                                       renderConfig.pixelsPerLongitude,
+                                       position.getLatitude(),
+                                       position.getLongitude())
+            + renderConfig.offset;
+        points.append(pos);
+    }
+
+    return QPolygonF(points);
+}
+
+QPolygonF MapTile::reversePolygon(const QPolygonF &input)
+{
+    QList<QPointF> result;
+
+    QList<QPointF>::const_reverse_iterator i;
+    for (i = input.rbegin(); i != input.rend(); ++i) {
+        result.append(*i);
+    }
+
+    return result;
+}
+
+void MapTile::clipAroundCoverage(const ::capnp::List<ChartData::CoverageArea>::Reader &areas,
                                  const RenderConfig &renderConfig,
                                  QPainter *painter)
 {
@@ -352,21 +380,18 @@ void MapTile::clipAroundCoverage(const ::capnp::List<ChartData::Area>::Reader &a
 
     for (const auto &area : areas) {
         auto polygons = area.getPolygons();
-        for (const auto &polygon : polygons) {
-            QVector<QPointF> points;
 
+        for (const auto &polygon : polygons) {
             // Reverse loop to define the hole to not clear.
-            for (int i = polygon.getPositions().size() - 1; i >= 0; i--) {
-                auto position = polygon.getPositions()[i];
-                const QPointF pos = toMercator(renderConfig.topLeft,
-                                               renderConfig.pixelsPerLongitude,
-                                               position.getLatitude(),
-                                               position.getLongitude())
-                    + renderConfig.offset;
-                points.append(pos);
-            }
-            painterPath.addPolygon(QPolygonF(points));
+            painterPath.addPolygon(reversePolygon(fromCapnpToPolygon(polygon.getMain(), renderConfig)));
             painterPath.closeSubpath();
+
+            // Holes in coverage are uncommon, but reversing the holes (which
+            // then will be clipped out) should in theory work.
+            for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
+                painterPath.addPolygon(reversePolygon(fromCapnpToPolygon(hole, renderConfig)));
+                painterPath.closeSubpath();
+            }
         }
     }
 
@@ -412,19 +437,15 @@ void MapTile::paintLandArea(const ::capnp::List<ChartData::LandArea>::Reader &ar
     for (const auto &area : areas) {
         QPainterPath painterPath;
         auto polygons = area.getPolygons();
-        for (const auto &polygon : polygons) {
-            QVector<QPointF> points;
-            for (const auto &position : polygon.getPositions()) {
-                const QPointF pos = toMercator(renderConfig.topLeft,
-                                               renderConfig.pixelsPerLongitude,
-                                               position.getLatitude(),
-                                               position.getLongitude())
-                    + renderConfig.offset;
-                points.append(pos);
-            }
 
-            painterPath.addPolygon(QPolygonF(points));
+        for (const auto &polygon : polygons) {
+            painterPath.addPolygon(fromCapnpToPolygon(polygon.getMain(), renderConfig));
             painterPath.closeSubpath();
+
+            for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
+                painterPath.addPolygon(fromCapnpToPolygon(hole, renderConfig));
+                painterPath.closeSubpath();
+            }
         }
         painter->drawPath(painterPath);
     }
@@ -454,17 +475,13 @@ void MapTile::paintDepthAreas(const ::capnp::List<ChartData::DepthArea>::Reader 
         const QColor color = depthColor(depthArea.getDepth());
         QPainterPath painterPath;
         for (const auto &polygon : depthArea.getPolygons()) {
-            QVector<QPointF> points;
-            for (const auto &position : polygon.getPositions()) {
-                QPointF point = toMercator(renderConfig.topLeft,
-                                           renderConfig.pixelsPerLongitude,
-                                           position.getLatitude(),
-                                           position.getLongitude())
-                    + renderConfig.offset;
-                points.append(point);
-            }
-            painterPath.addPolygon(QPolygonF(points));
+            painterPath.addPolygon(fromCapnpToPolygon(polygon.getMain(), renderConfig));
             painterPath.closeSubpath();
+
+            for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
+                painterPath.addPolygon(fromCapnpToPolygon(hole, renderConfig));
+                painterPath.closeSubpath();
+            }
         }
         if (color.isValid()) {
             painter->setBrush(QBrush(color));
@@ -544,16 +561,13 @@ void MapTile::paintBuiltUpArea(const ::capnp::List<ChartData::BuiltUpArea>::Read
     for (const auto &area : areas) {
         QPainterPath painterPath;
         for (const auto &polygon : area.getPolygons()) {
-            QVector<QPointF> points;
-            for (const auto &position : polygon.getPositions()) {
-                points << toMercator(renderConfig.topLeft,
-                                     renderConfig.pixelsPerLongitude,
-                                     position.getLatitude(),
-                                     position.getLongitude())
-                        + renderConfig.offset;
-            }
-            painterPath.addPolygon(QPolygonF(points));
+            painterPath.addPolygon(fromCapnpToPolygon(polygon.getMain(), renderConfig));
             painterPath.closeSubpath();
+
+            for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
+                painterPath.addPolygon(fromCapnpToPolygon(hole, renderConfig));
+                painterPath.closeSubpath();
+            }
         }
         painter->drawPath(painterPath);
     }

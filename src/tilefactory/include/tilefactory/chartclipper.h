@@ -1,16 +1,24 @@
 #pragma once
 
+#include <vector>
+
 #include <polyclipping/clipper.hpp>
 
 #include "chartdata.capnp.h"
-#include <capnp/message.h>
-
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
 class ChartClipper
 {
 public:
+    using Line = std::vector<Pos>;
+
+    struct Polygon
+    {
+        Line main;
+        std::vector<Line> holes;
+    };
+
     struct Config
     {
         GeoRect box;
@@ -23,15 +31,15 @@ public:
         bool moveOutEdges = false;
     };
 
-    using Polygon = std::vector<Pos>;
-    static std::vector<Polygon> clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
-                                             Config clipConfig);
+    static std::vector<Polygon> clipPolygon(const ChartData::Polygon::Reader &polygon,
+                                            Config clipConfig);
+    static ClipperLib::Path toClipperPath(const capnp::List<ChartData::Position>::Reader &points,
+                                          const GeoRect &roi, double xRes, double yRes);
+    static Line toLine(const ClipperLib::Path &path, const GeoRect &roi, double xRes, double yRes);
 
 private:
     static int inRange(double value, double min, double max, double margin);
-
-    static std::vector<Polygon> moveOutChartEdges(const std::vector<Polygon> &polygons,
-                                                       Config clipConfig);
+    static Line inflateAtChartEdges(const Line &area, Config clipConfig);
     static inline ClipperLib::IntPoint toIntPoint(const Pos &pos,
                                                   const GeoRect &roi,
                                                   double xRes,

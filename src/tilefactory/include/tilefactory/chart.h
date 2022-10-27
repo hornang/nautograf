@@ -39,7 +39,7 @@ public:
     capnp::MallocMessageBuilder &messageBuilder();
     ::ChartData::Reader root() const { return m_message->getRoot<ChartData>().asReader(); }
     int nativeScale() const { return m_message->getRoot<ChartData>().getNativeScale(); }
-    ::capnp::List<ChartData::Area>::Reader coverage() const { return m_message->getRoot<ChartData>().getCoverage().asReader(); }
+    capnp::List<ChartData::CoverageArea>::Reader coverage() const { return m_message->getRoot<ChartData>().getCoverage().asReader(); }
     ::ChartData::CoverageType coverageType() const { return root().getCoverageType(); }
     ::capnp::List<ChartData::LandArea>::Reader landAreas() const { return m_message->getRoot<ChartData>().getLandAreas().asReader(); }
     ::capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return m_message->getRoot<ChartData>().getDepthAreas().asReader(); }
@@ -70,7 +70,7 @@ private:
     static void loadRoads(ChartData::Builder &root, S57Vector &objs);
     static void loadBuoyLateral(ChartData::Builder &root, S57Vector &src);
     static bool pointsAround(const capnp::List<ChartData::Position>::Reader &points, const GeoRect &box);
-    static Pos calcAveragePosition(::capnp::List<ChartData::Polygon>::Reader dst);
+    static Pos calcAveragePosition(const capnp::List<ChartData::Position>::Reader &positions);
     static inline int countPolygonObjects(S57Vector &s57);
     static inline int countPointObjects(S57Vector &s57);
     static inline bool isPolygonObject(const oesenc::S57 *obj);
@@ -92,12 +92,10 @@ private:
         typename T::Reader item;
     };
 
-    using Polygon = std::vector<Pos>;
-
     template <typename T>
     struct ClippedPolygonItem
     {
-        std::vector<Polygon> polygons;
+        std::vector<ChartClipper::Polygon> polygons;
         typename T::Reader item;
     };
 
@@ -123,13 +121,18 @@ private:
                          const std::vector<ClippedPolygonItem<T>> &src,
                          std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
 
-    static inline void fromCapnPolygons(std::vector<Polygon> &dst,
-                                        const ::capnp::List<ChartData::Polygon>::Reader &src);
-    static inline void fromOesencPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
-                                          const std::vector<oesenc::S57::MultiGeometry> &src);
+    static inline void fromOesencPolygon(ChartData::Polygon::Builder dst,
+                                         const oesenc::S57::MultiGeometry &srcPolygon);
+    static inline void loadPolygons(ChartData::Polygon::Builder dst,
+                                    const std::vector<std::vector<oesenc::Position>> &src);
+    static inline void fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
+                                            const std::vector<oesenc::Position> &src);
     static inline void toCapnPosition(ChartData::Position::Builder &dst, const Pos &src);
-    static inline void toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
+
+    using Polygon = std::vector<Pos>;
+    static inline void toCapnPolygons(capnp::List<capnp::List<ChartData::Position>>::Builder dst,
                                       const std::vector<Polygon> &src);
+    static inline void toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src);
 
     GeoRect m_boundingBox;
     std::unique_ptr<::capnp::MallocMessageBuilder> m_message;

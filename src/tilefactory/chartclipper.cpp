@@ -4,8 +4,39 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
-std::vector<ChartClipper::Polygon> ChartClipper::clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
-                                                              Config clipConfig)
+ClipperLib::Path ChartClipper::toClipperPath(const capnp::List<ChartData::Position>::Reader &positions,
+                                             const GeoRect &roi, double xRes, double yRes)
+{
+    ClipperLib::Path path;
+    ClipperLib::IntPoint prevPoint;
+
+    for (const auto &p : positions) {
+        Pos pos(p.getLatitude(), p.getLongitude());
+        ClipperLib::IntPoint point = toIntPoint(pos, roi, xRes, yRes);
+        if (point == prevPoint) {
+            continue;
+        }
+        path.push_back(point);
+    }
+
+    return path;
+}
+
+ChartClipper::Line ChartClipper::toLine(const ClipperLib::Path &path,
+                                        const GeoRect &roi, double xRes, double yRes)
+{
+    ChartClipper::Line polygon;
+
+    for (const ClipperLib::IntPoint &intPoint : path) {
+        Pos p = fromIntPoint(intPoint, roi, xRes, yRes);
+        polygon.push_back(Pos(p.lat(), p.lon()));
+    }
+
+    return polygon;
+}
+
+std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Polygon::Reader &polygon,
+                                                             Config clipConfig)
 {
     assert(clipConfig.longitudeResolution > 0);
     assert(clipConfig.latitudeResolution > 0);
@@ -27,19 +58,7 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygons(const capnp::List<
 
     GeoRect geoRect(clipRect.top(), clipRect.bottom(), clipRect.left(), clipRect.right());
 
-    for (const auto &polygon : polygons) {
-        ClipperLib::Path path;
-        ClipperLib::IntPoint prevPoint;
-        for (const auto &p : polygon.getPositions()) {
-            Pos pos(p.getLatitude(), p.getLongitude());
-            ClipperLib::IntPoint point = toIntPoint(pos, geoRect, xRes, yRes);
-            if (point == prevPoint) {
-                continue;
-            }
-            path.push_back(point);
-        }
-        paths.push_back(path);
-    }
+    paths.push_back(toClipperPath(polygon.getMain(), clipRect, xRes, yRes));
 
     ClipperLib::Path clipPath;
     clipPath.push_back(ClipperLib::IntPoint(0, 0));
@@ -49,28 +68,55 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygons(const capnp::List<
 
     ClipperLib::Paths clipPaths;
     clipPaths.push_back(clipPath);
-    ClipperLib::Clipper clipper;
-    clipper.AddPaths(paths, ClipperLib::ptSubject, true);
-    clipper.AddPaths(clipPaths, ClipperLib::ptClip, true);
+    ClipperLib::Clipper mainClipper;
+    mainClipper.AddPaths(paths, ClipperLib::ptSubject, true);
+    mainClipper.AddPaths(clipPaths, ClipperLib::ptClip, true);
 
     ClipperLib::Paths solution;
-    clipper.Execute(ClipperLib::ctIntersection,
-                    solution,
-                    ClipperLib::pftEvenOdd,
-                    ClipperLib::pftEvenOdd);
+    mainClipper.Execute(ClipperLib::ctIntersection,
+                        solution,
+                        ClipperLib::pftEvenOdd,
+                        ClipperLib::pftEvenOdd);
     std::vector<Polygon> output;
 
-    for (const ClipperLib::Path &path : solution) {
-        Polygon polygon;
-        for (const ClipperLib::IntPoint &intPoint : path) {
-            Pos p = fromIntPoint(intPoint, geoRect, xRes, yRes);
-            polygon.push_back(Pos(p.lat(), p.lon()));
-        }
-        output.push_back(polygon);
+    if (solution.empty()) {
+        return {};
     }
 
-    if (clipConfig.moveOutEdges) {
-        output = moveOutChartEdges(output, clipConfig);
+    ClipperLib::Paths holePaths;
+    for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
+        holePaths.push_back(toClipperPath(hole, clipRect, xRes, yRes));
+    }
+
+    for (const ClipperLib::Path &mainAreas : solution) {
+        Polygon area;
+        auto polygon = toLine(mainAreas, geoRect, xRes, yRes);
+
+        if (clipConfig.moveOutEdges) {
+            polygon = inflateAtChartEdges(polygon, clipConfig);
+        }
+
+        area.main = polygon;
+
+        if (holePaths.empty()) {
+            output.push_back(area);
+            continue;
+        }
+
+        ClipperLib::Paths other = holePaths;
+        ClipperLib::Clipper holeClipper;
+        holeClipper.AddPaths(other, ClipperLib::ptSubject, true);
+        holeClipper.AddPaths({ mainAreas }, ClipperLib::ptClip, true);
+
+        ClipperLib::Paths holeResults;
+        holeClipper.Execute(ClipperLib::ctIntersection,
+                            holeResults,
+                            ClipperLib::pftEvenOdd,
+                            ClipperLib::pftEvenOdd);
+        for (const ClipperLib::Path &path : holeResults) {
+            area.holes.push_back(toLine(path, geoRect, xRes, yRes));
+        }
+        output.push_back(area);
     }
     return output;
 }
@@ -89,71 +135,60 @@ inline Pos ChartClipper::fromIntPoint(const ClipperLib::IntPoint &intPoint, cons
     return Pos(lat, lon);
 }
 
-std::vector<ChartClipper::Polygon> ChartClipper::moveOutChartEdges(const std::vector<Polygon> &polygons,
-                                                                   Config clipConfig)
+ChartClipper::Line ChartClipper::inflateAtChartEdges(const Line &line, Config clipConfig)
 {
-    std::vector<Polygon> output;
+    Pos previousPosition = line.back();
+    int longitudeState = inRange(previousPosition.lon(),
+                                 clipConfig.chartBoundingBox.left(),
+                                 clipConfig.chartBoundingBox.right(),
+                                 clipConfig.longitudeResolution);
+    int latitudeState = inRange(previousPosition.lat(),
+                                clipConfig.chartBoundingBox.bottom(),
+                                clipConfig.chartBoundingBox.top(),
+                                clipConfig.latitudeResolution);
+    bool outside = (longitudeState != 0) || (latitudeState != 0);
 
-    for (const Polygon &polygon : polygons) {
-        if (polygon.empty()) {
-            continue;
+    Line output;
+
+    for (Pos position : line) {
+        Pos newPosition = position;
+
+        int newLongitudeState = inRange(position.lon(),
+                                        clipConfig.chartBoundingBox.left(),
+                                        clipConfig.chartBoundingBox.right(),
+                                        clipConfig.longitudeResolution);
+
+        int newLatitudeState = inRange(position.lat(),
+                                       clipConfig.chartBoundingBox.bottom(),
+                                       clipConfig.chartBoundingBox.top(),
+                                       clipConfig.latitudeResolution);
+
+        bool newOutside = (newLongitudeState != 0) || (newLatitudeState != 0);
+
+        if (newOutside && !outside) {
+            output.push_back(position);
         }
 
-        Pos previousPosition = polygon.back();
-        int longitudeState = inRange(previousPosition.lon(),
-                                     clipConfig.chartBoundingBox.left(),
-                                     clipConfig.chartBoundingBox.right(),
-                                     clipConfig.longitudeResolution);
-        int latitudeState = inRange(previousPosition.lat(),
-                                    clipConfig.chartBoundingBox.bottom(),
-                                    clipConfig.chartBoundingBox.top(),
-                                    clipConfig.latitudeResolution);
-        bool outside = (longitudeState != 0) || (latitudeState != 0);
-
-        Polygon polygonOutput;
-
-        for (Pos position : polygon) {
-            Pos newPosition = position;
-
-            int newLongitudeState = inRange(position.lon(),
-                                            clipConfig.chartBoundingBox.left(),
-                                            clipConfig.chartBoundingBox.right(),
-                                            clipConfig.longitudeResolution);
-
-            int newLatitudeState = inRange(position.lat(),
-                                           clipConfig.chartBoundingBox.bottom(),
-                                           clipConfig.chartBoundingBox.top(),
-                                           clipConfig.latitudeResolution);
-
-            bool newOutside = (newLongitudeState != 0) || (newLatitudeState != 0);
-
-            if (newOutside && !outside) {
-                polygonOutput.push_back(position);
-            }
-
-            if (newLongitudeState == 1) {
-                newPosition.setLon(clipConfig.chartBoundingBox.right() + 2 * clipConfig.longitudeMargin);
-            } else if (newLongitudeState == -1) {
-                newPosition.setLon(clipConfig.chartBoundingBox.left() - 2 * clipConfig.longitudeMargin);
-            }
-
-            if (newLatitudeState == 1) {
-                newPosition.setLat(clipConfig.chartBoundingBox.top() + 2 * clipConfig.latitudeMargin);
-            } else if (newLatitudeState == -1) {
-                newPosition.setLat(clipConfig.chartBoundingBox.bottom() - 2 * clipConfig.latitudeMargin);
-            }
-
-            if (!newOutside && outside) {
-                polygonOutput.push_back(previousPosition);
-            }
-            outside = newOutside;
-
-            polygonOutput.push_back(newPosition);
-            previousPosition = position;
+        if (newLongitudeState == 1) {
+            newPosition.setLon(clipConfig.chartBoundingBox.right() + 2 * clipConfig.longitudeMargin);
+        } else if (newLongitudeState == -1) {
+            newPosition.setLon(clipConfig.chartBoundingBox.left() - 2 * clipConfig.longitudeMargin);
         }
-        output.push_back(polygonOutput);
+
+        if (newLatitudeState == 1) {
+            newPosition.setLat(clipConfig.chartBoundingBox.top() + 2 * clipConfig.latitudeMargin);
+        } else if (newLatitudeState == -1) {
+            newPosition.setLat(clipConfig.chartBoundingBox.bottom() - 2 * clipConfig.latitudeMargin);
+        }
+
+        if (!newOutside && outside) {
+            output.push_back(previousPosition);
+        }
+        outside = newOutside;
+
+        output.push_back(newPosition);
+        previousPosition = position;
     }
-
     return output;
 }
 

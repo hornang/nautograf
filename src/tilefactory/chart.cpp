@@ -156,7 +156,7 @@ Chart Chart::clipped(ChartClipper::Config config) const
     config.moveOutEdges = false;
     root.setNativeScale(nativeScale());
 
-    bool empty = clipPolygonItems<ChartData::Area>(
+    bool empty = clipPolygonItems<ChartData::CoverageArea>(
         coverage(),
         config,
         [&](unsigned int length) {
@@ -169,12 +169,12 @@ Chart Chart::clipped(ChartClipper::Config config) const
     if (empty) {
         root.setCoverageType(ChartData::CoverageType::ZERO);
     } else {
-        if (root.getCoverage().size() == 1) {
-            const auto &polygons = root.getCoverage()[0].getPolygons();
+        if (coverage().size() == 1) {
+            const auto &polygons = coverage()[0].getPolygons();
             if (polygons.size() == 1) {
-                const auto &polygon = polygons.asReader()[0];
+                const auto &polygon = polygons[0];
                 GeoRect test(config.box.top(), config.box.bottom(), config.box.left(), config.box.right());
-                if (pointsAround(polygon.getPositions(), test)) {
+                if (pointsAround(polygon.getMain(), test)) {
                     root.setCoverageType(ChartData::CoverageType::FULL);
                 }
             }
@@ -336,18 +336,22 @@ bool Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
 
     bool empty = true;
     for (const auto &element : src) {
-        if (element.getPolygons().size() == 0) {
-            continue;
+        for (const ChartData::Polygon::Reader &polygon : element.getPolygons()) {
+            std::vector<ChartClipper::Polygon> polygons = ChartClipper::clipPolygon(polygon, config);
+            if (polygons.empty()) {
+                continue;
+            }
+
+            empty = false;
+            ClippedPolygonItem<T> item;
+            item.polygons = polygons;
+            item.item = element;
+            clipped.push_back(item);
         }
-        auto clippedPolygons = ChartClipper::clipPolygons(element.getPolygons(), config);
-        if (clippedPolygons.empty()) {
-            continue;
-        }
-        empty = false;
-        ClippedPolygonItem<T> item;
-        item.polygons = clippedPolygons;
-        item.item = element;
-        clipped.push_back(item);
+    }
+
+    if (clipped.empty()) {
+        return true;
     }
 
     auto finalTarget = init(static_cast<unsigned int>(clipped.size()));
@@ -431,10 +435,19 @@ void Chart::fillList(typename capnp::List<T>::Builder &dst,
     int i = 0;
     for (const auto &item : src) {
         auto element = dst[i++];
-        auto polygons = element.initPolygons((unsigned int)item.polygons.size());
-        toCapnPolygons(polygons, item.polygons);
         if (copyFunction) {
             copyFunction(element, item.item);
+        }
+
+        auto dstPolygons = element.initPolygons((unsigned int)item.polygons.size());
+
+        int polygonIndex = 0;
+        for (const ChartClipper::Polygon &area : item.polygons) {
+            ChartData::Polygon::Builder dstPolygon = dstPolygons[polygonIndex++];
+            auto main = dstPolygon.initMain(static_cast<unsigned int>(area.main.size()));
+            toCapnPolygon(main, area.main);
+            auto holes = dstPolygon.initHoles(static_cast<unsigned int>(area.holes.size()));
+            toCapnPolygons(holes, area.holes);
         }
     }
 }
@@ -450,14 +463,17 @@ void Chart::loadLandAreas(ChartData::Builder &root, S57Vector &src)
         if (name.has_value()) {
             dstElement.setName(name.value());
         }
-        auto dstPolygons = dstElement.initPolygons(static_cast<unsigned int>(obj->polygons().size()));
-        fromOesencPolygons(dstPolygons, obj->polygons());
 
-        // Not strictly a centroid, but easier to compute the average.
-        Pos centroidPos = calcAveragePosition(dstPolygons.asReader());
-        auto centroid = dstElement.getCentroid();
-        centroid.setLatitude(centroidPos.lat());
-        centroid.setLongitude(centroidPos.lon());
+        if (!obj->polygons().empty()) {
+            capnp::List<ChartData::Polygon>::Builder polygons = dstElement.initPolygons(1);
+            loadPolygons(polygons[0], obj->polygons());
+
+            // Not strictly a centroid, but easier to compute the average.
+            Pos centroidPos = calcAveragePosition(polygons[0].getMain());
+            auto centroid = dstElement.getCentroid();
+            centroid.setLatitude(centroidPos.lat());
+            centroid.setLongitude(centroidPos.lon());
+        }
     }
 }
 
@@ -512,14 +528,17 @@ void Chart::loadBuiltUpAreas(ChartData::Builder &root, S57Vector &src)
             if (name.has_value()) {
                 dstElement.setName(name.value());
             }
-            auto dstPolygons = dstElement.initPolygons(static_cast<unsigned int>(obj->polygons().size()));
-            fromOesencPolygons(dstPolygons, obj->polygons());
 
-            // Not strictly a centroid so will compute average instead
-            Pos centroidPos = calcAveragePosition(dstPolygons.asReader());
-            auto centroid = dstElement.getCentroid();
-            centroid.setLatitude(centroidPos.lat());
-            centroid.setLongitude(centroidPos.lon());
+            if (!obj->polygons().empty()) {
+                capnp::List<ChartData::Polygon>::Builder polygons = dstElement.initPolygons(1);
+                loadPolygons(polygons[0], obj->polygons());
+
+                // Not strictly a centroid, but easier to compute the average.
+                Pos centroidPos = calcAveragePosition(polygons[0].getMain());
+                auto centroid = dstElement.getCentroid();
+                centroid.setLatitude(centroidPos.lat());
+                centroid.setLongitude(centroidPos.lon());
+            }
         }
     }
 
@@ -560,8 +579,10 @@ void Chart::loadCoverage(ChartData::Builder &root, S57Vector &src)
     unsigned int i = 0;
     for (const auto &obj : coverageRecords) {
         auto dstArea = areas[i++];
-        auto dstPolygons = dstArea.initPolygons(static_cast<unsigned int>(obj->polygons().size()));
-        fromOesencPolygons(dstPolygons, obj->polygons());
+        if (!obj->polygons().empty()) {
+            capnp::List<ChartData::Polygon>::Builder polygons = dstArea.initPolygons(1);
+            loadPolygons(polygons[0], obj->polygons());
+        }
     }
 }
 
@@ -572,13 +593,52 @@ void Chart::loadDepthAreas(ChartData::Builder &root, S57Vector &src)
     unsigned int i = 0;
     for (const auto &obj : src) {
         auto dstArea = dst[i++];
-        auto dstPolygons = dstArea.initPolygons(static_cast<unsigned int>(obj->polygons().size()));
         // Should read both limits here
         auto depth = obj->attribute<float>(oesenc::S57::Attribute::DepthValue1);
         if (depth.has_value()) {
             dstArea.setDepth(depth.value());
         }
-        fromOesencPolygons(dstPolygons, obj->polygons());
+
+        if (!obj->polygons().empty()) {
+            capnp::List<ChartData::Polygon>::Builder polygons = dstArea.initPolygons(1);
+            loadPolygons(polygons[0], obj->polygons());
+        }
+    }
+}
+
+void Chart::fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
+                                 const std::vector<oesenc::Position> &src)
+{
+    int i = 0;
+    for (const oesenc::Position &pos : src) {
+        auto dstPos = dst[i++];
+        dstPos.setLatitude(pos.latitude());
+        dstPos.setLongitude(pos.longitude());
+    }
+}
+
+void Chart::loadPolygons(ChartData::Polygon::Builder dst,
+                         const std::vector<std::vector<oesenc::Position>> &src)
+
+{
+    int polygonIndex = 0;
+
+    capnp::List<capnp::List<ChartData::Position>>::Builder holes;
+    if (src.size() > 1) {
+        holes = dst.initHoles(static_cast<unsigned int>(src.size() - 1));
+    }
+
+    for (const std::vector<oesenc::Position> &srcPolygon : src) {
+        if (polygonIndex == 0) {
+            capnp::List<ChartData::Position>::Builder main = dst.initMain(static_cast<unsigned int>(srcPolygon.size()));
+            fromOesencPosToCapnp(main, srcPolygon);
+        } else {
+            auto hole = holes.init(polygonIndex - 1,
+                                   static_cast<unsigned int>(srcPolygon.size()));
+            fromOesencPosToCapnp(hole, srcPolygon);
+        }
+
+        polygonIndex++;
     }
 }
 
@@ -874,17 +934,15 @@ void Chart::loadRoads(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-Pos Chart::calcAveragePosition(::capnp::List<ChartData::Polygon>::Reader polygons)
+Pos Chart::calcAveragePosition(const capnp::List<ChartData::Position>::Reader &positions)
 {
     double avgLat = 0;
     double avgLon = 0;
     int nPositions = 0;
-    for (const auto &polygon : polygons) {
-        for (const auto &pos : polygon.getPositions()) {
-            avgLat += pos.getLatitude();
-            avgLon += pos.getLongitude();
-            nPositions++;
-        }
+    for (const auto &pos : positions) {
+        avgLat += pos.getLatitude();
+        avgLon += pos.getLongitude();
+        nPositions++;
     }
 
     if (nPositions == 0) {
@@ -893,14 +951,24 @@ Pos Chart::calcAveragePosition(::capnp::List<ChartData::Polygon>::Reader polygon
     return Pos(avgLat / nPositions, avgLon / nPositions);
 }
 
-void Chart::toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
+void Chart::toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src)
+{
+    int positionIndex = 0;
+    for (const Pos &pos : src) {
+        auto dstPos = dst[positionIndex++];
+        dstPos.setLatitude(pos.lat());
+        dstPos.setLongitude(pos.lon());
+    }
+}
+
+void Chart::toCapnPolygons(::capnp::List<capnp::List<ChartData::Position>>::Builder dst,
                            const std::vector<Polygon> &src)
 {
     int polygonIndex = 0;
 
     for (const Polygon &srcPolygon : src) {
-        ChartData::Polygon::Builder p = dst[polygonIndex];
-        auto dstPositions = p.initPositions((unsigned int)srcPolygon.size());
+        dst.init(polygonIndex, (unsigned int)srcPolygon.size());
+        auto dstPositions = dst[polygonIndex];
 
         int positionIndex = 0;
         for (const Pos &pos : srcPolygon) {
@@ -908,45 +976,6 @@ void Chart::toCapnPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
             dstPos.setLatitude(pos.lat());
             dstPos.setLongitude(pos.lon());
             positionIndex++;
-        }
-
-        polygonIndex++;
-    }
-}
-
-void Chart::fromOesencPolygons(::capnp::List<ChartData::Polygon>::Builder dst,
-                               const std::vector<oesenc::S57::MultiGeometry> &src)
-{
-    int polygonIndex = 0;
-
-    for (const auto &srcPolygon : src) {
-        ChartData::Polygon::Builder p = dst[polygonIndex];
-        auto dstPositions = p.initPositions((unsigned int)srcPolygon.size());
-
-        int positionIndex = 0;
-        for (const auto &pos : srcPolygon) {
-            auto dstPos = dstPositions[positionIndex];
-            dstPos.setLatitude(pos.latitude());
-            dstPos.setLongitude(pos.longitude());
-            positionIndex++;
-        }
-
-        polygonIndex++;
-    }
-}
-
-void Chart::fromCapnPolygons(std::vector<Polygon> &dst,
-                             const ::capnp::List<ChartData::Polygon>::Reader &src)
-{
-    dst.resize(src.size());
-    int polygonIndex = 0;
-
-    for (const ChartData::Polygon::Reader &polygon : src) {
-        Polygon &dstPolygon = dst[polygonIndex];
-
-        for (const ChartData::Position::Reader &position : polygon.getPositions()) {
-            dstPolygon.push_back(Pos(position.getLatitude(),
-                                     position.getLongitude()));
         }
 
         polygonIndex++;
