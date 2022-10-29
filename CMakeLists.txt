@@ -39,9 +39,12 @@ add_subdirectory(Clipper2/CPP)
 
 option(RESOURCE_DEV "Load QML from file system not from Qt resource" "")
 
-if(NOT ${RESOURCE_DEV})
+if(${RESOURCE_DEV})
+    set(SYMBOLS_DIR "${CMAKE_SOURCE_DIR}/symbols")
+else()
     qt_add_resources(QML_RESOURCES qml/qml.qrc)
     qt_add_resources(SYMBOL_RESOURCES symbols/symbols.qrc)
+    set(SYMBOLS_DIR ":/symbols")
 endif()
 
 if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
@@ -124,8 +127,9 @@ set_target_properties(nautograf PROPERTIES AUTOMOC TRUE)
 
 if(${RESOURCE_DEV})
     target_compile_definitions(nautograf PRIVATE QML_DIR="${CMAKE_SOURCE_DIR}/qml")
-    target_compile_definitions(nautograf PRIVATE SYMBOLS_DIR="${CMAKE_SOURCE_DIR}/symbols")
 endif()
+
+target_compile_definitions(nautograf PRIVATE SYMBOLS_DIR="${SYMBOLS_DIR}")
 
 target_include_directories(nautograf PRIVATE src)
 

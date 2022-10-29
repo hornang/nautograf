@@ -9,7 +9,7 @@
 const int s_pixelsPerLon = 1000;
 
 #ifndef SYMBOLS_DIR
-#define SYMBOLS_DIR ":/symbols"
+#error SYMBOLS_DIR must be defined
 #endif
 
 Scene::Scene(QQuickItem *parent)
