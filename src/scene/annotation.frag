@@ -1,7 +1,7 @@
 #version 440
 
 layout(location = 0) in vec2 vTexCoord;
-layout(location = 1) in vec4 color;
+layout(location = 1) in vec3 color;
 layout(location = 2) in float zoomLimit;
 
 layout(std140, binding = 0) uniform buf {

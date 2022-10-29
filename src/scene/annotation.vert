@@ -3,11 +3,11 @@
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 offset;
 layout(location = 2) in vec2 aTexCoord;
-layout(location = 3) in vec4 colorIn;
+layout(location = 3) in vec3 colorIn;
 layout(location = 4) in float zoomLimitIn;
 
 layout(location = 0) out vec2 vTexCoord;
-layout(location = 1) out vec4 color;
+layout(location = 1) out vec3 color;
 layout(location = 2) out float zoomLimit;
 
 layout(std140, binding = 0) uniform buf {
