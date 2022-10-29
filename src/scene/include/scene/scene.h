@@ -4,13 +4,12 @@
 #include <QVector3D>
 #include <QtQuick>
 
-#include "fontimage.h"
-#include "symbolimage.h"
-#include "tessellator.h"
+#include "scene/fontimage.h"
+#include "scene/symbolimage.h"
+#include "scene/tessellator.h"
 #include "tilefactory/chart.h"
 #include "tilefactory/georect.h"
-
-class TileFactoryWrapper;
+#include "tilefactorywrapper.h"
 
 class Scene : public QQuickItem
 {

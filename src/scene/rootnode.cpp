@@ -1,9 +1,10 @@
 #include <QQuickWindow>
 #include <QSGTexture>
 
-#include "fontimage.h"
+#include "annotation/annotationmaterial.h"
 #include "rootnode.h"
-#include "symbolimage.h"
+#include "scene/fontimage.h"
+#include "scene/symbolimage.h"
 
 RootNode::RootNode(const SymbolImage &symbolImage,
                    const FontImage &fontImage,

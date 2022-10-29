@@ -1,7 +1,7 @@
 #include <QtConcurrent>
 
 #include "rootnode.h"
-#include "scene.h"
+#include "scene/scene.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
 #include "tilenode.h"

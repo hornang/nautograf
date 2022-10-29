@@ -47,6 +47,8 @@ else()
     set(SYMBOLS_DIR ":/symbols")
 endif()
 
+add_subdirectory(src/scene)
+
 if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
         AND NOT ${IMAGEMAGICK} STREQUAL "IMAGEMAGICK-NOTFOUND"
         AND NOT ${RSVG-CONVERT} STREQUAL "RSVG-CONVERT-NOTFOUND")
@@ -81,35 +83,9 @@ add_executable(nautograf WIN32
     src/chartmodel.h
     src/usersettings.cpp
     src/usersettings.h
-    src/scene/annotationmaterial.cpp
-    src/scene/annotationmaterial.h
-    src/scene/annotationnode.cpp
-    src/scene/annotationnode.h
-    src/scene/annotationshader.cpp
-    src/scene/annotationshader.h
-    src/scene/fontimage.cpp
-    src/scene/fontimage.h
-    src/scene/rootnode.cpp
-    src/scene/rootnode.h
-    src/scene/scene.cpp
-    src/scene/scene.h
-    src/scene/symbolimage.cpp
-    src/scene/symbolimage.h
-    src/scene/tessellator.cpp
-    src/scene/tessellator.h
-    src/scene/tilenode.cpp
-    src/scene/tilenode.h
     ${QML_RESOURCES}
     ${SYMBOL_RESOURCES}
     ${APP_ICON_RESOURCE_WINDOWS}
-)
-
-qt6_add_shaders(nautograf "shaders"
-    PREFIX
-        "/"
-    FILES
-        "src/scene/annotation.vert"
-        "src/scene/annotation.frag"
 )
 
 if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
@@ -129,8 +105,6 @@ if(${RESOURCE_DEV})
     target_compile_definitions(nautograf PRIVATE QML_DIR="${CMAKE_SOURCE_DIR}/qml")
 endif()
 
-target_compile_definitions(nautograf PRIVATE SYMBOLS_DIR="${SYMBOLS_DIR}")
-
 target_include_directories(nautograf PRIVATE src)
 
 target_link_libraries(nautograf
@@ -141,9 +115,7 @@ target_link_libraries(nautograf
     Qt6::Svg
     Qt::Gui
     tilefactory
-    msdfgen::msdfgen-core
-    msdfgen::msdfgen-ext
-    freetype-gl
+    scene
 )
 
 if(WIN32)

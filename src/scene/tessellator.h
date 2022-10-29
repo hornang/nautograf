@@ -5,8 +5,8 @@
 #include <QSGTexture>
 #include <QtConcurrent>
 
-#include "fontimage.h"
-#include "symbolimage.h"
+#include "scene/fontimage.h"
+#include "scene/symbolimage.h"
 #include "tilefactory/chart.h"
 #include "tilefactorywrapper.h"
 

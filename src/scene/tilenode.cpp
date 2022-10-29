@@ -2,7 +2,7 @@
 #include <QObject>
 #include <QSGSimpleRectNode>
 
-#include "annotationnode.h"
+#include "annotation/annotationnode.h"
 #include "tilefactory/mercator.h"
 #include "tilenode.h"
 
