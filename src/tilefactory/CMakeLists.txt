@@ -30,10 +30,7 @@ target_include_directories(tilefactory PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(tilefactory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(tilefactory
-    CapnProto::kj
     CapnProto::capnp
-    CapnProto::capnpc
-    CapnProto::kj-gzip
     polyclipping::polyclipping
     oesenc
 )
