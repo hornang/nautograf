@@ -14,26 +14,89 @@ OesencTileSource::OesencTileSource(const std::string &file,
                                    const std::string &name,
                                    const std::string &tileDir)
     : m_name(name)
-    , m_oesencChart(file)
-{
-    m_valid = m_oesencChart.readHeaders();
-    m_extent = m_oesencChart.extent();
-    m_scale = m_oesencChart.nativeScale();
 
-    ensureTileDir(tileDir);
+{
+    oesenc::ChartFile chart = oesenc::ChartFile(file);
+
+    if (chart.readHeaders()) {
+        readOesencMetaData(&chart);
+        m_oesencFile = file;
+        m_oesencSourceType = OesencSourceType::File;
+        ensureTileDir(tileDir);
+    }
 }
 
 OesencTileSource::OesencTileSource(const std::vector<std::byte> &data,
                                    const std::string &name,
                                    const std::string &tileDir)
     : m_name(name)
-    , m_oesencChart(data)
 {
-    m_valid = m_oesencChart.readHeaders();
-    m_extent = m_oesencChart.extent();
-    m_scale = m_oesencChart.nativeScale();
+    oesenc::ChartFile chart = oesenc::ChartFile(data);
 
-    ensureTileDir(tileDir);
+    if (chart.readHeaders()) {
+        readOesencMetaData(&chart);
+        m_oesencData = data;
+        m_oesencSourceType = OesencSourceType::Vector;
+        ensureTileDir(tileDir);
+    }
+}
+
+void OesencTileSource::readOesencMetaData(const oesenc::ChartFile *chart)
+{
+    assert(chart);
+    m_scale = chart->nativeScale();
+    m_extent = fromOesencRect(chart->extent());
+}
+
+GeoRect OesencTileSource::fromOesencRect(const oesenc::Rect &src)
+{
+    return GeoRect(src.top(), src.bottom(), src.left(), src.right());
+}
+
+bool OesencTileSource::convertChartToInternalFormat()
+{
+    if (m_oesencSourceType == OesencSourceType::Invalid) {
+        return false;
+    }
+
+    std::string filename = internalChartFileName();
+
+    const std::lock_guard<std::mutex> lock(m_internalChartMutex);
+
+    if (std::filesystem::exists(filename)) {
+        return true;
+    }
+
+    std::unique_ptr<capnp::MallocMessageBuilder> capnpMessage;
+    std::unique_ptr<oesenc::ChartFile> oesencChart;
+
+    switch (m_oesencSourceType) {
+    case OesencSourceType::File:
+        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencFile);
+        break;
+    case OesencSourceType::Vector:
+        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencData);
+        break;
+    }
+
+    if (!oesencChart->read()) {
+        return false;
+    }
+
+    readOesencMetaData(oesencChart.get());
+    capnpMessage = Chart::buildFromS57(oesencChart->s57(), m_extent, m_name, m_scale);
+
+    std::filesystem::path targetPath(filename);
+
+    if (!std::filesystem::exists(targetPath.parent_path())) {
+        std::filesystem::create_directory(targetPath.parent_path());
+    }
+
+    if (!Chart::write(capnpMessage.get(), filename)) {
+        return false;
+    }
+
+    return true;
 }
 
 void OesencTileSource::ensureTileDir(const std::string &tileDir)
@@ -52,7 +115,7 @@ void OesencTileSource::ensureTileDir(const std::string &tileDir)
 
 bool OesencTileSource::isValid() const
 {
-    return m_valid;
+    return m_oesencSourceType != OesencSourceType::Invalid;
 }
 
 OesencTileSource::~OesencTileSource()
@@ -61,7 +124,13 @@ OesencTileSource::~OesencTileSource()
 
 GeoRect OesencTileSource::extent() const
 {
-    return GeoRect(m_extent.top(), m_extent.bottom(), m_extent.left(), m_extent.right());
+    return m_extent;
+}
+
+std::string OesencTileSource::tileFileName(const std::string &id)
+{
+    std::filesystem::path path(m_tileDir);
+    return (path / m_name / (id + std::string(".bin"))).string();
 }
 
 std::shared_ptr<Chart> OesencTileSource::create(const GeoRect &boundingBox,
@@ -80,26 +149,22 @@ std::shared_ptr<Chart> OesencTileSource::create(const GeoRect &boundingBox,
     }
 
     std::lock_guard tileGuard(*tileMutex.get());
-    std::filesystem::path path = m_tileDir;
-    path.append(m_name);
-    path.append(id + std::string(".bin"));
-    std::string tilefile = path.string();
+    std::string tilefile = tileFileName(id);
 
     if (std::filesystem::exists(tilefile)) {
-        auto tile = std::make_shared<Chart>(tilefile);
+        std::shared_ptr<Chart> tile = Chart::open(tilefile);
+
+        if (!tile) {
+            std::cerr << "Failed to create chart from: " << tilefile << std::endl;
+            return {};
+        }
+
         std::lock_guard guard(m_tileMutexesMutex);
         m_tileMutexes.erase(id);
         return tile;
     }
 
-    if (!std::filesystem::exists(path.parent_path())) {
-        std::filesystem::create_directory(path.parent_path());
-    }
     auto tile = generateTile(boundingBox, pixelsPerLongitude);
-    if (tile) {
-        tile->write(tilefile);
-    }
-
     std::lock_guard guard(m_tileMutexesMutex);
     m_tileMutexes.erase(id);
     return tile;
@@ -155,23 +220,23 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
                                                                 pixelsPerLongitude)
         - boundingBox.left();
 
-    m_chartMutex.lock();
-    if (!m_entireChart) {
-        if (m_oesencChart.read()) {
-
-            const oesenc::Rect rect = m_oesencChart.extent();
-            const GeoRect extent(rect.top(), rect.bottom(), rect.left(), rect.right());
-            m_entireChart = std::make_unique<Chart>(m_oesencChart.s57(),
-                                                    extent,
-                                                    m_name,
-                                                    m_oesencChart.nativeScale());
-        } else {
-            std::cerr << "Failed read chart: " << m_name << std::endl;
-            m_chartMutex.unlock();
+    if (!std::filesystem::exists(internalChartFileName())) {
+        if (!convertChartToInternalFormat()) {
+            std::cerr << "Failed to convert chart to internal format" << std::endl;
             return {};
         }
     }
-    m_chartMutex.unlock();
+
+    std::shared_ptr<Chart> entireChart = Chart::open(internalChartFileName());
+
+    if (!entireChart) {
+        std::cerr << "Failed to open " << internalChartFileName() << std::endl;
+        return {};
+    }
+
+    std::string id = tileId(boundingBox, pixelsPerLongitude);
+    std::string tileFile = tileFileName(id);
+
     ChartClipper::Config clipConfig;
     clipConfig.box = boundingBox;
     clipConfig.latitudeMargin = latitudeMargin;
@@ -179,5 +244,19 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
     clipConfig.longitudeResolution = longitudeResolution;
     clipConfig.latitudeResolution = latitudeResolution;
     clipConfig.maxPixelsPerLongitude = pixelsPerLongitude;
-    return std::make_shared<Chart>(m_entireChart->clipped(clipConfig));
+
+    std::unique_ptr<capnp::MallocMessageBuilder> clippedChart = entireChart->buildClipped(clipConfig);
+
+    if (!Chart::write(clippedChart.get(), tileFileName(id))) {
+        std::cerr << "Failed to write " << tileFileName(id) << std::endl;
+        return {};
+    }
+
+    return Chart::open(tileFile);
+}
+
+std::string OesencTileSource::internalChartFileName() const
+{
+    std::filesystem::path path(m_tileDir);
+    return (path / m_name / "all.bin").string();
 }

@@ -24,39 +24,48 @@ public:
         bool hasValue = false;
     };
 
-    Chart(std::unique_ptr<capnp::MallocMessageBuilder> messageBuilder);
-    Chart();
+    static std::shared_ptr<Chart> open(const std::string &filename);
+    static bool write(capnp::MallocMessageBuilder *message, const std::string &filename);
+    static std::unique_ptr<capnp::MallocMessageBuilder>
+    buildFromS57(const std::vector<oesenc::S57> &objects,
+                 const GeoRect &boundingBox,
+                 const std::string &name,
+                 int scale);
+
+    Chart() = delete;
     ~Chart();
-    Chart(Chart &&) = default;
-    Chart(const std::string &filename);
-    Chart(const std::vector<oesenc::S57> &objects,
-          const GeoRect &boundingBox,
-          const std::string &name,
-          int scale);
+    Chart(Chart &&) = delete;
+    Chart(const Chart &) = delete;
+
+    std::unique_ptr<capnp::MallocMessageBuilder> buildClipped(ChartClipper::Config config) const;
 
     static uint64_t typeId() { return ChartData::_capnpPrivate::typeId; }
-    Chart clipped(ChartClipper::Config config) const;
-    capnp::MallocMessageBuilder &messageBuilder();
-    ::ChartData::Reader root() const { return m_message->getRoot<ChartData>().asReader(); }
-    int nativeScale() const { return m_message->getRoot<ChartData>().getNativeScale(); }
-    capnp::List<ChartData::CoverageArea>::Reader coverage() const { return m_message->getRoot<ChartData>().getCoverage().asReader(); }
-    ::ChartData::CoverageType coverageType() const { return root().getCoverageType(); }
-    ::capnp::List<ChartData::LandArea>::Reader landAreas() const { return m_message->getRoot<ChartData>().getLandAreas().asReader(); }
-    ::capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return m_message->getRoot<ChartData>().getDepthAreas().asReader(); }
-    ::capnp::List<ChartData::BuiltUpArea>::Reader builtUpAreas() const { return m_message->getRoot<ChartData>().getBuiltUpAreas().asReader(); }
-    ::capnp::List<ChartData::BuiltUpPoint>::Reader builtUpPoints() const { return root().getBuiltUpPoints(); }
-    ::capnp::List<ChartData::LandRegion>::Reader landRegions() const { return root().getLandRegions(); }
-    ::capnp::List<ChartData::Sounding>::Reader soundings() const { return m_message->getRoot<ChartData>().getSoundings().asReader(); }
-    ::capnp::List<ChartData::Beacon>::Reader beacons() const { return m_message->getRoot<ChartData>().getBeacons().asReader(); }
-    ::capnp::List<ChartData::UnderwaterRock>::Reader underwaterRocks() const { return m_message->getRoot<ChartData>().getUnderwaterRocks().asReader(); }
-    ::capnp::List<ChartData::BuoyLateral>::Reader lateralBuoys() const { return m_message->getRoot<ChartData>().getLateralBuoys().asReader(); }
-    ::capnp::List<ChartData::Road>::Reader roads() const { return m_message->getRoot<ChartData>().getRoads().asReader(); }
-    const GeoRect &boundingBox() const { return m_boundingBox; }
-    std::string name() const { return m_message->getRoot<ChartData>().getName().asReader(); }
-    bool loaded() const { return m_message != nullptr; }
-    void write(const std::string &filename);
+
+    ChartData::Reader root() const
+    {
+        assert(m_capnpReader);
+        return m_capnpReader->getRoot<ChartData>();
+    }
+
+    int nativeScale() const { return root().getNativeScale(); }
+    std::string name() const { return root().getName(); }
+    GeoRect boundingBox() const;
+    capnp::List<ChartData::CoverageArea>::Reader coverage() const { return root().getCoverage(); }
+    ChartData::CoverageType coverageType() const { return root().getCoverageType(); }
+    capnp::List<ChartData::LandArea>::Reader landAreas() const { return root().getLandAreas(); }
+    capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return root().getDepthAreas(); }
+    capnp::List<ChartData::BuiltUpArea>::Reader builtUpAreas() const { return root().getBuiltUpAreas(); }
+    capnp::List<ChartData::BuiltUpPoint>::Reader builtUpPoints() const { return root().getBuiltUpPoints(); }
+    capnp::List<ChartData::LandRegion>::Reader landRegions() const { return root().getLandRegions(); }
+    capnp::List<ChartData::Sounding>::Reader soundings() const { return root().getSoundings(); }
+    capnp::List<ChartData::Beacon>::Reader beacons() const { return root().getBeacons(); }
+    capnp::List<ChartData::UnderwaterRock>::Reader underwaterRocks() const { return root().getUnderwaterRocks(); }
+    capnp::List<ChartData::BuoyLateral>::Reader lateralBuoys() const { return root().getLateralBuoys(); }
+    capnp::List<ChartData::Road>::Reader roads() const { return root().getRoads(); }
 
 private:
+    Chart(FILE *fd);
+
     using S57Vector = const std::vector<const oesenc::S57 *>;
 
     static void loadCoverage(ChartData::Builder &root, S57Vector &src);
@@ -134,6 +143,6 @@ private:
                                       const std::vector<Polygon> &src);
     static inline void toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src);
 
-    GeoRect m_boundingBox;
-    std::unique_ptr<::capnp::MallocMessageBuilder> m_message;
+    std::unique_ptr<::capnp::PackedFdMessageReader> m_capnpReader;
+    FILE *m_file = nullptr;
 };

@@ -25,12 +25,18 @@ public:
     std::shared_ptr<Chart> create(const GeoRect &boundingBox, int pixelsPerLongitude) override;
 
 private:
+    bool convertChartToInternalFormat();
+    void readOesencMetaData(const oesenc::ChartFile *chart);
     void ensureTileDir(const std::string &tileDir);
+    std::string internalChartFileName() const;
+    std::string tileFileName(const std::string &id);
 
     /*!
         Creates a unique tile identification string for a given boundingBox zoom
     */
     static std::string tileId(const GeoRect &boundingBox, int pixelsPerLongitude);
+
+    static GeoRect fromOesencRect(const oesenc::Rect &src);
 
     /*!
         Generate tile data for the given boundingBox
@@ -38,15 +44,19 @@ private:
         The actual ChartFile will not be opened until the first call to this function
     */
     std::shared_ptr<Chart> generateTile(const GeoRect &boundingBox, int pixelsPerLongitude);
-    std::unique_ptr<Chart> m_entireChart;
     std::unordered_map<std::string, std::shared_ptr<std::mutex>> m_tileMutexes;
     std::mutex m_tileMutexesMutex;
     std::string m_tileDir;
-    std::string m_file;
     std::string m_name;
-    oesenc::ChartFile m_oesencChart;
-    oesenc::Rect m_extent;
-    std::mutex m_chartMutex;
+    GeoRect m_extent;
+    std::mutex m_internalChartMutex;
     int m_scale = 0;
-    bool m_valid = false;
+    enum class OesencSourceType {
+        Invalid,
+        File,
+        Vector
+    };
+    OesencSourceType m_oesencSourceType = OesencSourceType::Invalid;
+    std::string m_oesencFile;
+    std::vector<std::byte> m_oesencData;
 };

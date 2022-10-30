@@ -5,23 +5,14 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/mercator.h"
 
-Chart::Chart()
+std::unique_ptr<capnp::MallocMessageBuilder>
+Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
+                    const GeoRect &boundingBox,
+                    const std::string &name,
+                    int scale)
 {
-    m_message = std::make_unique<capnp::MallocMessageBuilder>();
-}
-
-Chart::~Chart()
-{
-}
-
-Chart::Chart(const std::vector<oesenc::S57> &objects,
-             const GeoRect &boundingBox,
-             const std::string &name,
-             int scale)
-    : m_boundingBox(boundingBox)
-{
-    m_message = std::make_unique<capnp::MallocMessageBuilder>();
-    auto root = m_message->initRoot<ChartData>();
+    auto message = std::make_unique<capnp::MallocMessageBuilder>();
+    ChartData::Builder root = message->initRoot<ChartData>();
     std::unordered_map<oesenc::S57::Type, std::vector<const oesenc::S57 *>> sortedObjects;
 
     for (const oesenc::S57 &obj : objects) {
@@ -33,6 +24,15 @@ Chart::Chart(const std::vector<oesenc::S57> &objects,
 
     root.setNativeScale(scale);
     root.setName(name);
+
+    ChartData::Position::Builder topLeft = root.initTopLeft();
+    topLeft.setLatitude(boundingBox.top());
+    topLeft.setLongitude(boundingBox.left());
+
+    ChartData::Position::Builder bottomRight = root.initBottomRight();
+    bottomRight.setLatitude(boundingBox.bottom());
+    bottomRight.setLongitude(boundingBox.right());
+
     loadCoverage(root, sortedObjects[oesenc::S57::Type::Coverage]);
     loadLandAreas(root, sortedObjects[oesenc::S57::Type::LandArea]);
     loadLandRegions(root, sortedObjects[oesenc::S57::Type::LandRegion]);
@@ -43,19 +43,31 @@ Chart::Chart(const std::vector<oesenc::S57> &objects,
     loadBeacons(root, sortedObjects[oesenc::S57::Type::Beacon]);
     loadUnderwaterRocks(root, sortedObjects[oesenc::S57::Type::UnderwaterRock]);
     loadBuoyLateral(root, sortedObjects[oesenc::S57::Type::BuoyLateral]);
+
+    return message;
 }
 
-Chart::Chart(std::unique_ptr<capnp::MallocMessageBuilder> messageBuilder)
-    : m_message(std::move(messageBuilder))
+Chart::~Chart()
 {
+    m_capnpReader.reset();
+    if (m_file) {
+        fclose(m_file);
+    }
 }
 
-Chart::Chart(const std::string &filename)
+Chart::Chart(FILE *file)
+    : m_file(file)
 {
-    read(filename);
+#ifdef Q_OS_WIN
+    const int fd = _fileno(file);
+#else
+    const int fd = fileno(file);
+#endif
+    assert(fd);
+    m_capnpReader = std::make_unique<::capnp::PackedFdMessageReader>(fd);
 }
 
-void Chart::read(const std::string &filename)
+std::shared_ptr<Chart> Chart::open(const std::string &filename)
 {
     FILE *file = nullptr;
 
@@ -66,30 +78,25 @@ void Chart::read(const std::string &filename)
 #endif
 
     if (file == 0) {
-        std::cerr << "Unable to open file " << filename << std::endl;
-        return;
+        std::cerr << "Unable to open file for reading: " << filename << std::endl;
+        return {};
     }
 
-#ifdef Q_OS_WIN
-    const int fd = _fileno(file);
-#else
-   const int fd = fileno(file);
-#endif
-    if (fd == 0) {
-        std::cerr << "Unable to open file " << filename << std::endl;
-        return;
-    }
-
-    // Create a reader here and copy the data to the message builder so it has
-    // no limits on number of reads (see security section of the docs).
-    ::capnp::PackedFdMessageReader reader(fd);
-    m_message = std::make_unique<::capnp::MallocMessageBuilder>();
-    reader.getRoot<ChartData>();
-    m_message->setRoot(reader.getRoot<ChartData>());
-    fclose(file);
+    return std::shared_ptr<Chart>(new Chart(file));
 }
 
-void Chart::write(const std::string &filename)
+GeoRect Chart::boundingBox() const
+{
+    ChartData::Position::Reader topLeft = root().getTopLeft();
+    ChartData::Position::Reader bottomRight = root().getBottomRight();
+
+    return GeoRect(topLeft.getLatitude(),
+                   bottomRight.getLatitude(),
+                   topLeft.getLongitude(),
+                   bottomRight.getLongitude());
+}
+
+bool Chart::write(capnp::MallocMessageBuilder *message, const std::string &filename)
 {
     FILE *file = 0;
 
@@ -100,7 +107,7 @@ void Chart::write(const std::string &filename)
 #endif
     if (!file) {
         std::cerr << "Failed to write file" << std::endl;
-        return;
+        return false;
     }
 
 #ifdef Q_OS_WIN
@@ -108,9 +115,10 @@ void Chart::write(const std::string &filename)
 #else
     const int fd = fileno(file);
 #endif
-
-    capnp::writePackedMessageToFd(fd, *m_message.get());
+    capnp::writePackedMessageToFd(fd, *message);
     fclose(file);
+
+    return true;
 }
 
 bool Chart::pointsAround(const capnp::List<ChartData::Position>::Reader &positions,
@@ -144,10 +152,10 @@ bool Chart::pointsAround(const capnp::List<ChartData::Position>::Reader &positio
     return left && right && above && below;
 }
 
-Chart Chart::clipped(ChartClipper::Config config) const
+std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::Config config) const
 {
     // Ugly to add this here
-    config.chartBoundingBox = m_boundingBox;
+    config.chartBoundingBox = boundingBox();
 
     auto message = std::make_unique<capnp::MallocMessageBuilder>();
     ChartData::Builder root = message->initRoot<ChartData>();
@@ -296,8 +304,7 @@ Chart Chart::clipped(ChartClipper::Config config) const
             dst.setName(src.getName());
         });
 
-    Chart clipped(std::move(message));
-    return clipped;
+    return message;
 }
 
 template <typename T>

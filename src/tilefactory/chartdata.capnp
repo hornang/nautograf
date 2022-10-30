@@ -1,4 +1,4 @@
-@0xf23098abf4bc548e;
+@0x897b19df25f153d2;
 
 struct ChartData {
     name @0: Text;
@@ -15,6 +15,8 @@ struct ChartData {
     roads @11 :List(Road);
     lateralBuoys @12 :List(BuoyLateral);
     landRegions @13 :List(LandRegion);
+    topLeft @14: Position;
+    bottomRight @15: Position;
 
     enum CoverageType {
         zero @0;
