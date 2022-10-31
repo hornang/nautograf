@@ -2,6 +2,7 @@
 #include <QSGTexture>
 
 #include "annotation/annotationmaterial.h"
+#include "polygon/polygonmaterial.h"
 #include "rootnode.h"
 #include "scene/fontimage.h"
 #include "scene/symbolimage.h"
@@ -16,6 +17,7 @@ RootNode::RootNode(const QImage &symbolImage,
     m_fontTexture = window->createTextureFromImage(fontImage);
     m_fontTexture->setFiltering(QSGTexture::Linear);
 
+    m_polygonMaterial = new PolygonMaterial();
     m_symbolMaterial = new AnnotationMaterial(m_symbolTexture);
     m_textMaterial = new AnnotationMaterial(m_fontTexture);
 }

@@ -9,6 +9,7 @@
 
 #include "scene/annotation/annotationnode.h"
 #include "scene/fontimage.h"
+#include "scene/polygon/polygonnode.h"
 #include "scene/symbolimage.h"
 #include "tilefactory/chart.h"
 #include "tilefactorywrapper.h"
@@ -24,6 +25,7 @@ public:
     {
         QList<AnnotationNode::Vertex> symbolVertices;
         QList<AnnotationNode::Vertex> textVertices;
+        QList<PolygonNode::Vertex> polygonVertices;
     };
 
     Tessellator(TileFactoryWrapper *tileFactory,
@@ -106,6 +108,11 @@ private:
                               TileFactoryWrapper::TileRecipe recipe,
                               std::shared_ptr<const SymbolImage> symbolImage,
                               std::shared_ptr<const FontImage> fontImage);
+
+    template <typename T>
+    static QList<PolygonNode::Vertex> drawPolygons(const typename capnp::List<T>::Reader &depthAreas,
+                                                   float z,
+                                                   std::function<QColor(const typename T::Reader &)> colorFunc);
 
     QFuture<TileData> m_result;
     QFutureWatcher<TileData> m_watcher;

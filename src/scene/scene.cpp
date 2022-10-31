@@ -3,6 +3,8 @@
 #include "annotation/annotationmaterial.h"
 #include "annotation/annotationnode.h"
 #include "fontimage.h"
+#include "polygon/polygonmaterial.h"
+#include "polygon/polygonnode.h"
 #include "rootnode.h"
 #include "scene/scene.h"
 #include "symbolimage.h"
@@ -116,6 +118,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 {
     RootNode *rootNode = static_cast<RootNode *>(old);
 
+    QSGNode *polygonNodesParent = nullptr;
     QSGNode *symbolNodesParent = nullptr;
     QSGNode *textNodesParent = nullptr;
 
@@ -124,18 +127,23 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                                 m_fontImage->image(),
                                 window());
 
+        polygonNodesParent = new QSGNode();
+        rootNode->appendChildNode(polygonNodesParent);
         symbolNodesParent = new QSGNode();
         rootNode->appendChildNode(symbolNodesParent);
         textNodesParent = new QSGNode();
         rootNode->appendChildNode(textNodesParent);
     } else {
-        symbolNodesParent = rootNode->firstChild();
+        polygonNodesParent = rootNode->firstChild();
+        symbolNodesParent = polygonNodesParent->nextSibling();
         textNodesParent = symbolNodesParent->nextSibling();
     }
 
+    Q_ASSERT(polygonNodesParent);
     Q_ASSERT(symbolNodesParent);
     Q_ASSERT(textNodesParent);
 
+    PolygonMaterial *polygonMaterial = rootNode->polygonMaterial();
     AnnotationMaterial *symbolMaterial = rootNode->symbolMaterial();
     AnnotationMaterial *textMaterial = rootNode->textMaterial();
 
@@ -153,17 +161,28 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     }
 
     if (m_tessellatorRemoved) {
+        removeStaleNodes<PolygonNode>(polygonNodesParent);
         removeStaleNodes<AnnotationNode>(symbolNodesParent);
         removeStaleNodes<AnnotationNode>(textNodesParent);
         m_tessellatorRemoved = false;
     }
 
     if (!m_tessellatorsWithPendingData.empty()) {
+        QHash<QString, PolygonNode *> polygonNodes = currentNodes<PolygonNode>(polygonNodesParent);
         QHash<QString, AnnotationNode *> symbolNodes = currentNodes<AnnotationNode>(symbolNodesParent);
         QHash<QString, AnnotationNode *> textNodes = currentNodes<AnnotationNode>(textNodesParent);
 
         for (const auto &tileId : m_tessellatorsWithPendingData) {
             Q_ASSERT(m_tessellators.contains(tileId));
+
+            updateNodeData<PolygonNode>(
+                tileId,
+                polygonNodesParent,
+                polygonNodes,
+                [&](const Tessellator::TileData &tileData) {
+                    return tileData.polygonVertices;
+                },
+                polygonMaterial);
 
             updateNodeData<AnnotationNode>(
                 tileId,
@@ -183,7 +202,6 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 },
                 textMaterial);
         }
-
         m_tessellatorsWithPendingData.clear();
     }
 
