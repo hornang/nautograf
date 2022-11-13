@@ -37,6 +37,4 @@ private:
                                                   double xRes,
                                                   double yRes);
     static inline Pos fromIntPoint(const ClipperLib::IntPoint &intPoint, const GeoRect &clip, double xRes, double yRes);
-    template <typename T>
-    static std::vector<T> clipByPosition(const std::vector<T> &input, const GeoRect &rect);
 };

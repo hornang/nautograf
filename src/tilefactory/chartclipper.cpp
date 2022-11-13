@@ -75,18 +75,6 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygons(const capnp::List<
     return output;
 }
 
-template <typename T>
-std::vector<T> ChartClipper::clipByPosition(const std::vector<T> &input, const GeoRect &rect)
-{
-    std::vector<T> clipped;
-    for (const T &item : input) {
-        if (rect.contains(item.position)) {
-            clipped.push_back(item);
-        }
-    }
-    return clipped;
-}
-
 inline ClipperLib::IntPoint ChartClipper::toIntPoint(const Pos &pos, const GeoRect &roi, double xRes, double yRes)
 {
     int x = (pos.lon() - roi.left()) / (roi.right() - roi.left()) * xRes;
