@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <polyclipping/clipper.hpp>
+#include <clipper2/clipper.h>
 
 #include "chartdata.capnp.h"
 #include "tilefactory/georect.h"
@@ -33,16 +33,21 @@ public:
 
     static std::vector<Polygon> clipPolygon(const ChartData::Polygon::Reader &polygon,
                                             Config clipConfig);
-    static ClipperLib::Path toClipperPath(const capnp::List<ChartData::Position>::Reader &points,
-                                          const GeoRect &roi, double xRes, double yRes);
-    static Line toLine(const ClipperLib::Path &path, const GeoRect &roi, double xRes, double yRes);
+    static Clipper2Lib::Path64 toClipperPath(const capnp::List<ChartData::Position>::Reader &points,
+                                             const GeoRect &roi, double xRes, double yRes);
+    static Line toLine(const Clipper2Lib::Path64 &path,
+                       const GeoRect &roi,
+                       double xRes,
+                       double yRes);
 
 private:
     static int inRange(double value, double min, double max, double margin);
     static Line inflateAtChartEdges(const Line &area, Config clipConfig);
-    static inline ClipperLib::IntPoint toIntPoint(const Pos &pos,
+    static inline Clipper2Lib::Point64 toIntPoint(const Pos &pos,
                                                   const GeoRect &roi,
                                                   double xRes,
                                                   double yRes);
-    static inline Pos fromIntPoint(const ClipperLib::IntPoint &intPoint, const GeoRect &clip, double xRes, double yRes);
+    static inline Pos fromIntPoint(const Clipper2Lib::Point64 &intPoint,
+                                   const GeoRect &clip,
+                                   double xRes, double yRes);
 };

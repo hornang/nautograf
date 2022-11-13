@@ -1,5 +1,5 @@
 {
     "name": "nautograf",
     "version": "0.1.0",
-    "dependencies": ["capnproto", "polyclipping", "tinyxml2", "freetype-gl"]
+    "dependencies": ["capnproto", "tinyxml2", "freetype-gl"]
 }

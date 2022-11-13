@@ -31,6 +31,12 @@ find_package(UnixCommands)
 add_subdirectory(oesenc)
 add_subdirectory(src/tilefactory)
 
+set(CLIPPER2_TESTS OFF)
+set(CLIPPER2_EXAMPLES OFF)
+set(CLIPPER2_TESTS OFF)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+add_subdirectory(Clipper2/CPP)
+
 option(RESOURCE_DEV "Load QML from file system not from Qt resource" "")
 
 if(NOT ${RESOURCE_DEV})

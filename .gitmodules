@@ -8,3 +8,6 @@
 [submodule "msdfgen"]
 	path = msdfgen
 	url = https://github.com/hornang/msdfgen
+[submodule "clipper2"]
+	path = Clipper2
+	url = https://github.com/AngusJohnson/Clipper2.git

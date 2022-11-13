@@ -1,5 +1,4 @@
 find_package(CapnProto CONFIG REQUIRED)
-find_package(polyclipping CONFIG REQUIRED)
 
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS chartdata.capnp)
 
@@ -31,6 +30,6 @@ target_include_directories(tilefactory PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includ
 
 target_link_libraries(tilefactory
     CapnProto::capnp
-    polyclipping::polyclipping
+    Clipper2
     oesenc
 )

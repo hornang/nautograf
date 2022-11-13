@@ -4,15 +4,15 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
-ClipperLib::Path ChartClipper::toClipperPath(const capnp::List<ChartData::Position>::Reader &positions,
-                                             const GeoRect &roi, double xRes, double yRes)
+Clipper2Lib::Path64 ChartClipper::toClipperPath(const capnp::List<ChartData::Position>::Reader &positions,
+                                                const GeoRect &roi, double xRes, double yRes)
 {
-    ClipperLib::Path path;
-    ClipperLib::IntPoint prevPoint;
+    Clipper2Lib::Path64 path;
+    Clipper2Lib::Point64 prevPoint;
 
     for (const auto &p : positions) {
         Pos pos(p.getLatitude(), p.getLongitude());
-        ClipperLib::IntPoint point = toIntPoint(pos, roi, xRes, yRes);
+        Clipper2Lib::Point64 point = toIntPoint(pos, roi, xRes, yRes);
         if (point == prevPoint) {
             continue;
         }
@@ -22,12 +22,12 @@ ClipperLib::Path ChartClipper::toClipperPath(const capnp::List<ChartData::Positi
     return path;
 }
 
-ChartClipper::Line ChartClipper::toLine(const ClipperLib::Path &path,
+ChartClipper::Line ChartClipper::toLine(const Clipper2Lib::Path64 &path,
                                         const GeoRect &roi, double xRes, double yRes)
 {
     ChartClipper::Line polygon;
 
-    for (const ClipperLib::IntPoint &intPoint : path) {
+    for (const Clipper2Lib::Point64 &intPoint : path) {
         Pos p = fromIntPoint(intPoint, roi, xRes, yRes);
         polygon.push_back(Pos(p.lat(), p.lon()));
     }
@@ -47,48 +47,43 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
                      boundingBox.left() - clipConfig.longitudeMargin,
                      boundingBox.right() + clipConfig.longitudeMargin);
 
-    double xRes = (clipConfig.box.right() - clipConfig.box.left()) / clipConfig.longitudeResolution;
-    double yRes = (clipConfig.box.top() - clipConfig.box.bottom()) / clipConfig.latitudeResolution;
+    int xRes = (clipConfig.box.right() - clipConfig.box.left()) / clipConfig.longitudeResolution;
+    int yRes = (clipConfig.box.top() - clipConfig.box.bottom()) / clipConfig.latitudeResolution;
 
     // Add a fudge factor here to increase resolution
     xRes *= 2;
     yRes *= 2;
 
-    ClipperLib::Paths paths;
+    Clipper2Lib::Paths64 paths;
 
     GeoRect geoRect(clipRect.top(), clipRect.bottom(), clipRect.left(), clipRect.right());
 
     paths.push_back(toClipperPath(polygon.getMain(), clipRect, xRes, yRes));
 
-    ClipperLib::Path clipPath;
-    clipPath.push_back(ClipperLib::IntPoint(0, 0));
-    clipPath.push_back(ClipperLib::IntPoint(0, yRes));
-    clipPath.push_back(ClipperLib::IntPoint(xRes, yRes));
-    clipPath.push_back(ClipperLib::IntPoint(xRes, 0));
+    Clipper2Lib::Path64 clipPath;
+    clipPath.push_back(Clipper2Lib::Point64(0, 0));
+    clipPath.push_back(Clipper2Lib::Point64(0, yRes));
+    clipPath.push_back(Clipper2Lib::Point64(xRes, yRes));
+    clipPath.push_back(Clipper2Lib::Point64(xRes, 0));
 
-    ClipperLib::Paths clipPaths;
+    Clipper2Lib::Paths64 clipPaths;
     clipPaths.push_back(clipPath);
-    ClipperLib::Clipper mainClipper;
-    mainClipper.AddPaths(paths, ClipperLib::ptSubject, true);
-    mainClipper.AddPaths(clipPaths, ClipperLib::ptClip, true);
-
-    ClipperLib::Paths solution;
-    mainClipper.Execute(ClipperLib::ctIntersection,
-                        solution,
-                        ClipperLib::pftEvenOdd,
-                        ClipperLib::pftEvenOdd);
+    Clipper2Lib::Paths64 solution = Clipper2Lib::Intersect(paths,
+                                                           clipPaths,
+                                                           Clipper2Lib::FillRule::EvenOdd);
     std::vector<Polygon> output;
 
     if (solution.empty()) {
         return {};
     }
 
-    ClipperLib::Paths holePaths;
+    Clipper2Lib::Paths64 holePaths;
+
     for (const capnp::List<ChartData::Position>::Reader &hole : polygon.getHoles()) {
         holePaths.push_back(toClipperPath(hole, clipRect, xRes, yRes));
     }
 
-    for (const ClipperLib::Path &mainAreas : solution) {
+    for (const Clipper2Lib::Path64 &mainAreas : solution) {
         Polygon area;
         auto polygon = toLine(mainAreas, geoRect, xRes, yRes);
 
@@ -103,17 +98,10 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
             continue;
         }
 
-        ClipperLib::Paths other = holePaths;
-        ClipperLib::Clipper holeClipper;
-        holeClipper.AddPaths(other, ClipperLib::ptSubject, true);
-        holeClipper.AddPaths({ mainAreas }, ClipperLib::ptClip, true);
-
-        ClipperLib::Paths holeResults;
-        holeClipper.Execute(ClipperLib::ctIntersection,
-                            holeResults,
-                            ClipperLib::pftEvenOdd,
-                            ClipperLib::pftEvenOdd);
-        for (const ClipperLib::Path &path : holeResults) {
+        Clipper2Lib::Paths64 holeResults = Clipper2Lib::Intersect(holePaths,
+                                                                  { mainAreas },
+                                                                  Clipper2Lib::FillRule::EvenOdd);
+        for (const Clipper2Lib::Path64 &path : holeResults) {
             area.holes.push_back(toLine(path, geoRect, xRes, yRes));
         }
         output.push_back(area);
@@ -121,17 +109,17 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
     return output;
 }
 
-inline ClipperLib::IntPoint ChartClipper::toIntPoint(const Pos &pos, const GeoRect &roi, double xRes, double yRes)
+inline Clipper2Lib::Point64 ChartClipper::toIntPoint(const Pos &pos, const GeoRect &roi, double xRes, double yRes)
 {
     int x = (pos.lon() - roi.left()) / (roi.right() - roi.left()) * xRes;
     int y = (pos.lat() - roi.bottom()) / (roi.top() - roi.bottom()) * yRes;
-    return ClipperLib::IntPoint(x, y);
+    return Clipper2Lib::Point64(x, y);
 }
 
-inline Pos ChartClipper::fromIntPoint(const ClipperLib::IntPoint &intPoint, const GeoRect &roi, double xRes, double yRes)
+inline Pos ChartClipper::fromIntPoint(const Clipper2Lib::Point64 &intPoint, const GeoRect &roi, double xRes, double yRes)
 {
-    double lon = static_cast<double>(intPoint.X) / xRes * (roi.right() - roi.left()) + roi.left();
-    double lat = static_cast<double>(intPoint.Y) / yRes * (roi.top() - roi.bottom()) + roi.bottom();
+    double lon = static_cast<double>(intPoint.x) / xRes * (roi.right() - roi.left()) + roi.left();
+    double lat = static_cast<double>(intPoint.y) / yRes * (roi.top() - roi.bottom()) + roi.bottom();
     return Pos(lat, lon);
 }
 
