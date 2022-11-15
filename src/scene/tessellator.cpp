@@ -631,7 +631,15 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
 
 QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input)
 {
-    QList<AnnotationNode::Vertex> vertices(input.size() * 6);
+    int validSymbols = 0;
+
+    for (const Symbol &element : input) {
+        if (element.symbol.has_value()) {
+            validSymbols++;
+        }
+    }
+
+    QList<AnnotationNode::Vertex> vertices(validSymbols * 6);
     AnnotationNode::Vertex *data = vertices.data();
 
     for (const auto &element : input) {
