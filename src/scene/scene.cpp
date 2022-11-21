@@ -6,8 +6,6 @@
 #include "tilefactory/mercator.h"
 #include "tilenode.h"
 
-const int s_pixelsPerLon = 1000;
-
 #ifndef SYMBOLS_DIR
 #error SYMBOLS_DIR must be defined
 #endif
@@ -30,8 +28,8 @@ void Scene::updateBox()
 {
     QPointF topLeft;
     {
-        double x = Mercator::mercatorWidth(0, m_viewport.x(), s_pixelsPerLon);
-        double y = Mercator::mercatorHeight(0, m_viewport.y(), s_pixelsPerLon);
+        double x = Mercator::mercatorWidth(0, m_viewport.x(), Tessellator::pixelsPerLon());
+        double y = Mercator::mercatorHeight(0, m_viewport.y(), Tessellator::pixelsPerLon());
         topLeft = QPointF(x, y);
     }
 
@@ -43,8 +41,8 @@ void Scene::updateBox()
 
     QPointF bottomRight;
     {
-        double x = Mercator::mercatorWidth(0, gpsBottom.x(), s_pixelsPerLon);
-        double y = Mercator::mercatorHeight(0, gpsBottom.y(), s_pixelsPerLon);
+        double x = Mercator::mercatorWidth(0, gpsBottom.x(), Tessellator::pixelsPerLon());
+        double y = Mercator::mercatorHeight(0, gpsBottom.y(), Tessellator::pixelsPerLon());
         bottomRight = QPointF(x, y);
     }
 
