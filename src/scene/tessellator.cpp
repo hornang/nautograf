@@ -555,9 +555,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y()),
                         static_cast<float>(texture.left()),
                         static_cast<float>(texture.top()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             data[1] = { static_cast<float>(pos.x()),
@@ -566,9 +567,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y()),
                         static_cast<float>(texture.right()),
                         static_cast<float>(texture.top()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             data[2] = { static_cast<float>(pos.x()),
@@ -577,9 +579,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y() + glyphHeight),
                         static_cast<float>(texture.left()),
                         static_cast<float>(texture.bottom()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             data[3] = { static_cast<float>(pos.x()),
@@ -588,9 +591,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y() + glyphHeight),
                         static_cast<float>(texture.left()),
                         static_cast<float>(texture.bottom()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             data[4] = { static_cast<float>(pos.x()),
@@ -599,9 +603,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y()),
                         static_cast<float>(texture.right()),
                         static_cast<float>(texture.top()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             data[5] = { static_cast<float>(pos.x()),
@@ -610,9 +615,10 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
                         static_cast<float>(glyphPos.y() + glyphHeight),
                         static_cast<float>(texture.right()),
                         static_cast<float>(texture.bottom()),
-                        color.redF(),
-                        color.greenF(),
-                        color.blueF(),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
                         scaleLimit };
 
             glyphCounter++;
@@ -652,9 +658,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y()),
                     static_cast<float>(sourceRect.left()),
                     static_cast<float>(sourceRect.top()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data[1] = { static_cast<float>(pos.x()),
@@ -663,9 +670,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y()),
                     static_cast<float>(sourceRect.right()),
                     static_cast<float>(sourceRect.top()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data[2] = { static_cast<float>(pos.x()),
@@ -674,9 +682,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y() + symbolSize.height()),
                     static_cast<float>(sourceRect.left()),
                     static_cast<float>(sourceRect.bottom()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data[3] = { static_cast<float>(pos.x()),
@@ -685,9 +694,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y() + symbolSize.height()),
                     static_cast<float>(sourceRect.left()),
                     static_cast<float>(sourceRect.bottom()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data[4] = { static_cast<float>(pos.x()),
@@ -696,9 +706,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y()),
                     static_cast<float>(sourceRect.right()),
                     static_cast<float>(sourceRect.top()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data[5] = { static_cast<float>(pos.x()),
@@ -707,9 +718,10 @@ QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input
                     static_cast<float>(-center.y() + symbolSize.height()),
                     static_cast<float>(sourceRect.right()),
                     static_cast<float>(sourceRect.bottom()),
-                    color.redF(),
-                    color.greenF(),
-                    color.blueF(),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
                     scaleLimit };
 
         data += 6;

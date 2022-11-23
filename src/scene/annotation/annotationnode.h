@@ -19,9 +19,10 @@ public:
         float yOffset;
         float xTexture;
         float yTexture;
-        float red;
-        float green;
-        float blue;
+        uchar red;
+        uchar green;
+        uchar blue;
+        uchar alpha; // For padding purposes. Ignored by shader
         float scaleLimit;
     };
     AnnotationNode(const QString &tileId,

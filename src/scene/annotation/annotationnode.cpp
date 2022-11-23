@@ -4,14 +4,14 @@ static const QSGGeometry::Attribute attributes[] = {
     QSGGeometry::Attribute::createWithAttributeType(0, 2, QSGGeometry::FloatType, QSGGeometry::PositionAttribute),
     QSGGeometry::Attribute::createWithAttributeType(1, 2, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute),
     QSGGeometry::Attribute::createWithAttributeType(2, 2, QSGGeometry::FloatType, QSGGeometry::TexCoordAttribute),
-    QSGGeometry::Attribute::createWithAttributeType(3, 3, QSGGeometry::FloatType, QSGGeometry::ColorAttribute),
+    QSGGeometry::Attribute::createWithAttributeType(3, 4, QSGGeometry::UnsignedByteType, QSGGeometry::ColorAttribute),
     QSGGeometry::Attribute::createWithAttributeType(4, 1, QSGGeometry::FloatType, QSGGeometry::UnknownAttribute)
 };
 static const QSGGeometry::AttributeSet attributeSet = { static_cast<int>(std::size(attributes)),
-                                                        40,
+                                                        sizeof(AnnotationNode::Vertex),
                                                         attributes };
 
-static_assert(sizeof(AnnotationNode::Vertex) == 40, "Incorrect sizeof(AnnotationNode::Vertex)");
+static_assert(sizeof(AnnotationNode::Vertex) == 32, "Incorrect sizeof(AnnotationNode::Vertex)");
 
 AnnotationNode::AnnotationNode(const QString &tileId,
                                QSGMaterial *material,
