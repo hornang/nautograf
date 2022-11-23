@@ -8,8 +8,6 @@ Item {
     property vector3d viewport: UserSettings.viewport
 
     signal showContextMenu(var x, var y)
-    signal toggleFullscreen
-    signal exitFullscreen
     property bool debugInfo: UserSettings.debugView
 
     function updateTileModel() {
@@ -17,23 +15,18 @@ Item {
         UserSettings.viewport = root.viewport;
     }
 
+    function zoomIn() {
+        const pixelsPerLatitude = viewport.z * 1.5;
+        adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
+    }
+
+    function zoomOut() {
+        const pixelsPerLatitude = viewport.z / 1.5;
+        adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
+    }
+
     Component.onCompleted: updateTileModel();
     onViewportChanged: updateTileModel()
-    focus: true
-
-    Keys.onPressed: (event)=> {
-        if (event.key === Qt.Key_Plus) {
-            const pixelsPerLatitude = viewport.z * 1.5;
-            adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
-        } else if (event.key === Qt.Key_Minus) {
-            const pixelsPerLatitude = viewport.z / 1.5;
-            adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
-        } else if (event.key === Qt.Key_F) {
-            root.toggleFullscreen();
-        } else if (event.key === Qt.Key_Escape) {
-            root.exitFullscreen();
-        }
-    }
 
     Rectangle {
         id: mapRoot

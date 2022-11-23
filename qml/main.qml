@@ -50,6 +50,23 @@ ApplicationWindow {
 
     Viewer {
         id: viewer
+
+        focus: true
+
+        Keys.onPressed: (event)=> {
+            if (event.key === Qt.Key_Plus) {
+                viewer.zoomIn();
+            } else if (event.key === Qt.Key_Minus) {
+                viewer.zoomOut();
+            } else if (event.key === Qt.Key_F) {
+                root.toggleFullscreen();
+            } else if (event.key === Qt.Key_Escape) {
+                if (root.visibility == Window.FullScreen) {
+                    root.visibility = Window.Windowed;
+                }
+            }
+        }
+
         Menu {
             id: menu
 
@@ -92,8 +109,6 @@ ApplicationWindow {
         onShowContextMenu: function() {
             menu.open();
         }
-        onToggleFullscreen: root.toggleFullscreen()
-        onExitFullscreen: root.visibility = Window.Maximized
     }
 
     Rectangle {
