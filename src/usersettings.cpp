@@ -3,6 +3,7 @@
 #include "usersettings.h"
 
 static const QString viewportKey = QStringLiteral("Viewport");
+const QString UserSettings::showLegacyRendererKey = QStringLiteral("ShowLegacyRenderer");
 
 UserSettings::UserSettings()
 {
@@ -56,6 +57,12 @@ void UserSettings::read()
         m_debugView = debugView;
         emit debugViewChanged();
     }
+
+    bool showLegacyRenderer = settings.value(showLegacyRendererKey).toBool();
+    if (m_showLegacyRenderer != showLegacyRenderer) {
+        m_showLegacyRenderer = showLegacyRenderer;
+        emit showLegacyRendererChanged();
+    }
 }
 
 void UserSettings::write()
@@ -70,6 +77,7 @@ void UserSettings::write()
     settings.setValue("Longitude", m_viewport.x());
     settings.setValue("PixelsPerLongitude", m_viewport.z());
     settings.setValue("DebugView", m_debugView);
+    settings.setValue(showLegacyRendererKey, m_showLegacyRenderer);
 }
 
 void UserSettings::setViewPort(const QVector3D &newViewport)
@@ -117,4 +125,17 @@ void UserSettings::setDebugView(bool newDebugView)
         return;
     m_debugView = newDebugView;
     emit debugViewChanged();
+}
+
+bool UserSettings::showLegacyRenderer() const
+{
+    return m_showLegacyRenderer;
+}
+
+void UserSettings::setLegacyRender(bool newLegacyRender)
+{
+    if (m_showLegacyRenderer == newLegacyRender)
+        return;
+    m_showLegacyRenderer = newLegacyRender;
+    emit showLegacyRendererChanged();
 }

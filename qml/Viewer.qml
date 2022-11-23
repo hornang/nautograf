@@ -8,6 +8,8 @@ Item {
     property vector3d viewport: UserSettings.viewport
 
     signal showContextMenu(var x, var y)
+
+    property bool showLegacyRenderer: false
     property bool debugInfo: UserSettings.debugView
 
     function updateTileModel() {
@@ -115,7 +117,9 @@ Item {
         }
 
         Repeater {
-            model: MapTileModel
+            id: legacyRenderer
+
+            model: root.showLegacyRenderer ? MapTileModel : null
 
             MapTile {
                 id: tile
@@ -242,12 +246,16 @@ Item {
             }
         }
 
-        Scene {
-            id: overlay
+        Loader {
             anchors.fill: parent
-            tileFactory: TileFactory
-            viewport: root.viewport
-            tileModel: MapTileModel
+            active: !root.showLegacyRenderer
+            sourceComponent: Scene {
+                id: sceneGraphRenderer
+
+                tileFactory: TileFactory
+                viewport: root.viewport
+                tileModel: MapTileModel
+            }
         }
     }
 

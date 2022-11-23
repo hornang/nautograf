@@ -52,7 +52,7 @@ ApplicationWindow {
         id: viewer
 
         focus: true
-
+        showLegacyRenderer: UserSettings.showLegacyRenderer
         Keys.onPressed: (event)=> {
             if (event.key === Qt.Key_Plus) {
                 viewer.zoomIn();
@@ -92,6 +92,13 @@ ApplicationWindow {
                 checkable: true
                 checked: UserSettings.debugView
                 onTriggered: UserSettings.debugView = !UserSettings.debugView
+            }
+
+            MenuItem {
+                text: qsTr("Legacy renderer")
+                checkable: true
+                checked: UserSettings.showLegacyRenderer
+                onTriggered: UserSettings.showLegacyRenderer = !UserSettings.showLegacyRenderer
             }
 
             MenuItem {

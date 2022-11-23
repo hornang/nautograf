@@ -9,11 +9,12 @@ static const QString appName = QStringLiteral("Nautograf");
 
 class UserSettings : public QObject
 {
+    Q_OBJECT
     Q_PROPERTY(QVector3D viewport READ viewport WRITE setViewPort NOTIFY viewportChanged)
     Q_PROPERTY(QWindow::Visibility windowState READ windowState WRITE setWindowState NOTIFY windowStateChanged)
     Q_PROPERTY(QRect geometry READ geometry WRITE setGeometry NOTIFY geometryChanged)
     Q_PROPERTY(bool debugView READ debugView WRITE setDebugView NOTIFY debugViewChanged)
-    Q_OBJECT
+    Q_PROPERTY(bool showLegacyRenderer READ showLegacyRenderer WRITE setLegacyRender NOTIFY showLegacyRendererChanged)
 
 public:
     UserSettings();
@@ -28,17 +29,23 @@ public:
     bool debugView() const;
     void setDebugView(bool newDebugView);
 
+    bool showLegacyRenderer() const;
+    void setLegacyRender(bool newLegacyRender);
+
 private:
+    static const QString showLegacyRendererKey;
     QVector3D m_viewport = QVector3D((float)4.5, (float)61, (float)200);
     void write();
     void read();
     QWindow::Visibility m_windowState = QWindow::Windowed;
     QRect m_geometry = QRect(200, 200, 1280, 1024);
     bool m_debugView;
+    bool m_showLegacyRenderer = false;
 
 signals:
     void viewportChanged();
     void windowStateChanged();
     void geometryChanged();
     void debugViewChanged();
+    void showLegacyRendererChanged();
 };
