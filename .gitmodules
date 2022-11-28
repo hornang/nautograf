@@ -1,13 +1,12 @@
 [submodule "vcpkg"]
 	path = vcpkg
-	url = https://www.github.com/microsoft/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
 [submodule "oesenc"]
 	path = oesenc
-	url = https://www.github.com/hornang/oesenc
-
+	url = https://github.com/hornang/oesenc.git
 [submodule "msdfgen"]
 	path = msdfgen
-	url = https://github.com/hornang/msdfgen
+	url = https://github.com/hornang/msdfgen.git
 [submodule "clipper2"]
 	path = Clipper2
 	url = https://github.com/AngusJohnson/Clipper2.git
