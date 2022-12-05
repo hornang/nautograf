@@ -36,6 +36,7 @@ public:
     QHash<int, QByteArray> roleNames() const;
     void chartsChanged(const std::vector<GeoRect> &rects);
     int count() const;
+    void scheduleUpdate();
 
 public slots:
     void setViewPort(const QSizeF &viewPort);

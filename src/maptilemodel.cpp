@@ -80,6 +80,11 @@ void MapTileModel::reset()
     endResetModel();
 }
 
+void MapTileModel::scheduleUpdate()
+{
+    QMetaObject::invokeMethod(this, &MapTileModel::update, Qt::QueuedConnection);
+}
+
 void MapTileModel::update()
 {
     std::vector<TileFactory::Tile> tiles = m_tileManager->tiles(m_topLeft,

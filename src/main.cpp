@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     ChartModel chartModel(tileManager);
 
     tileManager->setUpdateCallback([&]() {
-        mapTileModel.update();
+        mapTileModel.scheduleUpdate();
     });
 
     tileManager->setChartsChangedCb([&](const std::vector<GeoRect> &rects) {
