@@ -228,36 +228,33 @@ bool TileFactory::hasSource(const std::string &name)
     return false;
 }
 
-void TileFactory::insertSorted(const TileFactory::Source &source)
+void TileFactory::setSources(const std::vector<TileFactory::Source> &sources)
 {
     const std::lock_guard<std::mutex> lock(m_sourcesMutex);
-    auto upper = std::upper_bound(m_sources.begin(),
-                                  m_sources.end(),
-                                  source, [](const TileFactory::Source &a, const TileFactory::Source &b) -> bool {
-                                      return a.tileSource->scale() < b.tileSource->scale();
-                                  });
-
-    m_sources.insert(upper, source);
-}
-
-void TileFactory::addSources(const std::vector<TileFactory::Source> &sources)
-{
+    std::vector<TileFactory::Source> qualifiedSources;
     std::vector<GeoRect> rois;
+
+    for (const auto &source : m_sources) {
+        rois.push_back(source.tileSource->extent());
+    }
 
     for (const auto &source : sources) {
         if (!source.tileSource) {
             std::cerr << "Not adding null source" << std::endl;
             continue;
         }
-        if (hasSource(source.name)) {
-            std::cerr << "Source with name " << source.name << " already exists " << std::endl;
-            continue;
-        }
+        qualifiedSources.push_back(source);
         rois.push_back(source.tileSource->extent());
-        insertSorted(source);
     }
 
     m_previousTileLocations.clear();
+    m_sources = sources;
+
+    std::sort(m_sources.begin(),
+              m_sources.end(),
+              [](const TileFactory::Source &a, const TileFactory::Source &b) -> bool {
+                  return a.tileSource->scale() < b.tileSource->scale();
+              });
 
     if (m_updateCallback) {
         m_updateCallback();

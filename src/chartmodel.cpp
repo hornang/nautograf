@@ -152,10 +152,6 @@ void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, 
     sourceWrapper.encrypted = encrypted;
     sourceWrapper.source = source;
 
-    if (tileSource) {
-        m_tileFactory->addSources(std::vector<TileFactory::Source>({ source }));
-    }
-
     for (auto it = m_sourceCache.begin(); it < m_sourceCache.end(); it++) {
         if (it->source.name > source.name) {
             int i = std::distance(m_sourceCache.begin(), it);
@@ -178,6 +174,11 @@ bool ChartModel::loadNextFromQueue()
         m_loadingCharts = false;
         m_loadingProgress = 1;
         emit loadingProgressChanged();
+        std::vector<TileFactory::Source> sources;
+        for (const SourceWrapper &sourceWrapper : m_sourceCache) {
+            sources.push_back(sourceWrapper.source);
+        }
+        m_tileFactory->setSources(sources);
         return true;
     }
 

@@ -61,13 +61,12 @@ public:
 
     void setUpdateCallback(std::function<void(void)> updateCallback) { m_updateCallback = updateCallback; }
     void setChartsChangedCb(std::function<void(std::vector<GeoRect> roi)> chartsChangedCb) { m_chartsChangedCb = chartsChangedCb; }
-    void addSources(const std::vector<TileFactory::Source> &sources);
+    void setSources(const std::vector<TileFactory::Source> &sources);
     void setChartEnabled(const std::string &name, bool enabled);
     std::vector<int> setAllChartsEnabled(bool enabled);
     std::vector<Source> sources() const { return m_sources; }
 
 private:
-    void insertSorted(const TileFactory::Source &source);
     bool hasSource(const std::string &id);
     static std::vector<GeoRect> tilesInViewport(const GeoRect &rect, int zoom);
     static std::string tileId(const GeoRect &rectBox, int pixelsPerLongitude);
