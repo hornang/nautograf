@@ -89,7 +89,10 @@ bool OesencTileSource::convertChartToInternalFormat()
     std::filesystem::path targetPath(filename);
 
     if (!std::filesystem::exists(targetPath.parent_path())) {
-        std::filesystem::create_directory(targetPath.parent_path());
+        std::error_code errorCode;
+        if (!std::filesystem::create_directory(targetPath.parent_path(), errorCode)) {
+            std::cerr << "Failed to create dir " << targetPath.parent_path() << std::endl;
+        }
     }
 
     if (!Chart::write(capnpMessage.get(), filename)) {
