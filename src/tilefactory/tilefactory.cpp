@@ -6,41 +6,13 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#include "filehelper.h"
 #include "tilefactory/georect.h"
 #include "tilefactory/itilesource.h"
 #include "tilefactory/mercator.h"
 #include "tilefactory/tilefactory.h"
 
 static constexpr int maxTileSize = 1024;
-
-std::string TileFactory::tileId(const GeoRect &rectBox, int pixelsPerLongitude)
-{
-    std::stringstream ss;
-    ss << rectBox.top();
-    ss << rectBox.left();
-    ss << rectBox.bottom();
-    ss << rectBox.right();
-    ss << pixelsPerLongitude;
-    size_t hash = std::hash<std::string> {}(ss.str());
-
-    static const std::string_view hex_chars = "0123456789abcdef";
-
-    std::mt19937 mt(static_cast<unsigned int>(hash));
-
-    std::string uuid;
-    unsigned int len = 16;
-    uuid.reserve(len);
-
-    while (uuid.size() < len) {
-        auto n = mt();
-        for (auto i = std::mt19937::max(); i & 0x8 && uuid.size() < len; i >>= 4) {
-            uuid += hex_chars[n & 0xf];
-            n >>= 4;
-        }
-    }
-
-    return uuid;
-}
 
 void TileFactory::clear()
 {
@@ -164,7 +136,7 @@ std::vector<TileFactory::Tile> TileFactory::tiles(const Pos &topLeft,
     for (const auto &tileRect : tileLocations) {
         for (const auto &source : m_sources) {
             if (tileRect.intersects(source.tileSource->extent())) {
-                Tile tile { tileId(tileRect, maxPixelsPerLon),
+                Tile tile { FileHelper::tileId(tileRect, maxPixelsPerLon),
                             tileRect,
                             maxPixelsPerLon };
                 tiles.push_back(tile);

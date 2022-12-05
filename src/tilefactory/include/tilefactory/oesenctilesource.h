@@ -27,15 +27,6 @@ public:
 private:
     bool convertChartToInternalFormat();
     void readOesencMetaData(const oesenc::ChartFile *chart);
-    void ensureTileDir(const std::string &tileDir);
-    std::string internalChartFileName() const;
-    std::string tileFileName(const std::string &id);
-
-    /*!
-        Creates a unique tile identification string for a given boundingBox zoom
-    */
-    static std::string tileId(const GeoRect &boundingBox, int pixelsPerLongitude);
-
     static GeoRect fromOesencRect(const oesenc::Rect &src);
 
     /*!

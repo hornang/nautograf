@@ -4,6 +4,7 @@
 #include <sstream>
 #include <thread>
 
+#include "filehelper.h"
 #include "tilefactory/chartclipper.h"
 #include "tilefactory/mercator.h"
 #include "tilefactory/oesenctilesource.h"
@@ -12,9 +13,9 @@ static constexpr int clippingMarginInPixels = 2;
 
 OesencTileSource::OesencTileSource(const std::string &file,
                                    const std::string &name,
-                                   const std::string &tileDir)
+                                   const std::string &baseTileDir)
     : m_name(name)
-
+    , m_tileDir(FileHelper::getTileDir(baseTileDir, Chart::typeId()))
 {
     oesenc::ChartFile chart = oesenc::ChartFile(file);
 
@@ -22,14 +23,14 @@ OesencTileSource::OesencTileSource(const std::string &file,
         readOesencMetaData(&chart);
         m_oesencFile = file;
         m_oesencSourceType = OesencSourceType::File;
-        ensureTileDir(tileDir);
     }
 }
 
 OesencTileSource::OesencTileSource(const std::vector<std::byte> &data,
                                    const std::string &name,
-                                   const std::string &tileDir)
+                                   const std::string &baseTileDir)
     : m_name(name)
+    , m_tileDir(FileHelper::getTileDir(baseTileDir, Chart::typeId()))
 {
     oesenc::ChartFile chart = oesenc::ChartFile(data);
 
@@ -37,7 +38,6 @@ OesencTileSource::OesencTileSource(const std::vector<std::byte> &data,
         readOesencMetaData(&chart);
         m_oesencData = data;
         m_oesencSourceType = OesencSourceType::Vector;
-        ensureTileDir(tileDir);
     }
 }
 
@@ -59,7 +59,7 @@ bool OesencTileSource::convertChartToInternalFormat()
         return false;
     }
 
-    std::string filename = internalChartFileName();
+    std::string filename = FileHelper::internalChartFileName(m_tileDir, m_name);
 
     const std::lock_guard<std::mutex> lock(m_internalChartMutex);
 
@@ -99,20 +99,6 @@ bool OesencTileSource::convertChartToInternalFormat()
     return true;
 }
 
-void OesencTileSource::ensureTileDir(const std::string &tileDir)
-{
-    std::stringstream ss;
-
-    // When schema has incompatible changes then another directory should be used
-    ss << std::hex << Chart::typeId();
-    const std::string s = ss.str();
-    std::filesystem::path dir;
-    dir.append(tileDir);
-    dir.append(ss.str());
-    m_tileDir = dir.string();
-    std::filesystem::create_directories(dir);
-}
-
 bool OesencTileSource::isValid() const
 {
     return m_oesencSourceType != OesencSourceType::Invalid;
@@ -127,16 +113,10 @@ GeoRect OesencTileSource::extent() const
     return m_extent;
 }
 
-std::string OesencTileSource::tileFileName(const std::string &id)
-{
-    std::filesystem::path path(m_tileDir);
-    return (path / m_name / (id + std::string(".bin"))).string();
-}
-
 std::shared_ptr<Chart> OesencTileSource::create(const GeoRect &boundingBox,
                                                 int pixelsPerLongitude)
 {
-    const std::string id = tileId(boundingBox, pixelsPerLongitude);
+    const std::string id = FileHelper::tileId(boundingBox, pixelsPerLongitude);
 
     std::shared_ptr<std::mutex> tileMutex;
     {
@@ -149,7 +129,7 @@ std::shared_ptr<Chart> OesencTileSource::create(const GeoRect &boundingBox,
     }
 
     std::lock_guard tileGuard(*tileMutex.get());
-    std::string tilefile = tileFileName(id);
+    std::string tilefile = FileHelper::tileFileName(m_tileDir, m_name, id);
 
     if (std::filesystem::exists(tilefile)) {
         std::shared_ptr<Chart> tile = Chart::open(tilefile);
@@ -168,35 +148,6 @@ std::shared_ptr<Chart> OesencTileSource::create(const GeoRect &boundingBox,
     std::lock_guard guard(m_tileMutexesMutex);
     m_tileMutexes.erase(id);
     return tile;
-}
-
-std::string OesencTileSource::tileId(const GeoRect &boundingBox, int pixelsPerLongitude)
-{
-    std::stringstream ss;
-    ss << boundingBox.top();
-    ss << boundingBox.left();
-    ss << boundingBox.bottom();
-    ss << boundingBox.right();
-    ss << pixelsPerLongitude;
-    unsigned int h1 = std::hash<std::string> {}(ss.str());
-
-    static const std::string_view hex_chars = "0123456789abcdef";
-
-    std::mt19937 mt(h1);
-
-    std::string uuid;
-    unsigned int len = 16;
-    uuid.reserve(len);
-
-    while (uuid.size() < len) {
-        auto n = mt();
-        for (auto i = std::mt19937::max(); i & 0x8 && uuid.size() < len; i >>= 4) {
-            uuid += hex_chars[n & 0xf];
-            n >>= 4;
-        }
-    }
-
-    return uuid;
 }
 
 std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox,
@@ -220,22 +171,24 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
                                                                 pixelsPerLongitude)
         - boundingBox.left();
 
-    if (!std::filesystem::exists(internalChartFileName())) {
+    std::string internalChartFileName = FileHelper::internalChartFileName(m_tileDir, m_name);
+
+    if (!std::filesystem::exists(internalChartFileName)) {
         if (!convertChartToInternalFormat()) {
             std::cerr << "Failed to convert chart to internal format" << std::endl;
             return {};
         }
     }
 
-    std::shared_ptr<Chart> entireChart = Chart::open(internalChartFileName());
+    std::shared_ptr<Chart> entireChart = Chart::open(internalChartFileName);
 
     if (!entireChart) {
-        std::cerr << "Failed to open " << internalChartFileName() << std::endl;
+        std::cerr << "Failed to open " << internalChartFileName << std::endl;
         return {};
     }
 
-    std::string id = tileId(boundingBox, pixelsPerLongitude);
-    std::string tileFile = tileFileName(id);
+    std::string id = FileHelper::tileId(boundingBox, pixelsPerLongitude);
+    std::string tileFile = FileHelper::tileFileName(m_tileDir, m_name, id);
 
     ChartClipper::Config clipConfig;
     clipConfig.box = boundingBox;
@@ -247,16 +200,10 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
 
     std::unique_ptr<capnp::MallocMessageBuilder> clippedChart = entireChart->buildClipped(clipConfig);
 
-    if (!Chart::write(clippedChart.get(), tileFileName(id))) {
-        std::cerr << "Failed to write " << tileFileName(id) << std::endl;
+    if (!Chart::write(clippedChart.get(), tileFile)) {
+        std::cerr << "Failed to write " << tileFile << std::endl;
         return {};
     }
 
     return Chart::open(tileFile);
-}
-
-std::string OesencTileSource::internalChartFileName() const
-{
-    std::filesystem::path path(m_tileDir);
-    return (path / m_name / "all.bin").string();
 }

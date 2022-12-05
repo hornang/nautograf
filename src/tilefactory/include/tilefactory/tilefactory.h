@@ -69,7 +69,6 @@ public:
 private:
     bool hasSource(const std::string &id);
     static std::vector<GeoRect> tilesInViewport(const GeoRect &rect, int zoom);
-    static std::string tileId(const GeoRect &rectBox, int pixelsPerLongitude);
     std::function<void(void)> m_updateCallback;
     std::function<void(std::vector<GeoRect> roi)> m_chartsChangedCb;
     std::vector<Source> m_sources;

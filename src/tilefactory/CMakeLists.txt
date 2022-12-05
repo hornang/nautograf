@@ -12,6 +12,8 @@ add_library(tilefactory
     include/tilefactory/chartclipper.h
     include/tilefactory/pos.h
     chart.cpp
+    filehelper.cpp
+    filehelper.h
     georect.cpp
     chartclipper.cpp
     mercator.cpp
