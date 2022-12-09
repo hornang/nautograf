@@ -1,15 +1,19 @@
 #pragma once
 
+#include <memory>
+
 #include <QHash>
+#include <QSet>
 #include <QVector3D>
 #include <QtQuick>
 
-#include "scene/fontimage.h"
-#include "scene/symbolimage.h"
 #include "scene/tessellator.h"
 #include "tilefactory/chart.h"
 #include "tilefactory/georect.h"
 #include "tilefactorywrapper.h"
+
+class SymbolImage;
+class FontImage;
 
 class Scene : public QQuickItem
 {
@@ -48,6 +52,7 @@ public slots:
     void dataChanged(const QModelIndex &topLeft,
                      const QModelIndex &bottomRight,
                      const QList<int> &roles);
+    void tessellatorDone(const QString &tileId);
 
 signals:
     void tileFactoryChanged();
@@ -56,13 +61,29 @@ signals:
 
 private:
     static std::optional<TileFactoryWrapper::TileRecipe> parseTileRef(const QVariantMap &tileRef);
-    void addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int last);
+
+    template <typename T>
+    void removeStaleNodes(QSGNode *parent) const;
+
+    template <typename T>
+    void updateNodeData(const QString &tileId,
+                        QSGNode *parent,
+                        const QHash<QString, T *> &existingNodes,
+                        std::function<QList<typename T::Vertex>(const Tessellator::TileData &tileData)> getter,
+                        QSGMaterial *material);
+
+    template <typename T>
+    static QHash<QString, T *> currentNodes(const QSGNode *parent);
+    void markChildrensDirtyMaterial(QSGNode *parent);
+    void addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first, int last);
     void updateBox();
     void getData();
+    void fetchAll();
 
-    QHash<QString, TileFactoryWrapper::TileRecipe> m_tiles;
-    SymbolImage m_symbolImage;
-    FontImage m_fontImage;
+    QHash<QString, std::shared_ptr<Tessellator>> m_tessellators;
+    QSet<QString> m_tessellatorsWithPendingData;
+    std::shared_ptr<SymbolImage> m_symbolImage;
+    std::shared_ptr<FontImage> m_fontImage;
     QVector3D m_viewport;
     QRectF m_boundingRect;
 
@@ -71,6 +92,6 @@ private:
 
     TileFactoryWrapper *m_tileFactory = nullptr;
     QAbstractListModel *m_tileModel = nullptr;
-    bool m_sourceDataChanged = false;
-    bool m_tilesChanged = false;
+    bool m_tessellatorRemoved = false;
+    float m_zoom = 1.0;
 };

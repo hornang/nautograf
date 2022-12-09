@@ -29,8 +29,6 @@ add_library(scene
 
     tessellator.cpp
     tessellator.h
-    tilenode.cpp
-    tilenode.h
 )
 
 qt6_add_shaders(scene "shaders"

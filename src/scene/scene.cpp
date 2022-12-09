@@ -1,17 +1,21 @@
 #include <QtConcurrent>
 
+#include "annotation/annotationmaterial.h"
+#include "annotation/annotationnode.h"
+#include "fontimage.h"
 #include "rootnode.h"
 #include "scene/scene.h"
+#include "symbolimage.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
-#include "tilenode.h"
 
 #ifndef SYMBOLS_DIR
 #error SYMBOLS_DIR must be defined
 #endif
 
 Scene::Scene(QQuickItem *parent)
-    : m_symbolImage(SYMBOLS_DIR)
+    : m_symbolImage(std::make_shared<SymbolImage>(SYMBOLS_DIR))
+    , m_fontImage(std::make_shared<FontImage>())
 {
     setFlag(ItemHasContents, true);
 }
@@ -49,23 +53,95 @@ void Scene::updateBox()
     m_box = QRectF(topLeft, bottomRight);
 }
 
+template <typename T>
+void Scene::removeStaleNodes(QSGNode *parent) const
+{
+    Q_ASSERT(parent);
+
+    T *tile = static_cast<T *>(parent->firstChild());
+    while (tile) {
+        auto *next = static_cast<T *>(tile->nextSibling());
+        if (!m_tessellators.contains(tile->tileId())) {
+            parent->removeChildNode(tile);
+            delete tile;
+        }
+        tile = next;
+    }
+}
+
+template <typename T>
+QHash<QString, T *> Scene::currentNodes(const QSGNode *parent)
+{
+    Q_ASSERT(parent);
+
+    QHash<QString, T *> nodes;
+
+    T *tile = static_cast<T *>(parent->firstChild());
+    while (tile) {
+        nodes[tile->tileId()] = tile;
+        auto *next = static_cast<T *>(tile->nextSibling());
+        tile = next;
+    }
+
+    return nodes;
+}
+
+void Scene::markChildrensDirtyMaterial(QSGNode *parent)
+{
+    QSGNode *tile = static_cast<QSGNode *>(parent->firstChild());
+
+    while (tile) {
+        tile->markDirty(QSGNode::DirtyMaterial);
+        tile = static_cast<QSGNode *>(tile->nextSibling());
+    }
+}
+
+template <typename T>
+void Scene::updateNodeData(const QString &tileId,
+                           QSGNode *parent,
+                           const QHash<QString, T *> &existingNodes,
+                           std::function<QList<typename T::Vertex>(const Tessellator::TileData &tileData)> getter,
+                           QSGMaterial *material)
+{
+    const std::shared_ptr<Tessellator> &tessellator = m_tessellators[tileId];
+
+    if (existingNodes.contains(tileId)) {
+        existingNodes[tileId]->updateVertices(getter(tessellator->data()));
+    } else {
+        parent->appendChildNode(new T(tileId, material, getter(tessellator->data())));
+    }
+}
+
 QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 {
-    auto *rootNode = static_cast<RootNode *>(old);
+    RootNode *rootNode = static_cast<RootNode *>(old);
 
-    QSGTransformNode *transformNode = nullptr;
+    QSGNode *symbolNodesParent = nullptr;
+    QSGNode *textNodesParent = nullptr;
 
     if (!rootNode) {
-        rootNode = new RootNode(m_symbolImage, m_fontImage, window());
-        transformNode = new QSGTransformNode();
-        rootNode->appendChildNode(transformNode);
+        rootNode = new RootNode(m_symbolImage->image(),
+                                m_fontImage->image(),
+                                window());
+
+        symbolNodesParent = new QSGNode();
+        rootNode->appendChildNode(symbolNodesParent);
+        textNodesParent = new QSGNode();
+        rootNode->appendChildNode(textNodesParent);
+    } else {
+        symbolNodesParent = rootNode->firstChild();
+        textNodesParent = symbolNodesParent->nextSibling();
     }
+
+    Q_ASSERT(symbolNodesParent);
+    Q_ASSERT(textNodesParent);
+
+    AnnotationMaterial *symbolMaterial = rootNode->symbolMaterial();
+    AnnotationMaterial *textMaterial = rootNode->textMaterial();
 
     QRectF box = boundingRect();
 
     QMatrix4x4 matrix;
-
-    transformNode = static_cast<QSGTransformNode *>(rootNode->firstChild());
 
     float zoom = box.width() / m_box.width();
     if (!m_box.isNull()) {
@@ -73,55 +149,52 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         float yScale = box.height() / m_box.height();
         matrix.scale(xScale, yScale);
         matrix.translate(-m_box.x(), -m_box.y());
-        transformNode->setMatrix(matrix);
+        rootNode->setMatrix(matrix);
     }
 
-    if (m_tilesChanged) {
-        auto *tileNode = static_cast<TileNode *>(transformNode->firstChild());
-
-        QStringList tileIds;
-
-        while (tileNode) {
-            auto *next = static_cast<TileNode *>(tileNode->nextSibling());
-            if (m_tiles.contains(tileNode->tileId())) {
-                tileIds.append(tileNode->tileId());
-            } else {
-                transformNode->removeChildNode(tileNode);
-                delete tileNode;
-            }
-            tileNode = next;
-        }
-
-        for (const auto &tileId : m_tiles.keys()) {
-            if (!tileIds.contains(tileId)) {
-                auto *tileNode = new TileNode(tileId,
-                                              m_tileFactory,
-                                              &m_fontImage,
-                                              &m_symbolImage,
-                                              { rootNode->fontTexture(),
-                                                rootNode->symbolTexture() },
-                                              m_tiles[tileId]);
-                connect(tileNode, &TileNode::update, this, [&]() {
-                    update();
-                });
-                transformNode->appendChildNode(tileNode);
-            }
-        }
+    if (m_tessellatorRemoved) {
+        removeStaleNodes<AnnotationNode>(symbolNodesParent);
+        removeStaleNodes<AnnotationNode>(textNodesParent);
+        m_tessellatorRemoved = false;
     }
 
-    auto *tileNode = static_cast<TileNode *>(transformNode->firstChild());
-    while (tileNode) {
-        tileNode->updatePaintNode(zoom);
+    if (!m_tessellatorsWithPendingData.empty()) {
+        QHash<QString, AnnotationNode *> symbolNodes = currentNodes<AnnotationNode>(symbolNodesParent);
+        QHash<QString, AnnotationNode *> textNodes = currentNodes<AnnotationNode>(textNodesParent);
 
-        if (m_sourceDataChanged) {
-            tileNode->setTileFactory(m_tileFactory);
-            tileNode->fetchAgain();
+        for (const auto &tileId : m_tessellatorsWithPendingData) {
+            Q_ASSERT(m_tessellators.contains(tileId));
+
+            updateNodeData<AnnotationNode>(
+                tileId,
+                symbolNodesParent,
+                symbolNodes,
+                [&](const Tessellator::TileData &tileData) {
+                    return tileData.symbolVertices;
+                },
+                symbolMaterial);
+
+            updateNodeData<AnnotationNode>(
+                tileId,
+                textNodesParent,
+                textNodes,
+                [&](const Tessellator::TileData &tileData) {
+                    return tileData.textVertices;
+                },
+                textMaterial);
         }
 
-        tileNode = static_cast<TileNode *>(tileNode->nextSibling());
+        m_tessellatorsWithPendingData.clear();
     }
 
-    m_sourceDataChanged = false;
+    if (m_zoom != zoom) {
+        symbolMaterial->setScale(zoom);
+        markChildrensDirtyMaterial(symbolNodesParent);
+        textMaterial->setScale(zoom);
+        markChildrensDirtyMaterial(textNodesParent);
+    }
+    m_zoom = zoom;
+
     return rootNode;
 }
 
@@ -134,9 +207,15 @@ void Scene::setTileFactory(TileFactoryWrapper *newTileFactory)
 {
     if (m_tileFactory == newTileFactory)
         return;
+
+    if (m_tileFactory) {
+        disconnect(m_tileFactory, nullptr, this, nullptr);
+    }
+
     m_tileFactory = newTileFactory;
     emit tileFactoryChanged();
-    m_sourceDataChanged = true;
+
+    fetchAll();
 }
 
 const QVector3D &Scene::viewport() const
@@ -186,11 +265,11 @@ void Scene::setModel(QAbstractListModel *newTileModel)
             this, &Scene::dataChanged);
 
     if (m_tileModel->rowCount() > 0) {
-        addTilesFromModel(m_tileFactory, 0, m_tileModel->rowCount() - 1);
+        addTessellatorsFromModel(m_tileFactory, 0, m_tileModel->rowCount() - 1);
     }
 }
 
-void Scene::addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int last)
+void Scene::addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first, int last)
 {
     for (int i = first; i < last + 1; i++) {
         QVariant tileRefVariant = m_tileModel->data(m_tileModel->index(i, 0), 0);
@@ -198,8 +277,14 @@ void Scene::addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int la
         QString tileId = tileRef[QStringLiteral("tileId")].toString();
         auto result = parseTileRef(tileRef);
         if (result.has_value()) {
-            m_tiles.insert(tileId, result.value());
-            m_tilesChanged = true;
+            auto tessellator = std::make_shared<Tessellator>(m_tileFactory,
+                                                             result.value(),
+                                                             m_symbolImage,
+                                                             m_fontImage);
+            connect(tessellator.get(), &Tessellator::dataChanged, this, &Scene::tessellatorDone);
+            tessellator->setId(tileId);
+            m_tessellators.insert(tileId, tessellator);
+            tessellator->fetchAgain();
         } else {
             qWarning() << "Failed to parse tile ref";
         }
@@ -208,16 +293,24 @@ void Scene::addTilesFromModel(TileFactoryWrapper *tileFactory, int first, int la
 
 void Scene::rowsInserted(const QModelIndex &parent, int first, int last)
 {
-    addTilesFromModel(m_tileFactory, first, last);
+    addTessellatorsFromModel(m_tileFactory, first, last);
+}
+
+void Scene::fetchAll()
+{
+    QHashIterator<QString, std::shared_ptr<Tessellator>> i(m_tessellators);
+
+    while (i.hasNext()) {
+        i.next();
+        i.value()->fetchAgain();
+    }
 }
 
 void Scene::dataChanged(const QModelIndex &topLeft,
                         const QModelIndex &bottomRight,
                         const QList<int> &roles)
 {
-
-    m_sourceDataChanged = true;
-    update();
+    fetchAll();
 }
 
 void Scene::rowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
@@ -229,14 +322,14 @@ void Scene::rowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)
         QVariantMap tileRef = tileRefVariant.toMap();
         QString tileId = tileRef["tileId"].toString();
 
-        if (m_tiles.contains(tileId)) {
-            m_tiles.remove(tileId);
+        if (m_tessellators.contains(tileId)) {
+            m_tessellators.remove(tileId);
+            m_tessellatorsWithPendingData.remove(tileId);
+            m_tessellatorRemoved = true;
         } else {
             qWarning() << "Strange missing id" << tileId;
         }
     }
-
-    m_tilesChanged = true;
 }
 
 std::optional<TileFactoryWrapper::TileRecipe> Scene::parseTileRef(const QVariantMap &tileRef)
@@ -274,4 +367,13 @@ std::optional<TileFactoryWrapper::TileRecipe> Scene::parseTileRef(const QVariant
     };
 
     return recipe;
+}
+
+void Scene::tessellatorDone(const QString &tileId)
+{
+    if (m_tessellatorsWithPendingData.contains(tileId)) {
+        return;
+    }
+    m_tessellatorsWithPendingData.insert(tileId);
+    update();
 }

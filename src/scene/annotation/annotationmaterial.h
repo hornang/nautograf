@@ -12,6 +12,11 @@ public:
     int compare(const QSGMaterial *other) const override;
     QSGMaterialShader *createShader(QSGRendererInterface::RenderMode) const override;
     QSGTexture *texture() const { return m_texture; }
+    void setScale(float scale)
+    {
+        uniforms.scale = scale;
+        uniforms.dirty = true;
+    }
 
     struct
     {

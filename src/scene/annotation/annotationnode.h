@@ -2,22 +2,37 @@
 
 #include <QSGGeometryNode>
 #include <QSGMaterial>
-#include <QSGTexture>
 #include <QSGMaterialShader>
+#include <QSGTexture>
+#include <QString>
+
+class AnnotationMaterial;
 
 class AnnotationNode : public QSGGeometryNode
 {
 public:
-    AnnotationNode(QSGTexture *texture, const QList<float> &vertices, float scale);
+    struct Vertex
+    {
+        float xCenter;
+        float yCenter;
+        float xOffset;
+        float yOffset;
+        float xTexture;
+        float yTexture;
+        float red;
+        float green;
+        float blue;
+        float scaleLimit;
+    };
+    AnnotationNode(const QString &tileId,
+                   QSGMaterial *material,
+                   const QList<AnnotationNode::Vertex> &vertices);
     ~AnnotationNode();
+    const QString &tileId() const { return m_tileId; }
 
 public:
-    void setPositions(const QList<QPointF> &positions);
-    void setScale(qreal scale);
+    void updateVertices(const QList<AnnotationNode::Vertex> &vertices);
 
 private:
-    float m_scale = 1;
-    QSGGeometry::Attribute m_attributes[5];
-    QSGGeometry::AttributeSet m_attributeSet = { 5, 40, m_attributes };
-    QSGTexture *m_texture = nullptr;
+    QString m_tileId;
 };

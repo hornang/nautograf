@@ -12,22 +12,21 @@
 // projection that can be linearly transformed in scene graph/vertex shader.
 const int s_pixelsPerLon = 1000;
 
-// This number is tightly connected with annotationnode.cpp. annotationnode.cpp
-// defines the number of floats per vertex which is 10. For displaying rectangles
-// of chart symbols or individual glyphs there are two triangles and therefore
-// 6 corners.
-const int s_stride = 60;
-
 Tessellator::Tessellator(TileFactoryWrapper *tileFactory,
                          TileFactoryWrapper::TileRecipe recipe,
-                         const SymbolImage *symbolImage,
-                         const FontImage *fontImage)
+                         std::shared_ptr<const SymbolImage> symbolImage,
+                         std::shared_ptr<const FontImage> fontImage)
     : m_fontImage(fontImage)
     , m_symbolImage(symbolImage)
     , m_tileFactory(tileFactory)
     , m_recipe(recipe)
 {
     connect(&m_watcher, &QFutureWatcher<TileData>::finished, this, &Tessellator::finished);
+}
+
+void Tessellator::setId(const QString &id)
+{
+    m_id = id;
 }
 
 int Tessellator::pixelsPerLon()
@@ -76,7 +75,7 @@ void Tessellator::finished()
         m_ready = true;
         m_dataChanged = true;
         m_data = m_result.result();
-        emit dataChanged();
+        emit dataChanged(m_id);
     }
 }
 
@@ -116,8 +115,8 @@ QPointF Tessellator::labelOffset(const QRectF &labelBox,
 
 Tessellator::TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                              TileFactoryWrapper::TileRecipe recipe,
-                                             const SymbolImage *symbolImage,
-                                             const FontImage *fontImage)
+                                             std::shared_ptr<const SymbolImage> symbolImage,
+                                             std::shared_ptr<const FontImage> fontImage)
 {
     Q_ASSERT(tileFactory);
     auto charts = tileFactory->create(recipe);
@@ -515,16 +514,14 @@ Tessellator::TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
     }
 
     tileData.symbolVertices = addSymbols(symbols);
-    tileData.textVertices = addLabels(labels, fontImage);
-
-
+    tileData.textVertices = addLabels(labels, fontImage.get());
     return tileData;
 }
 
-QList<float> Tessellator::addLabels(const QList<SymbolLabel> &labels,
-                                    const FontImage *fontImage)
+QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &labels,
+                                                     const FontImage *fontImage)
 {
-    QList<float> list;
+    QList<AnnotationNode::Vertex> list;
     int glyphCounter = 0;
 
     for (const auto &label : labels) {
@@ -542,9 +539,9 @@ QList<float> Tessellator::addLabels(const QList<SymbolLabel> &labels,
             const auto glyphHeight = static_cast<float>(glyph.target.height());
             const auto &pos = label.pos;
 
-            list.resize(list.size() + s_stride);
-            float *data = list.data();
-            data += glyphCounter * s_stride;
+            list.resize(list.size() + 6);
+            AnnotationNode::Vertex *data = list.data();
+            data += glyphCounter * 6;
 
             float scaleLimit = 1000;
 
@@ -552,87 +549,86 @@ QList<float> Tessellator::addLabels(const QList<SymbolLabel> &labels,
                 scaleLimit = label.scaleLimit.value();
             }
 
-            data[0] = pos.x();
-            data[1] = pos.y();
-            data[2] = glyphPos.x();
-            data[3] = glyphPos.y();
-            data[4] = texture.left();
-            data[5] = texture.top();
-            data[6] = color.redF();
-            data[7] = color.greenF();
-            data[8] = color.blueF();
-            data[9] = scaleLimit;
+            data[0] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.top()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
-            data[10] = pos.x();
-            data[11] = pos.y();
-            data[12] = glyphPos.x() + glyphWidth;
-            data[13] = glyphPos.y();
-            data[14] = texture.right();
-            data[15] = texture.top();
-            data[16] = color.redF();
-            data[17] = color.greenF();
-            data[18] = color.blueF();
-            data[19] = scaleLimit;
+            data[1] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.top()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
-            data[20] = pos.x();
-            data[21] = pos.y();
-            data[22] = glyphPos.x();
-            data[23] = glyphPos.y() + glyphHeight;
-            data[24] = texture.left();
-            data[25] = texture.bottom();
-            data[26] = color.redF();
-            data[27] = color.greenF();
-            data[28] = color.blueF();
-            data[29] = scaleLimit;
+            data[2] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.bottom()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
-            data[30] = pos.x();
-            data[31] = pos.y();
-            data[32] = glyphPos.x();
-            data[33] = glyphPos.y() + glyphHeight;
-            data[34] = texture.left();
-            data[35] = texture.bottom();
-            data[36] = color.redF();
-            data[37] = color.greenF();
-            data[38] = color.blueF();
-            data[39] = scaleLimit;
+            data[3] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.bottom()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
-            data[40] = pos.x();
-            data[41] = pos.y();
-            data[42] = glyphPos.x() + glyphWidth;
-            data[43] = glyphPos.y();
-            data[44] = texture.right();
-            data[45] = texture.top();
-            data[46] = color.redF();
-            data[47] = color.greenF();
-            data[48] = color.blueF();
-            data[49] = scaleLimit;
+            data[4] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.top()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
-            data[50] = pos.x();
-            data[51] = pos.y();
-            data[52] = glyphPos.x() + glyphWidth;
-            data[53] = glyphPos.y() + glyphHeight;
-            data[54] = texture.right();
-            data[55] = texture.bottom();
-            data[56] = color.redF();
-            data[57] = color.greenF();
-            data[58] = color.blueF();
-            data[59] = scaleLimit;
+            data[5] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.bottom()),
+                        color.redF(),
+                        color.greenF(),
+                        color.blueF(),
+                        scaleLimit };
 
             glyphCounter++;
         }
     }
 
-    Q_ASSERT(glyphCounter * s_stride == list.size());
+    Q_ASSERT(glyphCounter * 6 == list.size());
     return list;
 }
 
-QList<float> Tessellator::addSymbols(const QList<Symbol> &input)
+QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input)
 {
-    QList<float> vertices(input.size() * s_stride);
-    float *data = vertices.data();
+    QList<AnnotationNode::Vertex> vertices(input.size() * 6);
+    AnnotationNode::Vertex *data = vertices.data();
 
     for (const auto &element : input) {
-
         if (!element.symbol.has_value()) {
             continue;
         }
@@ -650,73 +646,73 @@ QList<float> Tessellator::addSymbols(const QList<Symbol> &input)
             scaleLimit = element.scaleLimit.value();
         }
 
-        data[0] = pos.x();
-        data[1] = pos.y();
-        data[2] = -center.x();
-        data[3] = -center.y();
-        data[4] = sourceRect.left();
-        data[5] = sourceRect.top();
-        data[6] = color.redF();
-        data[7] = color.greenF();
-        data[8] = color.blueF();
-        data[9] = scaleLimit;
+        data[0] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.top()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data[10] = pos.x();
-        data[11] = pos.y();
-        data[12] = -center.x() + symbolSize.width();
-        data[13] = -center.y();
-        data[14] = sourceRect.right();
-        data[15] = sourceRect.top();
-        data[16] = color.redF();
-        data[17] = color.greenF();
-        data[18] = color.blueF();
-        data[19] = scaleLimit;
+        data[1] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.top()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data[20] = pos.x();
-        data[21] = pos.y();
-        data[22] = -center.x();
-        data[23] = -center.y() + symbolSize.height();
-        data[24] = sourceRect.left();
-        data[25] = sourceRect.bottom();
-        data[26] = color.redF();
-        data[27] = color.greenF();
-        data[28] = color.blueF();
-        data[29] = scaleLimit;
+        data[2] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.bottom()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data[30] = pos.x();
-        data[31] = pos.y();
-        data[32] = -center.x();
-        data[33] = -center.y() + symbolSize.height();
-        data[34] = sourceRect.left();
-        data[35] = sourceRect.bottom();
-        data[36] = color.redF();
-        data[37] = color.greenF();
-        data[38] = color.blueF();
-        data[39] = scaleLimit;
+        data[3] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.bottom()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data[40] = pos.x();
-        data[41] = pos.y();
-        data[42] = -center.x() + symbolSize.width();
-        data[43] = -center.y();
-        data[44] = sourceRect.right();
-        data[45] = sourceRect.top();
-        data[46] = color.redF();
-        data[47] = color.greenF();
-        data[48] = color.blueF();
-        data[49] = scaleLimit;
+        data[4] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.top()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data[50] = pos.x();
-        data[51] = pos.y();
-        data[52] = -center.x() + symbolSize.width();
-        data[53] = -center.y() + symbolSize.height();
-        data[54] = sourceRect.right();
-        data[55] = sourceRect.bottom();
-        data[56] = color.redF();
-        data[57] = color.greenF();
-        data[58] = color.blueF();
-        data[59] = scaleLimit;
+        data[5] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.bottom()),
+                    color.redF(),
+                    color.greenF(),
+                    color.blueF(),
+                    scaleLimit };
 
-        data += s_stride;
+        data += 6;
     }
 
     return vertices;
