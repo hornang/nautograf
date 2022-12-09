@@ -40,7 +40,7 @@ public:
     void setRemoved();
     void resetDataChanged() { m_dataChanged = false; }
     void setTileFactory(TileFactoryWrapper *tileFactoryWrapper);
-    TileData data() const { return m_data; }
+    const TileData &data() const { return m_data; }
     QString id() const { return m_id; }
     void setId(const QString &tileId);
     static int pixelsPerLon();
