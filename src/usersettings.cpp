@@ -69,7 +69,7 @@ void UserSettings::read()
     bool debugView = settings.value("DebugView").toBool();
     if (m_debugView != debugView) {
         m_debugView = debugView;
-        emit debugViewChanged();
+        emit showLegacyDebugViewChanged();
     }
 
     bool showLegacyRenderer = settings.value(showLegacyRendererKey).toBool();
@@ -120,17 +120,17 @@ void UserSettings::setGeometry(const QRect &newGeometry)
     emit geometryChanged();
 }
 
-bool UserSettings::debugView() const
+bool UserSettings::showLegacyDebugView() const
 {
     return m_debugView;
 }
 
-void UserSettings::setDebugView(bool newDebugView)
+void UserSettings::setShowLegacyDebugView(bool newShowLegacyDebugView)
 {
-    if (m_debugView == newDebugView)
+    if (m_debugView == newShowLegacyDebugView)
         return;
-    m_debugView = newDebugView;
-    emit debugViewChanged();
+    m_debugView = newShowLegacyDebugView;
+    emit showLegacyDebugViewChanged();
 }
 
 bool UserSettings::showLegacyRenderer() const

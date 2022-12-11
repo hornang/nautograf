@@ -17,7 +17,7 @@ class UserSettings : public QObject
 
     Q_PROPERTY(QWindow::Visibility windowState READ windowState WRITE setWindowState NOTIFY windowStateChanged)
     Q_PROPERTY(QRect geometry READ geometry WRITE setGeometry NOTIFY geometryChanged)
-    Q_PROPERTY(bool debugView READ debugView WRITE setDebugView NOTIFY debugViewChanged)
+    Q_PROPERTY(bool showLegacyDebugView READ showLegacyDebugView WRITE setShowLegacyDebugView NOTIFY showLegacyDebugViewChanged)
     Q_PROPERTY(bool showLegacyRenderer READ showLegacyRenderer WRITE setLegacyRender NOTIFY showLegacyRendererChanged)
 
 public:
@@ -28,8 +28,8 @@ public:
     const QRect &geometry() const;
     void setGeometry(const QRect &newGeometry);
 
-    bool debugView() const;
-    void setDebugView(bool newDebugView);
+    bool showLegacyDebugView() const;
+    void setShowLegacyDebugView(bool newShowLegacyDebugView);
 
     bool showLegacyRenderer() const;
     void setLegacyRender(bool newLegacyRender);
@@ -61,6 +61,6 @@ signals:
     void pixelsPerLonChanged();
     void windowStateChanged();
     void geometryChanged();
-    void debugViewChanged();
+    void showLegacyDebugViewChanged();
     void showLegacyRendererChanged();
 };

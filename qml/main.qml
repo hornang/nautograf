@@ -53,6 +53,8 @@ ApplicationWindow {
 
         focus: true
         showLegacyRenderer: UserSettings.showLegacyRenderer
+        showLegacyDebugView: UserSettings.showLegacyDebugView
+
         Keys.onPressed: (event)=> {
             if (event.key === Qt.Key_Plus) {
                 viewer.zoomIn();
@@ -87,18 +89,23 @@ ApplicationWindow {
                 onTriggered: toggleFullscreen();
             }
 
-            MenuItem {
-                text: qsTr("Debug view")
-                checkable: true
-                checked: UserSettings.debugView
-                onTriggered: UserSettings.debugView = !UserSettings.debugView
-            }
+            Menu {
+                title: qsTr("Legacy renderer")
 
-            MenuItem {
-                text: qsTr("Legacy renderer")
-                checkable: true
-                checked: UserSettings.showLegacyRenderer
-                onTriggered: UserSettings.showLegacyRenderer = !UserSettings.showLegacyRenderer
+                MenuItem {
+                    text: qsTr("Enable")
+                    checkable: true
+                    checked: UserSettings.showLegacyRenderer
+                    onTriggered: UserSettings.showLegacyRenderer = !UserSettings.showLegacyRenderer
+                }
+
+                MenuItem {
+                    text: qsTr("Debug view")
+                    checkable: true
+                    enabled: UserSettings.showLegacyRenderer
+                    checked: UserSettings.showLegacyDebugView
+                    onTriggered: UserSettings.showLegacyDebugView = !UserSettings.showLegacyDebugView
+                }
             }
 
             MenuItem {

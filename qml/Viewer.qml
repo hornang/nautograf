@@ -13,7 +13,7 @@ Item {
     signal showContextMenu(var x, var y)
 
     property bool showLegacyRenderer: false
-    property bool debugInfo: UserSettings.debugView
+    property bool showLegacyDebugView: false
 
     function updateTileModel() {
         MapTileModel.setPanZoom(Qt.point(root.lon, root.lat), root.pixelsPerLon);
@@ -158,7 +158,7 @@ Item {
                     anchors.margins: tile.margin
 
                     Rectangle {
-                        visible: busyIndicator.running || root.debugInfo || tile.noData || tile.error
+                        visible: busyIndicator.running || root.showLegacyDebugView || tile.noData || tile.error
                         anchors.fill: parent
                         border {
                             width: 1
@@ -174,7 +174,7 @@ Item {
 
                     Loader {
                         anchors.fill: parent
-                        active: root.debugInfo
+                        active: root.showLegacyDebugView
                         sourceComponent: Component {
                             Item {
                                 anchors.fill: parent
