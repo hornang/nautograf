@@ -118,36 +118,24 @@ ApplicationWindow {
         }
     }
 
-    Rectangle {
+    Pane {
         anchors.centerIn: parent
-        color: "#77000000"
-        border.width: 2
-        border.color: "#666"
         width: 700
         height: 100
-        opacity: ChartModel.loadingProgress !== 1
-
-        Behavior on opacity {
-            NumberAnimation { duration: 1000 }
-        }
+        visible: ChartModel.loadingProgress < 1.0
 
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 15
             spacing: 5
-            Text {
+
+            Label {
                 Layout.alignment: Qt.AlignHCenter
-                font {
-                    bold: true
-                    pixelSize: 20
-                    letterSpacing: 4
-                }
                 text: qsTr("Loading charts...")
             }
 
             ProgressBar {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 25
                 value: ChartModel.loadingProgress
             }
         }
