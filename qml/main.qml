@@ -2,9 +2,9 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Controls.Universal 2.12
-import Qt.labs.platform 1.0
-import org.seatronomy.nautograf 1.0
+import QtQuick.Controls.Universal
+import Qt.labs.platform
+import org.seatronomy.nautograf
 
 ApplicationWindow {
     id: root
