@@ -27,7 +27,7 @@ void main()
         fragColor = vec4(0, 0, 0, 0);
     } else {
         float dist = texture(ourTexture, vTexCoord).r;
-        float alpha = smoothstep(outerEdgeCenter - smoothing, outerEdgeCenter + smoothing, dist);
+        float alpha = smoothstep(outerEdgeCenter - smoothing, outerEdgeCenter + smoothing, dist) * ubuf.qt_Opacity;
         float border = smoothstep(edgeCenter - smoothing, edgeCenter + smoothing, dist);
         fragColor = vec4(mix(u_outlineColor.rgb, color.rgb, border) * alpha, alpha);
     }
