@@ -48,24 +48,33 @@ ApplicationWindow {
         }
     }
 
-    Viewer {
-        id: viewer
+    Item {
+        anchors.fill: parent
 
-        focus: true
-        showLegacyRenderer: UserSettings.showLegacyRenderer
-        showLegacyDebugView: UserSettings.showLegacyDebugView
-
-        Keys.onPressed: (event)=> {
-            if (event.key === Qt.Key_Plus) {
-                viewer.zoomIn();
-            } else if (event.key === Qt.Key_Minus) {
-                viewer.zoomOut();
-            } else if (event.key === Qt.Key_F) {
+        Keys.onPressed: function(event) {
+            if (event.key === Qt.Key_F) {
                 root.toggleFullscreen();
-            } else if (event.key === Qt.Key_Escape) {
-                if (root.visibility == Window.FullScreen) {
-                    root.visibility = Window.Windowed;
-                }
+                event.accepted = true;
+            }
+        }
+
+        Keys.onEscapePressed: function(event) {
+            if (root.visibility == Window.FullScreen) {
+                toggleFullscreen();
+                event.accepted = true;
+            }
+        }
+
+        Viewer {
+            id: viewer
+
+            focus: true
+            anchors.fill: parent
+            showLegacyRenderer: UserSettings.showLegacyRenderer
+            showLegacyDebugView: UserSettings.showLegacyDebugView
+
+            onShowContextMenu: function() {
+                menu.open();
             }
         }
 
@@ -79,7 +88,9 @@ ApplicationWindow {
 
             MenuItem {
                 text: qsTr("Show chart selector")
-                onTriggered: drawer.open()
+                checkable: true
+                checked: chartList.enabled
+                onTriggered: chartList.enabled = !chartList.enabled
             }
 
             MenuItem {
@@ -119,9 +130,70 @@ ApplicationWindow {
             }
         }
 
-        anchors.fill: parent
-        onShowContextMenu: function() {
-            menu.open();
+        Pane {
+            id: chartList
+
+            property bool enabled: false
+
+            visible: x < root.width
+            width: 400
+            anchors {
+                top: parent.top
+                topMargin: 80
+                bottom: parent.bottom
+                bottomMargin: 80
+                left: parent.right
+            }
+
+            onEnabledChanged: {
+                if (enabled) {
+                    chartList.focus = true;
+                } else {
+                    viewer.focus = true;
+                }
+            }
+
+            Keys.onEscapePressed: function(event) {
+                if (event.key === Qt.Key_Escape) {
+                    enabled = false;
+                    event.accepted = true;
+                }
+            }
+
+            states: State {
+                when: chartList.enabled
+
+                AnchorChanges {
+                    target: chartList
+                    anchors {
+                        left: undefined
+                        right: parent.right
+                    }
+                }
+            }
+
+            transitions: Transition {
+                AnchorAnimation {
+                    duration: 200
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            Button {
+                text: "✕"
+                anchors.top: parent.top
+                anchors.left: parent.left
+                onClicked: chartList.enabled = false;
+            }
+
+            ChartSelector {
+                anchors {
+                    margins: 20
+                    topMargin: 40
+                    fill: parent
+                }
+                model: ChartModel
+            }
         }
     }
 
@@ -145,20 +217,6 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 value: ChartModel.loadingProgress
             }
-        }
-    }
-
-    Drawer {
-        id: drawer
-        width: 400
-        height: root.height
-        edge: Qt.RightEdge
-        onClosed: ChartModel.writeVisibleCharts()
-
-        ChartSelector {
-            anchors.fill: parent
-            anchors.margins: 20
-            model: ChartModel
         }
     }
 

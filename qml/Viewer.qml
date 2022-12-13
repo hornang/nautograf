@@ -15,6 +15,16 @@ Item {
     property bool showLegacyRenderer: false
     property bool showLegacyDebugView: false
 
+    Keys.onPressed: function(event) {
+        if (event.key === Qt.Key_Plus) {
+            zoomIn();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Minus) {
+            zoomOut();
+            event.accepted = true;
+        }
+    }
+
     function updateTileModel() {
         MapTileModel.setPanZoom(Qt.point(root.lon, root.lat), root.pixelsPerLon);
         UserSettings.lat = root.lat;
