@@ -7,9 +7,10 @@
 #include "maptile.h"
 #include "maptilemodel.h"
 #include "oesenc/chartfile.h"
-#include "tilefactorywrapper.h"
 #include "scene/scene.h"
 #include "tilefactory/tilefactory.h"
+#include "tilefactorywrapper.h"
+#include "tileinfobackend.h"
 #include "usersettings.h"
 
 #ifndef QML_DIR
@@ -41,11 +42,23 @@ int main(int argc, char *argv[])
     tileFactoryWrapper.setTileDataCallback([&](GeoRect rect, double pixelsPerLongitude) -> std::vector<std::shared_ptr<Chart>> {
         return tileFactory->tileData(rect, pixelsPerLongitude);
     });
+    tileFactoryWrapper.setChartInfoCallback([&](GeoRect rect, double pixelsPerLongitude) -> std::vector<TileFactory::ChartInfo> {
+        return tileFactory->chartInfo(rect, pixelsPerLongitude);
+    });
+
+    tileFactory->setTileDataChangedCallback([&](const std::vector<std::string> &tileIds) {
+        tileFactoryWrapper.triggerTileDataChanged(tileIds);
+    });
+
+    tileFactoryWrapper.setTileSettingsCb([&](const std::string &tileId, TileFactory::TileSettings tileSettings) {
+        tileFactory->setTileSettings(tileId, tileSettings);
+    });
 
     UserSettings userSettings;
 
     qmlRegisterType<MapTile>("org.seatronomy.nautograf", 1, 0, "MapTile");
     qmlRegisterType<Scene>("org.seatronomy.nautograf", 1, 0, "Scene");
+    qmlRegisterType<TileInfoBackend>("org.seatronomy.nautograf", 1, 0, "TileInfoBackend");
 
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "MapTileModel", &mapTileModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "TileFactory", &tileFactoryWrapper);

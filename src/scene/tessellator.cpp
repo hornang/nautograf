@@ -852,3 +852,36 @@ QList<PolygonNode::Vertex> Tessellator::drawPolygons(const typename capnp::List<
 
     return vertices;
 }
+
+QPointF Tessellator::posToMercator(const Pos &pos)
+{
+    return { Mercator::mercatorWidth(0, pos.lon(), s_pixelsPerLon),
+             Mercator::mercatorHeight(0, pos.lat(), s_pixelsPerLon) };
+}
+
+QList<PolygonNode::Vertex> Tessellator::overlayVertices(const QColor &color) const
+{
+    QList<QPointF> points;
+    points << posToMercator(m_recipe.rect.topLeft());
+    points << posToMercator(m_recipe.rect.bottomLeft());
+    points << posToMercator(m_recipe.rect.topRight());
+    points << posToMercator(m_recipe.rect.topRight());
+    points << posToMercator(m_recipe.rect.bottomLeft());
+    points << posToMercator(m_recipe.rect.bottomRight());
+
+    QList<PolygonNode::Vertex> vertices;
+    vertices.resize(points.size());
+
+    int vertexCount = 0;
+    for (const auto &point : points) {
+        vertices[vertexCount] = { static_cast<float>(point.x()),
+                                  static_cast<float>(point.y()),
+                                  0.5,
+                                  static_cast<uchar>(color.red()),
+                                  static_cast<uchar>(color.green()),
+                                  static_cast<uchar>(color.blue()),
+                                  50 };
+        vertexCount++;
+    }
+    return vertices;
+}

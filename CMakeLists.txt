@@ -81,6 +81,8 @@ add_executable(nautograf WIN32
     src/tilefactorywrapper.h
     src/chartmodel.cpp
     src/chartmodel.h
+    src/tileinfobackend.cpp
+    src/tileinfobackend.h
     src/usersettings.cpp
     src/usersettings.h
     ${QML_RESOURCES}

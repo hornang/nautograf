@@ -41,6 +41,7 @@ public:
 public slots:
     void setViewPort(const QSizeF &viewPort);
     void setPanZoom(QPointF topLeft, qreal pixelsPerLongitude);
+    QVariantMap tileRefAtPos(float lat, float lon);
     void update();
 
 signals:
@@ -50,6 +51,9 @@ signals:
     void countChanged(int count);
 
 private:
+    static QVariantMap createTileRef(const QString &tileId,
+                                     const GeoRect &boundingBox,
+                                     int maxPixelsPerLon);
     void reset();
     std::shared_ptr<TileFactory> m_tileManager;
     Pos m_topLeft;

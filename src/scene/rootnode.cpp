@@ -18,6 +18,7 @@ RootNode::RootNode(const QImage &symbolImage,
     m_fontTexture->setFiltering(QSGTexture::Linear);
 
     m_polygonMaterial = new PolygonMaterial();
+    m_blendColorMaterial = new PolygonMaterial(PolygonMaterial::BlendMode::Alpha);
     m_symbolMaterial = new AnnotationMaterial(m_symbolTexture);
     m_textMaterial = new AnnotationMaterial(m_fontTexture);
 }

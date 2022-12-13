@@ -3,3 +3,4 @@ Viewer 1.0 Viewer.qml
 ChartSelector 1.0 ChartSelector.qml
 StatusBar 1.0 StatusBar.qml
 OverlayText 1.0 OverlayText.qml
+TileInfo 1.0 TileInfo.qml

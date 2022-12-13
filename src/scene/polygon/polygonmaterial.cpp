@@ -1,6 +1,13 @@
 #include "polygonmaterial.h"
 #include "polygonshader.h"
 
+PolygonMaterial::PolygonMaterial(BlendMode blendMode)
+{
+    if (blendMode == BlendMode::Alpha) {
+        setFlag(QSGMaterial::Blending);
+    }
+}
+
 QSGMaterialType *PolygonMaterial::type() const
 {
     static QSGMaterialType type;

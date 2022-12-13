@@ -10,6 +10,7 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/itilesource.h"
 #include "tilefactory/mercator.h"
+#include "tilefactory/oesenctilesource.h"
 #include "tilefactory/tilefactory.h"
 
 static constexpr int maxTileSize = 1024;
@@ -22,19 +23,40 @@ void TileFactory::clear()
 
 void TileFactory::setChartEnabled(const std::string &name, bool enabled)
 {
-    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+    std::vector<Source> changedSources;
 
-    for (auto &source : m_sources) {
-        if (source.name == name) {
-            if (source.enabled == enabled) {
-                return;
-            }
-            source.enabled = enabled;
-            if (m_chartsChangedCb) {
-                m_chartsChangedCb({ source.tileSource->extent() });
+    {
+        const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+
+        for (auto &source : m_sources) {
+            if (source.name == name) {
+                if (source.enabled == enabled) {
+                    return;
+                }
+                source.enabled = enabled;
+                changedSources.push_back(source);
+                if (m_chartsChangedCb) {
+                    m_chartsChangedCb({ source.tileSource->extent() });
+                }
             }
         }
     }
+
+    if (!m_tileDataChangedCallback) {
+        return;
+    }
+
+    std::vector<std::string> tilesAffected;
+
+    for (const Source &source : changedSources) {
+        for (const Tile &tile : m_previousTiles) {
+            if (source.tileSource->extent().intersects(tile.boundingBox)) {
+                tilesAffected.push_back(tile.tileId);
+            }
+        }
+    }
+
+    m_tileDataChangedCallback(tilesAffected);
 }
 
 std::vector<int> TileFactory::setAllChartsEnabled(bool enabled)
@@ -60,6 +82,61 @@ std::vector<int> TileFactory::setAllChartsEnabled(bool enabled)
     return indexes;
 }
 
+bool TileFactory::chartEnabledForTile(const std::string &chart,
+                                      const std::string &tileId) const
+{
+    std::unordered_map<std::string, TileSettings>::const_iterator it = m_tileSettings.find(tileId);
+
+    if (it == m_tileSettings.end()) {
+        return true;
+    }
+    TileSettings tileSettings = it->second;
+
+    std::vector<std::string>::iterator it2 = find(tileSettings.disabledCharts.begin(),
+                                                  tileSettings.disabledCharts.end(),
+                                                  chart);
+    return (it2 == tileSettings.disabledCharts.end());
+}
+
+std::vector<TileFactory::ChartInfo> TileFactory::chartInfo(const GeoRect &rect,
+                                                           double pixelsPerLongitude)
+{
+    std::vector<TileFactory::ChartInfo> result;
+
+    m_sourcesMutex.lock();
+    auto sources = m_sources;
+    m_sourcesMutex.unlock();
+
+    std::string tileId = FileHelper::tileId(rect, pixelsPerLongitude);
+
+    for (const auto &source : sources) {
+        assert(source.tileSource);
+
+        ChartInfo chartInfo;
+        chartInfo.qualified = true;
+        chartInfo.globallyEnabled = source.enabled;
+        chartInfo.name = source.name;
+        chartInfo.enabled = chartEnabledForTile(source.name, tileId);
+
+        int scaleActual = 52246 / (pixelsPerLongitude / 2560 * 0.6);
+
+        const std::shared_ptr<ITileSource> &tileSource = source.tileSource;
+
+        if (!tileSource->extent().intersects(rect)) {
+            continue;
+        }
+
+        // Avoid showing too detailed maps when zoomed out
+        if (scaleActual / 4 > tileSource->scale()) {
+            chartInfo.qualified = false;
+        }
+
+        result.push_back(chartInfo);
+    }
+
+    return result;
+}
+
 std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
                                                           double pixelsPerLongitude)
 {
@@ -69,10 +146,12 @@ std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
     auto sources = m_sources;
     m_sourcesMutex.unlock();
 
+    std::string tileId = FileHelper::tileId(rect, pixelsPerLongitude);
+
     for (const auto &source : sources) {
         assert(source.tileSource);
 
-        if (!source.enabled) {
+        if (!source.enabled || !chartEnabledForTile(source.name, tileId)) {
             continue;
         }
 
@@ -235,4 +314,20 @@ void TileFactory::setSources(const std::vector<TileFactory::Source> &sources)
     if (m_chartsChangedCb) {
         m_chartsChangedCb(rois);
     }
+}
+
+void TileFactory::setTileSettings(const std::string &tileId, TileSettings tileSettings)
+{
+    std::unordered_map<std::string, TileSettings>::const_iterator it = m_tileSettings.find(tileId);
+    if (it != m_tileSettings.end() && it->second.disabledCharts == tileSettings.disabledCharts) {
+        return;
+    }
+
+    m_tileSettings[tileId] = tileSettings;
+
+    if (!m_tileDataChangedCallback) {
+        return;
+    }
+
+    m_tileDataChangedCallback({ tileId });
 }

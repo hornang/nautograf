@@ -22,6 +22,8 @@ class Scene : public QQuickItem
     Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
     Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
     Q_PROPERTY(double pixelsPerLon READ pixelsPerLon WRITE setPixelsPerLon NOTIFY pixelsPerLonChanged)
+    Q_PROPERTY(QString focusedTile READ focusedTile WRITE setFocusedTile NOTIFY setFocusedTileChanged)
+    Q_PROPERTY(QColor accentColor READ accentColor WRITE setAccentColor NOTIFY accentColorChanged)
 
 public:
     Scene(QQuickItem *parent = 0);
@@ -43,6 +45,13 @@ public:
     QAbstractListModel *tileModel() const;
     void setModel(QAbstractListModel *newTileModel);
 
+    static std::optional<TileFactoryWrapper::TileRecipe> parseTileRef(const QVariantMap &tileRef);
+    const QString &focusedTile() const;
+    void setFocusedTile(const QString &newFocusedTile);
+
+    const QColor &accentColor() const;
+    void setAccentColor(const QColor &newAccentColor);
+
 public slots:
     void rowsInserted(const QModelIndex &parent, int first, int last);
     void rowsAboutToBeRemoved(const QModelIndex &parent, int first, int last);
@@ -50,6 +59,7 @@ public slots:
                      const QModelIndex &bottomRight,
                      const QList<int> &roles);
     void tessellatorDone(const QString &tileId);
+    void tileDataChanged(const QStringList &tileIds);
 
 signals:
     void tileFactoryChanged();
@@ -57,10 +67,11 @@ signals:
     void lonChanged();
     void pixelsPerLonChanged();
     void tileModelChanged();
+    void setFocusedTileChanged();
+
+    void accentColorChanged();
 
 private:
-    static std::optional<TileFactoryWrapper::TileRecipe> parseTileRef(const QVariantMap &tileRef);
-
     template <typename T>
     void removeStaleNodes(QSGNode *parent) const;
 
@@ -80,6 +91,7 @@ private:
     void fetchAll();
 
     QHash<QString, std::shared_ptr<Tessellator>> m_tessellators;
+    QSet<QString> m_newTessellators;
     QSet<QString> m_tessellatorsWithPendingData;
     std::shared_ptr<SymbolImage> m_symbolImage;
     std::shared_ptr<FontImage> m_fontImage;
@@ -92,8 +104,12 @@ private:
     /// The viewport in mercator coordinates
     QRectF m_box;
 
+    QString m_focusedTile;
+    bool m_focusedTileChanged = false;
+
     TileFactoryWrapper *m_tileFactory = nullptr;
     QAbstractListModel *m_tileModel = nullptr;
     bool m_tessellatorRemoved = false;
     float m_zoom = 1.0;
+    QColor m_accentColor;
 };

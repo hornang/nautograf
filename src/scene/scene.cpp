@@ -121,6 +121,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     QSGNode *polygonNodesParent = nullptr;
     QSGNode *symbolNodesParent = nullptr;
     QSGNode *textNodesParent = nullptr;
+    QSGNode *overlayNodesParent = nullptr;
 
     if (!rootNode) {
         rootNode = new RootNode(m_symbolImage->image(),
@@ -133,15 +134,19 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         rootNode->appendChildNode(symbolNodesParent);
         textNodesParent = new QSGNode();
         rootNode->appendChildNode(textNodesParent);
+        overlayNodesParent = new QSGNode();
+        rootNode->appendChildNode(overlayNodesParent);
     } else {
         polygonNodesParent = rootNode->firstChild();
         symbolNodesParent = polygonNodesParent->nextSibling();
         textNodesParent = symbolNodesParent->nextSibling();
+        overlayNodesParent = textNodesParent->nextSibling();
     }
 
     Q_ASSERT(polygonNodesParent);
     Q_ASSERT(symbolNodesParent);
     Q_ASSERT(textNodesParent);
+    Q_ASSERT(overlayNodesParent);
 
     PolygonMaterial *polygonMaterial = rootNode->polygonMaterial();
     AnnotationMaterial *symbolMaterial = rootNode->symbolMaterial();
@@ -164,7 +169,6 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         removeStaleNodes<PolygonNode>(polygonNodesParent);
         removeStaleNodes<AnnotationNode>(symbolNodesParent);
         removeStaleNodes<AnnotationNode>(textNodesParent);
-        m_tessellatorRemoved = false;
     }
 
     if (!m_tessellatorsWithPendingData.empty()) {
@@ -205,6 +209,33 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         m_tessellatorsWithPendingData.clear();
     }
 
+    if (m_focusedTileChanged || m_tessellatorRemoved || m_newTessellators.contains(m_focusedTile)) {
+        if (m_tessellators.contains(m_focusedTile)) {
+            PolygonNode *polygonNode = nullptr;
+            if (overlayNodesParent->childCount() > 0) {
+                Q_ASSERT(overlayNodesParent->childCount() == 1);
+                polygonNode = static_cast<PolygonNode *>(overlayNodesParent->firstChild());
+                polygonNode->updateVertices(m_tessellators[m_focusedTile]->overlayVertices(m_accentColor));
+            } else {
+                PolygonNode *polygonNode = new PolygonNode(m_focusedTile,
+                                                           rootNode->blendColorMaterial(),
+                                                           m_tessellators[m_focusedTile]->overlayVertices(m_accentColor));
+                overlayNodesParent->appendChildNode(polygonNode);
+            }
+        } else {
+            if (overlayNodesParent->childCount() > 0) {
+                Q_ASSERT(overlayNodesParent->childCount() == 1);
+                QSGNode *child = overlayNodesParent->firstChild();
+                overlayNodesParent->removeChildNode(child);
+                delete child;
+            }
+        }
+    }
+
+    m_focusedTileChanged = false;
+    m_tessellatorRemoved = false;
+    m_newTessellators.clear();
+
     if (m_zoom != zoom) {
         symbolMaterial->setScale(zoom);
         markChildrensDirtyMaterial(symbolNodesParent);
@@ -232,7 +263,7 @@ void Scene::setTileFactory(TileFactoryWrapper *newTileFactory)
 
     m_tileFactory = newTileFactory;
     emit tileFactoryChanged();
-
+    connect(m_tileFactory, &TileFactoryWrapper::tileDataChanged, this, &Scene::tileDataChanged);
     fetchAll();
 }
 
@@ -334,6 +365,7 @@ void Scene::addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first,
             connect(tessellator.get(), &Tessellator::dataChanged, this, &Scene::tessellatorDone);
             tessellator->setId(tileId);
             m_tessellators.insert(tileId, tessellator);
+            m_newTessellators.insert(tileId);
             tessellator->fetchAgain();
         } else {
             qWarning() << "Failed to parse tile ref";
@@ -426,4 +458,41 @@ void Scene::tessellatorDone(const QString &tileId)
     }
     m_tessellatorsWithPendingData.insert(tileId);
     update();
+}
+
+void Scene::tileDataChanged(const QStringList &tileIds)
+{
+    for (const QString &tileId : tileIds) {
+        if (m_tessellators.contains(tileId)) {
+            m_tessellators[tileId]->fetchAgain();
+        }
+    }
+}
+
+const QString &Scene::focusedTile() const
+{
+    return m_focusedTile;
+}
+
+void Scene::setFocusedTile(const QString &newFocusedTile)
+{
+    if (m_focusedTile == newFocusedTile)
+        return;
+    m_focusedTile = newFocusedTile;
+    emit setFocusedTileChanged();
+    m_focusedTileChanged = true;
+    update();
+}
+
+const QColor &Scene::accentColor() const
+{
+    return m_accentColor;
+}
+
+void Scene::setAccentColor(const QColor &newAccentColor)
+{
+    if (m_accentColor == newAccentColor)
+        return;
+    m_accentColor = newAccentColor;
+    emit accentColorChanged();
 }

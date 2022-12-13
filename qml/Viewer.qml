@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
+import QtQuick.Controls.Universal
 import org.seatronomy.nautograf 1.0
 
 Item {
@@ -12,6 +13,9 @@ Item {
 
     signal showContextMenu(var x, var y)
 
+    property string highlightedTile
+    property bool highlightedTileVisible
+    property var selectedTileRef: ({})
     property bool showLegacyRenderer: false
     property bool showLegacyDebugView: false
 
@@ -88,7 +92,12 @@ Item {
                 property point startPos
                 hoverEnabled: true
                 onDoubleClicked: function (mouse) {
-                    root.showContextMenu(mouse.x, mouse.y);
+                    const topLeft = Qt.point(root.lon, root.lat);
+                    const position = mapTile.offsetPosition(topLeft,
+                                                            root.pixelsPerLon,
+                                                            Qt.point(mouse.x, mouse.y));
+                    const tileRef = MapTileModel.tileRefAtPos(position.y, position.x);
+                    root.selectedTileRef = tileRef;
                 }
 
                 onPressed: function (mouse) {
@@ -263,6 +272,8 @@ Item {
             sourceComponent: Scene {
                 id: sceneGraphRenderer
 
+                focusedTile: root.highlightedTileVisible ? root.highlightedTile : ""
+                accentColor: Universal.accent
                 tileFactory: TileFactory
                 lat: root.lat
                 lon: root.lon
@@ -284,9 +295,7 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: function(mouse) {
-            root.showContextMenu(mouse.x, mouse.y);
-        }
+        onClicked: root.showContextMenu(mouse.x, mouse.y)
         acceptedButtons: Qt.RightButton
     }
 

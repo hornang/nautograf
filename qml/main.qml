@@ -62,6 +62,10 @@ ApplicationWindow {
             if (root.visibility == Window.FullScreen) {
                 toggleFullscreen();
                 event.accepted = true;
+            } else if (chartList.enabled || tileInfoLoader.enabled) {
+                chartList.enabled = false;
+                tileInfoLoader.enabled = false;
+                viewer.focus = true;
             }
         }
 
@@ -69,9 +73,16 @@ ApplicationWindow {
             id: viewer
 
             focus: true
+            highlightedTileVisible: tileInfoLoader.enabled
             anchors.fill: parent
             showLegacyRenderer: UserSettings.showLegacyRenderer
             showLegacyDebugView: UserSettings.showLegacyDebugView
+
+            onSelectedTileRefChanged: {
+                if (selectedTileRef.hasOwnProperty("tileId")) {
+                    tileInfoLoader.selectTile(selectedTileRef);
+                }
+            }
 
             onShowContextMenu: function() {
                 menu.open();
@@ -91,6 +102,13 @@ ApplicationWindow {
                 checkable: true
                 checked: chartList.enabled
                 onTriggered: chartList.enabled = !chartList.enabled
+            }
+
+            MenuItem {
+                text: qsTr("Tile info")
+                checkable: true
+                checked: tileInfoLoader.enabled
+                onTriggered: tileInfoLoader.enabled = !tileInfoLoader.enabled
             }
 
             MenuItem {
@@ -130,6 +148,69 @@ ApplicationWindow {
             }
         }
 
+        Loader {
+            id: tileInfoLoader
+
+            property variant initialTileRef: ({})
+            property bool enabled: false
+
+            function selectTile(tileRef) {
+                enabled = true;
+                if (status === Loader.Ready) {
+                    item.tileRef = tileRef;
+                } else {
+                    initialTileRef = tileRef;
+                }
+            }
+
+            onStatusChanged: {
+                if (status === Loader.Ready) {
+                    item.tileRef = initialTileRef;
+                }
+            }
+
+            active: x > -width
+            width: 400
+            anchors {
+                top: parent.top
+                topMargin: 80
+                bottom: parent.bottom
+                bottomMargin: 80
+                right: parent.left
+            }
+
+            states: State {
+                when: tileInfoLoader.enabled
+
+                AnchorChanges {
+                    target: tileInfoLoader
+                    anchors {
+                        right: undefined
+                        left: parent.left
+                    }
+                }
+            }
+
+            transitions: Transition {
+                AnchorAnimation {
+                    duration: 200
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            sourceComponent: Component {
+                TileInfo {
+                    id: tileInfo
+
+                    focus: true
+                    onSelectedTileChanged: viewer.highlightedTile = selectedTile
+                    onClose: tileInfoLoader.enabled = false
+                    anchors.fill: parent
+                    chartModel: ChartModel
+                }
+            }
+        }
+
         Pane {
             id: chartList
 
@@ -143,21 +224,6 @@ ApplicationWindow {
                 bottom: parent.bottom
                 bottomMargin: 80
                 left: parent.right
-            }
-
-            onEnabledChanged: {
-                if (enabled) {
-                    chartList.focus = true;
-                } else {
-                    viewer.focus = true;
-                }
-            }
-
-            Keys.onEscapePressed: function(event) {
-                if (event.key === Qt.Key_Escape) {
-                    enabled = false;
-                    event.accepted = true;
-                }
             }
 
             states: State {

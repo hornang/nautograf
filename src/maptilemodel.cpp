@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include <QDebug>
+// #include <xlocale>
 
 #include "maptile.h"
 #include "maptilemodel.h"
@@ -151,6 +152,20 @@ int MapTileModel::rowCount(const QModelIndex &parent) const
     return 0;
 }
 
+QVariantMap MapTileModel::createTileRef(const QString &tileId,
+                                        const GeoRect &boundingBox,
+                                        int maxPixelsPerLon)
+{
+    QVariantMap tileRef;
+    tileRef["tileId"] = tileId;
+    tileRef["topLatitude"] = boundingBox.top();
+    tileRef["leftLongitude"] = boundingBox.left();
+    tileRef["bottomLatitude"] = boundingBox.bottom();
+    tileRef["rightLongitude"] = boundingBox.right();
+    tileRef["maxPixelsPerLongitude"] = maxPixelsPerLon;
+    return tileRef;
+}
+
 QVariant MapTileModel::data(const QModelIndex &index, int role) const
 {
     const int row = index.row();
@@ -209,4 +224,16 @@ QSizeF MapTileModel::viewPort() const
 qreal MapTileModel::pixelsPerLongitude() const
 {
     return m_pixelsPerLongitude;
+}
+
+QVariantMap MapTileModel::tileRefAtPos(float lat, float lon)
+{
+    for (const TileFactory::Tile &tile : m_tiles) {
+        if (tile.boundingBox.contains(lat, lon)) {
+            return createTileRef(QString::fromStdString(tile.tileId),
+                                 tile.boundingBox,
+                                 tile.maxPixelsPerLon);
+        }
+    }
+    return {};
 }

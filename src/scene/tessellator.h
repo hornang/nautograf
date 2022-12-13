@@ -46,6 +46,7 @@ public:
     QString id() const { return m_id; }
     void setId(const QString &tileId);
     static int pixelsPerLon();
+    QList<PolygonNode::Vertex> overlayVertices(const QColor &color) const;
 
 public slots:
     void finished();
@@ -54,6 +55,8 @@ signals:
     void dataChanged(const QString &id);
 
 private:
+    static QPointF posToMercator(const Pos &pos);
+
     // This only applies to symbol collisions. Labels are always checked.
     enum class CollisionRule {
         NoCheck,
