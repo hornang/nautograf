@@ -46,6 +46,7 @@ FontImage::FontImage()
         }
 
         textureFont->rendermode = RENDER_SIGNED_DISTANCE_FIELD;
+        textureFont->padding = 2;
         QHash<QChar, struct texture_glyph_t *> glyphs;
 
         for (const QChar &c : glyphsToRender) {

@@ -14,8 +14,9 @@ layout(std140, binding = 0) uniform buf {
 layout(binding = 1) uniform sampler2D ourTexture;
 layout(location = 0) out vec4 fragColor;
 
-const float smoothing = 6.0 / 16.0;
-const float outlineWidth = 4.0 / 16.0;
+const float smoothing = 2.0 / 16.0;
+const float borderSmoothing = 7.0 / 16.0;
+const float outlineWidth = 6.0 / 16.0;
 const float edgeCenter = 0.5;
 const float outerEdgeCenter = edgeCenter - outlineWidth;
 const vec4 u_outlineColor = vec4(1, 1, 1, 1);
@@ -28,7 +29,7 @@ void main()
     } else {
         float dist = texture(ourTexture, vTexCoord).r;
         float alpha = smoothstep(outerEdgeCenter - smoothing, outerEdgeCenter + smoothing, dist) * ubuf.qt_Opacity;
-        float border = smoothstep(edgeCenter - smoothing, edgeCenter + smoothing, dist);
+        float border = smoothstep(edgeCenter - borderSmoothing, edgeCenter + borderSmoothing, dist);
         fragColor = vec4(mix(u_outlineColor.rgb, color.rgb, border) * alpha, alpha);
     }
 }
