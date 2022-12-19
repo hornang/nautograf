@@ -40,6 +40,8 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
 {
     assert(clipConfig.longitudeResolution > 0);
     assert(clipConfig.latitudeResolution > 0);
+    assert(!clipConfig.box.isNull());
+    assert(!clipConfig.chartBoundingBox.isNull());
 
     const GeoRect &boundingBox = clipConfig.box;
     GeoRect clipRect(boundingBox.top() + clipConfig.latitudeMargin,
