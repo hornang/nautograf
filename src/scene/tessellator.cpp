@@ -525,6 +525,12 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
     int glyphCounter = 0;
 
     for (const auto &label : labels) {
+        if (!label.scaleLimit.has_value()) {
+            continue;
+        }
+
+        float scaleLimit = label.scaleLimit.value();
+
         auto glyphs = fontImage->glyphs(label.text,
                                         label.pointSize,
                                         label.font);
@@ -542,12 +548,6 @@ QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &l
             list.resize(list.size() + 6);
             AnnotationNode::Vertex *data = list.data();
             data += glyphCounter * 6;
-
-            float scaleLimit = 1000;
-
-            if (label.scaleLimit.has_value()) {
-                scaleLimit = label.scaleLimit.value();
-            }
 
             data[0] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
