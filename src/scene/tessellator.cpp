@@ -204,8 +204,7 @@ Tessellator::TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  std::nullopt,
                                  std::nullopt } },
                              1,
-                             // This makes underwater rocks beeing show even if they collide with other symbols
-                             CollisionRule::OnlyWithSameType });
+                             CollisionRule::Always });
         }
 
         for (const auto &buoy : chart->lateralBuoys()) {
