@@ -9,8 +9,8 @@
 #include "tilefactory/tilefactory.h"
 #include "usersettings.h"
 
-ChartModel::ChartModel(std::shared_ptr<TileFactory> tileManager)
-    : m_tileManager(tileManager)
+ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
+    : m_tileFactory(tileFactory)
     , m_roleNames({
           { (int)Role::Name, "name" },
           { (int)Role::Scale, "scale" },
@@ -153,7 +153,7 @@ void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, 
     sourceWrapper.source = source;
 
     if (tileSource) {
-        m_tileManager->addSources(std::vector<TileFactory::Source>({ source }));
+        m_tileFactory->addSources(std::vector<TileFactory::Source>({ source }));
     }
 
     for (auto it = m_sourceCache.begin(); it < m_sourceCache.end(); it++) {
@@ -227,7 +227,7 @@ void ChartModel::populateModel(const QString &dir)
     m_sourceCache.clear();
     endResetModel();
 
-    m_tileManager->clear();
+    m_tileFactory->clear();
     m_chartsToLoad.clear();
 
     m_chartsToLoad.append(QDir(dir).entryList({ "*.oesenc", "*.oesu" },
@@ -290,10 +290,10 @@ void ChartModel::setDir(const QString &dir)
 
 void ChartModel::setAllChartsEnabled(bool enabled)
 {
-    m_tileManager->setAllChartsEnabled(enabled);
+    m_tileFactory->setAllChartsEnabled(enabled);
 
     // Emit on every for now. Not straightforward to figure out which ones when
-    // m_sourceCache is not equal to m_tileManager->sources();
+    // m_sourceCache is not equal to m_tileFactory->sources();
     int i = 0;
     for (auto &source : m_sourceCache) {
         source.source.enabled = enabled;
@@ -317,7 +317,7 @@ void ChartModel::setChartEnabled(int index, bool enabled)
         return;
     }
 
-    m_tileManager->setChartEnabled(m_sourceCache[index].source.name, enabled);
+    m_tileFactory->setChartEnabled(m_sourceCache[index].source.name, enabled);
     m_sourceCache[index].source.enabled = enabled;
     emit dataChanged(createIndex(index, 0),
                      createIndex(index, 0),
@@ -343,7 +343,7 @@ void ChartModel::updateAllEnabled()
 
 void ChartModel::clear()
 {
-    m_tileManager->clear();
+    m_tileFactory->clear();
     m_dir.clear();
 }
 

@@ -25,21 +25,21 @@ int main(int argc, char *argv[])
     const QString iconPath = ":/icon.ico";
     application.setWindowIcon(QIcon(iconPath));
 
-    std::shared_ptr<TileFactory> tileManager = std::make_shared<TileFactory>();
-    MapTileModel mapTileModel(tileManager);
-    ChartModel chartModel(tileManager);
+    std::shared_ptr<TileFactory> tileFactory = std::make_shared<TileFactory>();
+    MapTileModel mapTileModel(tileFactory);
+    ChartModel chartModel(tileFactory);
 
-    tileManager->setUpdateCallback([&]() {
+    tileFactory->setUpdateCallback([&]() {
         mapTileModel.scheduleUpdate();
     });
 
-    tileManager->setChartsChangedCb([&](const std::vector<GeoRect> &rects) {
+    tileFactory->setChartsChangedCb([&](const std::vector<GeoRect> &rects) {
         mapTileModel.chartsChanged(rects);
     });
 
     TileFactoryWrapper tileFactoryWrapper;
     tileFactoryWrapper.setTileDataCallback([&](GeoRect rect, double pixelsPerLongitude) -> std::vector<std::shared_ptr<Chart>> {
-        return tileManager->tileData(rect, pixelsPerLongitude);
+        return tileFactory->tileData(rect, pixelsPerLongitude);
     });
 
     UserSettings userSettings;

@@ -39,7 +39,7 @@ public:
         Encrypted,
     };
 
-    ChartModel(std::shared_ptr<TileFactory> tileManager);
+    ChartModel(std::shared_ptr<TileFactory> tileFactory);
     QHash<int, QByteArray> roleNames() const;
     bool allEnabled() const;
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
@@ -79,7 +79,7 @@ private:
     bool loadNextFromQueue();
     QQueue<QString> m_chartsToLoad;
     CryptReader m_cryptReader;
-    std::shared_ptr<TileFactory> m_tileManager;
+    std::shared_ptr<TileFactory> m_tileFactory;
     QHash<int, QByteArray> m_roleNames;
     std::vector<SourceWrapper> m_sourceCache;
     QString m_tileDir;
