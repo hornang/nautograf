@@ -82,7 +82,6 @@ private:
     std::shared_ptr<TileFactory> m_tileManager;
     QHash<int, QByteArray> m_roleNames;
     std::vector<SourceWrapper> m_sourceCache;
-    std::unique_ptr<TileFactoryWrapper> m_tileFactory;
     QString m_tileDir;
     QString m_dirBeeingLoaded;
     QString m_currentChartBeeingLoaded;
