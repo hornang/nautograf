@@ -105,13 +105,10 @@ Item {
                 }
 
                 onWheel: function (wheel) {
-                    let zoomFactor;
-                    if (wheel.angleDelta.y > 0) {
-                        zoomFactor = 1.5;
-                    } else {
-                        zoomFactor = 1 / 1.5;
-                    }
-                    adjustZoom(root.viewport.z * zoomFactor, Qt.point(wheel.x, wheel.y), Qt.point(0, 0));
+                    let zoomFactor = Math.pow(2, wheel.angleDelta.y / 500);
+                    adjustZoom(root.viewport.z * zoomFactor,
+                               Qt.point(wheel.x, wheel.y),
+                               Qt.point(0, 0));
                 }
             }
         }
