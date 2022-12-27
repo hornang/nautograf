@@ -1,6 +1,10 @@
+#include <algorithm>
+
 #include <QSettings>
 
 #include "usersettings.h"
+
+const double maxLatFromSettings = 85.0;
 
 static const QString viewportKey = QStringLiteral("Viewport");
 const QString UserSettings::showLegacyRendererKey = QStringLiteral("ShowLegacyRenderer");
@@ -43,13 +47,24 @@ void UserSettings::read()
     }
     settings.beginGroup(viewportKey);
 
-    auto lat = settings.value("Latitude");
-    auto lon = settings.value("Longitude");
-    auto pixelsPerLongitude = settings.value("PixelsPerLongitude");
+    QVariant latValue = settings.value("Latitude");
+    QVariant lonValue = settings.value("Longitude");
+    QVariant pixelsPerLongitudeValue = settings.value("PixelsPerLongitude");
 
-    if (lat.isValid() && lon.isValid() && pixelsPerLongitude.isValid()) {
-        m_viewport = QVector3D(lon.toDouble(), lat.toDouble(), pixelsPerLongitude.toDouble());
-        emit viewportChanged();
+    if (latValue.isValid() && lonValue.isValid() && pixelsPerLongitudeValue.isValid()) {
+        double lon = lonValue.toDouble();
+        double lat = latValue.toDouble();
+        double pixelsPerLongitude = pixelsPerLongitudeValue.toDouble();
+
+        if (std::isfinite(lon) && std::isfinite(lat) && std::isfinite(pixelsPerLongitude)) {
+            lat = std::clamp<double>(lat, -maxLatFromSettings, maxLatFromSettings);
+            lon = std::clamp<double>(lon, -180, 180);
+
+            m_viewport = QVector3D(lon, lat, pixelsPerLongitude);
+            emit viewportChanged();
+        } else {
+            qWarning() << "Invalid viewport" << m_viewport;
+        }
     }
 
     bool debugView = settings.value("DebugView").toBool();
