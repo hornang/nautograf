@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+#include <cassert>
 #include <cmath>
 
 #include "tilefactory/mercator.h"
@@ -11,7 +12,9 @@ double Mercator::mercatorHeightInverse(const double topLatitude,
 {
     double pixelsPerLongitudeRadians = pixelsPerLongitude * 180. / M_PI;
     double phiTop = topLatitude * M_PI / 180.;
-    double yTop = log(tan(M_PI / 4 + phiTop / 2));
+    double logArg = tan(M_PI / 4 + phiTop / 2);
+    assert(logArg > 0);
+    double yTop = log(logArg);
     double expArg = yTop - height / pixelsPerLongitudeRadians;
     double expResult = exp(expArg);
     double phiBottom = 2 * atan(expResult) - M_PI / 2;
@@ -59,8 +62,14 @@ double Mercator::mercatorHeight(double topLatitude,
     double phiTop = topLatitude * M_PI / 180.;
     double phiBottom = bottomLatitude * M_PI / 180.;
 
-    double yTop = (log(tan(M_PI / 4 + phiTop / 2)));
-    double yBottom = (log(tan(M_PI / 4 + phiBottom / 2)));
+    double logArgTop = tan(M_PI / 4 + phiTop / 2);
+    double logArgBottom = tan(M_PI / 4 + phiBottom / 2);
+
+    assert(logArgTop > 0);
+    assert(logArgBottom > 0);
+
+    double yTop = log(logArgTop);
+    double yBottom = log(logArgBottom);
 
     double height = pixelsPerLongitudeRadians * (yTop - yBottom);
     return height;
