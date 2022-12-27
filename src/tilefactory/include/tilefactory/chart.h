@@ -51,7 +51,6 @@ public:
     std::string name() const { return root().getName(); }
     GeoRect boundingBox() const;
     capnp::List<ChartData::CoverageArea>::Reader coverage() const { return root().getCoverage(); }
-    ChartData::CoverageType coverageType() const { return root().getCoverageType(); }
     capnp::List<ChartData::LandArea>::Reader landAreas() const { return root().getLandAreas(); }
     capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return root().getDepthAreas(); }
     capnp::List<ChartData::BuiltUpArea>::Reader builtUpAreas() const { return root().getBuiltUpAreas(); }
@@ -78,7 +77,6 @@ private:
     static void loadUnderwaterRocks(ChartData::Builder &root, S57Vector &objs);
     static void loadRoads(ChartData::Builder &root, S57Vector &objs);
     static void loadBuoyLateral(ChartData::Builder &root, S57Vector &src);
-    static bool pointsAround(const capnp::List<ChartData::Position>::Reader &points, const GeoRect &box);
     static Pos calcAveragePosition(const capnp::List<ChartData::Position>::Reader &positions);
     static inline int countPolygonObjects(S57Vector &s57);
     static inline int countPointObjects(S57Vector &s57);
@@ -109,7 +107,7 @@ private:
     };
 
     template <typename T>
-    static bool clipPolygonItems(const typename capnp::List<T>::Reader &src,
+    static void clipPolygonItems(const typename capnp::List<T>::Reader &src,
                                  ChartClipper::Config config,
                                  std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
                                  std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);

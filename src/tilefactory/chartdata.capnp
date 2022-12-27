@@ -1,28 +1,21 @@
-@0x897b19df25f153d2;
+@0xcfa67771551e48ef;
 
 struct ChartData {
     name @0: Text;
-    coverageType @1: CoverageType;
-    nativeScale @2: Int32;
-    coverage @3 :List(CoverageArea);
-    landAreas @4 :List(LandArea);
-    builtUpAreas @5 :List(BuiltUpArea);
-    builtUpPoints @6 :List(BuiltUpPoint);
-    depthAreas @7 :List(DepthArea);
-    soundings @8 :List(Sounding);
-    beacons @9 :List(Beacon);
-    underwaterRocks @10 :List(UnderwaterRock);
-    roads @11 :List(Road);
-    lateralBuoys @12 :List(BuoyLateral);
-    landRegions @13 :List(LandRegion);
-    topLeft @14: Position;
-    bottomRight @15: Position;
-
-    enum CoverageType {
-        zero @0;
-        partial @1;
-        full @2;
-    }
+    nativeScale @1: Int32;
+    coverage @2 :List(CoverageArea);
+    landAreas @3 :List(LandArea);
+    builtUpAreas @4 :List(BuiltUpArea);
+    builtUpPoints @5 :List(BuiltUpPoint);
+    depthAreas @6 :List(DepthArea);
+    soundings @7 :List(Sounding);
+    beacons @8 :List(Beacon);
+    underwaterRocks @9 :List(UnderwaterRock);
+    roads @10 :List(Road);
+    lateralBuoys @11 :List(BuoyLateral);
+    landRegions @12 :List(LandRegion);
+    topLeft @13: Position;
+    bottomRight @14: Position;
 
     struct CoverageArea {
         polygons @0 :List(Polygon);

@@ -4,6 +4,7 @@
 #include "tilefactory/chart.h"
 #include "tilefactory/georect.h"
 #include "tilefactory/mercator.h"
+#include "tilefactory/triangulator.h"
 
 std::unique_ptr<capnp::MallocMessageBuilder>
 Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
@@ -121,37 +122,6 @@ bool Chart::write(capnp::MallocMessageBuilder *message, const std::string &filen
     return true;
 }
 
-bool Chart::pointsAround(const capnp::List<ChartData::Position>::Reader &positions,
-                         const GeoRect &rect)
-{
-    bool left = false;
-    bool right = false;
-    bool above = false;
-    bool below = false;
-    double latMargin = 0;
-    double lonMargin = 0;
-
-    for (const auto &pos : positions) {
-        if (rect.contains(pos.getLatitude(), pos.getLongitude())) {
-            return false;
-        }
-
-        if (pos.getLongitude() < rect.left() + lonMargin) {
-            left = true;
-        } else if (pos.getLongitude() > rect.right() - lonMargin) {
-            right = true;
-        }
-
-        if (pos.getLatitude() > rect.top() - latMargin) {
-            above = true;
-        } else if (pos.getLatitude() < rect.bottom() + latMargin) {
-            below = true;
-        }
-    }
-
-    return left && right && above && below;
-}
-
 std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::Config config) const
 {
     // Ugly to add this here
@@ -164,30 +134,13 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
     config.moveOutEdges = false;
     root.setNativeScale(nativeScale());
 
-    bool empty = clipPolygonItems<ChartData::CoverageArea>(
+    clipPolygonItems<ChartData::CoverageArea>(
         coverage(),
         config,
         [&](unsigned int length) {
             return root.initCoverage(length);
         },
         {});
-
-    root.setCoverageType(ChartData::CoverageType::PARTIAL);
-
-    if (empty) {
-        root.setCoverageType(ChartData::CoverageType::ZERO);
-    } else {
-        if (coverage().size() == 1) {
-            const auto &polygons = coverage()[0].getPolygons();
-            if (polygons.size() == 1) {
-                const auto &polygon = polygons[0];
-                GeoRect test(config.box.top(), config.box.bottom(), config.box.left(), config.box.right());
-                if (pointsAround(polygon.getMain(), test)) {
-                    root.setCoverageType(ChartData::CoverageType::FULL);
-                }
-            }
-        }
-    }
 
     config.moveOutEdges = true;
 
@@ -334,14 +287,13 @@ void Chart::clipPointItems(const typename capnp::List<T>::Reader &src,
 }
 
 template <typename T>
-bool Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
+void Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
                              ChartClipper::Config config,
                              std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
                              std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
 {
     std::vector<ClippedPolygonItem<T>> clipped;
 
-    bool empty = true;
     for (const auto &element : src) {
         for (const ChartData::Polygon::Reader &polygon : element.getPolygons()) {
             std::vector<ChartClipper::Polygon> polygons = ChartClipper::clipPolygon(polygon, config);
@@ -349,7 +301,6 @@ bool Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
                 continue;
             }
 
-            empty = false;
             ClippedPolygonItem<T> item;
             item.polygons = polygons;
             item.item = element;
@@ -358,12 +309,11 @@ bool Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
     }
 
     if (clipped.empty()) {
-        return true;
+        return;
     }
 
     auto finalTarget = init(static_cast<unsigned int>(clipped.size()));
     fillList<T>(finalTarget, clipped, copyFunction);
-    return empty;
 }
 
 template <typename T>

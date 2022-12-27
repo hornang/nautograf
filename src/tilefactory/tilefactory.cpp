@@ -13,7 +13,10 @@
 #include "tilefactory/oesenctilesource.h"
 #include "tilefactory/tilefactory.h"
 
+#include "coverageratio.h"
+
 static constexpr int maxTileSize = 1024;
+static float coverageAccpetanceThreshold = 0.98f;
 
 void TileFactory::clear()
 {
@@ -98,27 +101,20 @@ bool TileFactory::chartEnabledForTile(const std::string &chart,
     return (it2 == tileSettings.disabledCharts.end());
 }
 
-std::vector<TileFactory::ChartInfo> TileFactory::chartInfo(const GeoRect &rect,
-                                                           double pixelsPerLongitude)
+std::vector<TileFactory::Source> TileFactory::sourceCandidates(const GeoRect &rect,
+                                                               double pixelsPerLon)
 {
-    std::vector<TileFactory::ChartInfo> result;
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+    std::vector<TileFactory::Source> validSources;
 
-    m_sourcesMutex.lock();
-    auto sources = m_sources;
-    m_sourcesMutex.unlock();
-
-    std::string tileId = FileHelper::tileId(rect, pixelsPerLongitude);
-
-    for (const auto &source : sources) {
+    for (const auto &source : m_sources) {
         assert(source.tileSource);
 
-        ChartInfo chartInfo;
-        chartInfo.qualified = true;
-        chartInfo.globallyEnabled = source.enabled;
-        chartInfo.name = source.name;
-        chartInfo.enabled = chartEnabledForTile(source.name, tileId);
+        if (!source.enabled) {
+            continue;
+        }
 
-        int scaleActual = 52246 / (pixelsPerLongitude / 2560 * 0.6);
+        int scaleActual = 52246 / (pixelsPerLon / 2560 * 0.6);
 
         const std::shared_ptr<ITileSource> &tileSource = source.tileSource;
 
@@ -128,12 +124,31 @@ std::vector<TileFactory::ChartInfo> TileFactory::chartInfo(const GeoRect &rect,
 
         // Avoid showing too detailed maps when zoomed out
         if (scaleActual / 4 > tileSource->scale()) {
-            chartInfo.qualified = false;
+            continue;
         }
 
-        result.push_back(chartInfo);
+        validSources.push_back(source);
     }
 
+    return validSources;
+}
+
+std::vector<TileFactory::ChartInfo> TileFactory::chartInfo(const GeoRect &rect,
+                                                           double pixelsPerLongitude)
+{
+    std::vector<TileFactory::ChartInfo> result;
+    std::vector<Source> candidates = sourceCandidates(rect, pixelsPerLongitude);
+
+    std::string tileId = FileHelper::tileId(rect, pixelsPerLongitude);
+
+    for (const auto &source : candidates) {
+        ChartInfo chartInfo;
+        chartInfo.name = source.name;
+        chartInfo.enabled = chartEnabledForTile(source.name, tileId);
+
+        const std::shared_ptr<ITileSource> &tileSource = source.tileSource;
+        result.push_back(chartInfo);
+    }
     return result;
 }
 
@@ -141,33 +156,13 @@ std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
                                                           double pixelsPerLongitude)
 {
     std::vector<std::shared_ptr<Chart>> chartDatas;
-
-    m_sourcesMutex.lock();
-    auto sources = m_sources;
-    m_sourcesMutex.unlock();
+    auto sources = sourceCandidates(rect, pixelsPerLongitude);
 
     std::string tileId = FileHelper::tileId(rect, pixelsPerLongitude);
+    CoverageRatio coverageRatio(rect);
 
     for (const auto &source : sources) {
-        assert(source.tileSource);
-
-        if (!source.enabled || !chartEnabledForTile(source.name, tileId)) {
-            continue;
-        }
-
-        int scaleActual = 52246 / (pixelsPerLongitude / 2560 * 0.6);
-
         const std::shared_ptr<ITileSource> &tileSource = source.tileSource;
-
-        if (!tileSource->extent().intersects(rect)) {
-            continue;
-        }
-
-        // Avoid showing too detailed maps when zoomed out
-        if (scaleActual / 4 > tileSource->scale()) {
-            continue;
-        }
-
         std::shared_ptr<Chart> tileData = tileSource->create(rect, pixelsPerLongitude);
 
         if (!tileData) {
@@ -175,14 +170,15 @@ std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
             continue;
         }
 
-        // If we found a map that covers the entire tile we can break here
-        if (tileData->coverageType() == ChartData::CoverageType::FULL) {
-            chartDatas.push_back(tileData);
-            break;
+        if (!chartEnabledForTile(source.name, tileId)) {
+            continue;
         }
 
-        if (tileData->coverageType() != ChartData::CoverageType::ZERO) {
-            chartDatas.push_back(tileData);
+        chartDatas.push_back(tileData);
+        coverageRatio.accumulate(tileData->coverage());
+
+        if (coverageRatio.ratio() >= coverageAccpetanceThreshold) {
+            break;
         }
     }
 

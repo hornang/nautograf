@@ -25,9 +25,7 @@ public:
     {
         std::string name;
         GeoRect boundingBox;
-        bool globallyEnabled;
         bool enabled;
-        bool qualified;
     };
 
     struct TileSettings
@@ -86,6 +84,7 @@ public:
     std::vector<Source> sources() const { return m_sources; }
 
 private:
+    std::vector<Source> sourceCandidates(const GeoRect &rect, double pixelsPerLon);
     bool chartEnabledForTile(const std::string &chart, const std::string &tileId) const;
     bool hasSource(const std::string &id);
     static std::vector<GeoRect> tilesInViewport(const GeoRect &rect, int zoom);

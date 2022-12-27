@@ -15,6 +15,8 @@ add_library(tilefactory
     include/tilefactory/triangulator.h
 
     chart.cpp
+    coverageratio.h
+    coverageratio.cpp
     filehelper.cpp
     filehelper.h
     georect.cpp

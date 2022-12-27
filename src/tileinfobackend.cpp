@@ -111,8 +111,6 @@ QVariantList TileInfoBackend::chartInfos() const
     for (const TileFactory::ChartInfo &chartInfo : m_chartInfos) {
         QVariantMap entry;
         entry["name"] = QString::fromStdString(chartInfo.name);
-        entry["qualified"] = chartInfo.qualified;
-        entry["globallyEnabled"] = chartInfo.globallyEnabled;
         entry["enabled"] = chartInfo.enabled;
         output.append(entry);
     }

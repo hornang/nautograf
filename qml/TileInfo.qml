@@ -135,7 +135,6 @@ Pane {
                         checked: modelData["enabled"]
                         onClicked: tileInfoBackend.setChartEnabled(modelData["name"], checked);
                         text: modelData["name"]
-                        enabled: modelData["globallyEnabled"] && modelData["qualified"]
                     }
                 }
             }
