@@ -7,7 +7,7 @@
 
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
-#include "triangulator.h"
+#include "tilefactory/triangulator.h"
 
 static const QColor criticalWaterColor(165, 202, 159);
 static const QColor landAreaColor(255, 240, 190);

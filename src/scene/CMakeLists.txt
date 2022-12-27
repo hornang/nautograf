@@ -36,8 +36,6 @@ add_library(scene
 
     tessellator.cpp
     tessellator.h
-    triangulator.cpp
-    triangulator.h
 )
 
 qt6_add_shaders(scene "shaders"
@@ -49,9 +47,6 @@ qt6_add_shaders(scene "shaders"
         "polygon/polygon.frag"
         "polygon/polygon.vert"
 )
-
-find_path(EARCUT_HPP_INCLUDE_DIRS "mapbox/earcut.hpp")
-target_include_directories(scene PRIVATE ${EARCUT_HPP_INCLUDE_DIRS})
 
 target_compile_definitions(scene PRIVATE SYMBOLS_DIR="${SYMBOLS_DIR}")
 

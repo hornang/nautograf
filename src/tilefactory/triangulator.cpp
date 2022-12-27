@@ -1,10 +1,6 @@
-#include <QList>
-
 #include <mapbox/earcut.hpp>
 
-#include "triangulator.h"
-#include <array>
-#include <iostream>
+#include "tilefactory/triangulator.h"
 
 Triangulator::Point Triangulator::getPoint(const std::vector<std::vector<Point>> &polygon, int index)
 {
