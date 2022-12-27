@@ -15,7 +15,9 @@ class MapTile : public QQuickPaintedItem
     Q_OBJECT
     Q_PROPERTY(QVariantMap tileRef READ tileRef WRITE setTileRef NOTIFY tileRefChanged)
     Q_PROPERTY(TileFactoryWrapper *tileFactory READ tileFactory WRITE setTileFactory NOTIFY tileFactoryChanged)
-    Q_PROPERTY(QVector3D viewport READ viewport WRITE setViewport NOTIFY viewportChanged)
+    Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
+    Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
+    Q_PROPERTY(double pixelsPerLon READ pixelsPerLon WRITE setPixelsPerLon NOTIFY pixelsPerLonChanged)
     Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
     Q_PROPERTY(int margin READ margin CONSTANT)
     Q_PROPERTY(bool noData READ noData NOTIFY noDataChanged)
@@ -23,24 +25,17 @@ class MapTile : public QQuickPaintedItem
     Q_PROPERTY(QStringList charts READ charts NOTIFY chartsChanged)
 
 public:
-
     MapTile(QQuickItem *parent = 0);
     ~MapTile();
 
-    /*!
-        \property viewport
+    double lat() const;
+    void setLat(double newLat);
 
-        The viewport is QVector3D where the x, y and z coordinates are (mis-)used
-        as follows:
-        * x longitude
-        * y longitude
-        * z pixelsPerLon
+    double lon() const;
+    void setLon(double newLon);
 
-        Having one object to pass back and forth from QML is easier and QVector3D
-        serves this purpose. Ideally another custom object would be used but that
-        requires use of Qt's private headers.
-    */
-    QVector3D viewport() const;
+    double pixelsPerLon() const;
+    void setPixelsPerLon(double newPixelsPerLon);
 
     void paint(QPainter *painter);
     const QVariantMap &tileRef() const;
@@ -49,7 +44,6 @@ public:
     void setTileFactory(TileFactoryWrapper *newTileFactory);
     bool loading() const;
     int margin() const;
-    void setViewport(const QVector3D &viewport);
     QStringList charts() const;
     bool chartVisible(int index) const;
     bool noData() const;
@@ -77,7 +71,7 @@ private:
         QStringList hiddenCharts;
     };
 
-    void render(const QVector3D &viewport);
+    void render(double lat, double lon, double pixelsPerLon);
     static std::vector<std::shared_ptr<Chart>> getChartData(TileFactoryWrapper *tileFactory,
                                                                 const GeoRect &boundingBox,
                                                                 int pixelsPerLongitude);
@@ -123,8 +117,7 @@ private:
                                         const RenderConfig &renderConfig);
 
     static QPolygonF reversePolygon(const QPolygonF &input);
-    static QSizeF sizeFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
-    static QPointF positionFromViewport(const GeoRect &boundingBox, const QVector3D &viewport);
+    static QSizeF sizeFromPixelsPerLon(const GeoRect &boundingBox, double pixelsPerLon);
     static void rasterClip(const QRectF &outer, const QRectF &inner, QPainter *painter);
     static QColor depthColor(qreal depth);
 
@@ -138,12 +131,13 @@ private:
     QSize m_imageSize;
     QVariantMap m_tileRef;
 
-    /// The viewport set from QML.
-    QVector3D m_viewport;
+    double m_lat = 0;
+    double m_lon = 0;
+    double m_pixelsPerLon = 300;
 
-    /// The last rendererd viewport. This is updated when rendering is finished
-    /// If it differes from m_viewport the tile will be rendered again.
-    QVector3D m_updatedViewport;
+    double m_updatedLat = 0;
+    double m_updatedLon = 0;
+    double m_updatedPixelsPerLon = 0;
 
     TileFactoryWrapper *m_tileFactory = nullptr;
     QStringList m_charts;
@@ -160,7 +154,9 @@ private:
 
 signals:
     void chartsChanged();
-    void viewportChanged(const QVector3D &viewport);
+    void latChanged();
+    void lonChanged();
+    void pixelsPerLonChanged();
     void tileRefChanged();
     void tileFactoryChanged(TileFactoryWrapper *tileFactory);
     void loadingChanged(bool loading);

@@ -19,11 +19,6 @@ UserSettings::~UserSettings()
     write();
 }
 
-const QVector3D &UserSettings::viewport() const
-{
-    return m_viewport;
-}
-
 void UserSettings::read()
 {
     QSettings settings(orgName, appName);
@@ -60,10 +55,14 @@ void UserSettings::read()
             lat = std::clamp<double>(lat, -maxLatFromSettings, maxLatFromSettings);
             lon = std::clamp<double>(lon, -180, 180);
 
-            m_viewport = QVector3D(lon, lat, pixelsPerLongitude);
-            emit viewportChanged();
+            m_lat = lat;
+            emit latChanged();
+            m_lon = lon;
+            emit lonChanged();
+            m_pixelsPerLon = pixelsPerLongitude;
+            emit pixelsPerLonChanged();
         } else {
-            qWarning() << "Invalid viewport" << m_viewport;
+            qWarning() << "Invalid viewport" << lat << lon << pixelsPerLongitude;
         }
     }
 
@@ -88,19 +87,11 @@ void UserSettings::write()
     }
     settings.setValue("WindowState", m_windowState);
     settings.beginGroup(viewportKey);
-    settings.setValue("Latitude", m_viewport.y());
-    settings.setValue("Longitude", m_viewport.x());
-    settings.setValue("PixelsPerLongitude", m_viewport.z());
+    settings.setValue("Latitude", m_lat);
+    settings.setValue("Longitude", m_lon);
+    settings.setValue("PixelsPerLongitude", m_pixelsPerLon);
     settings.setValue("DebugView", m_debugView);
     settings.setValue(showLegacyRendererKey, m_showLegacyRenderer);
-}
-
-void UserSettings::setViewPort(const QVector3D &newViewport)
-{
-    if (m_viewport == newViewport)
-        return;
-    m_viewport = newViewport;
-    emit viewportChanged();
 }
 
 QWindow::Visibility UserSettings::windowState() const
@@ -153,4 +144,43 @@ void UserSettings::setLegacyRender(bool newLegacyRender)
         return;
     m_showLegacyRenderer = newLegacyRender;
     emit showLegacyRendererChanged();
+}
+
+double UserSettings::lat() const
+{
+    return m_lat;
+}
+
+void UserSettings::setLat(const double &newLat)
+{
+    if (m_lat == newLat)
+        return;
+    m_lat = newLat;
+    emit latChanged();
+}
+
+double UserSettings::lon() const
+{
+    return m_lon;
+}
+
+void UserSettings::setLon(const double &newLon)
+{
+    if (m_lon == newLon)
+        return;
+    m_lon = newLon;
+    emit lonChanged();
+}
+
+double UserSettings::pixelsPerLon() const
+{
+    return m_pixelsPerLon;
+}
+
+void UserSettings::setPixelsPerLon(const double &newPixelsPerLon)
+{
+    if (m_pixelsPerLon == newPixelsPerLon)
+        return;
+    m_pixelsPerLon = newPixelsPerLon;
+    emit pixelsPerLonChanged();
 }

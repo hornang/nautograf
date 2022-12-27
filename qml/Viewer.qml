@@ -5,7 +5,10 @@ import org.seatronomy.nautograf 1.0
 
 Item {
     id: root
-    property vector3d viewport: UserSettings.viewport
+
+    property real lat: UserSettings.lat
+    property real lon: UserSettings.lon
+    property real pixelsPerLon: UserSettings.pixelsPerLon
 
     signal showContextMenu(var x, var y)
 
@@ -13,22 +16,26 @@ Item {
     property bool debugInfo: UserSettings.debugView
 
     function updateTileModel() {
-        MapTileModel.setPanZoom(Qt.point(root.viewport.x, root.viewport.y), root.viewport.z);
-        UserSettings.viewport = root.viewport;
+        MapTileModel.setPanZoom(Qt.point(root.lon, root.lat), root.pixelsPerLon);
+        UserSettings.lat = root.lat;
+        UserSettings.lon = root.lon;
+        UserSettings.pixelsPerLon = root.pixelsPerLon;
     }
 
     function zoomIn() {
-        const pixelsPerLatitude = viewport.z * 1.5;
+        const pixelsPerLatitude = root.pixelsPerLon * 1.5;
         adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
     }
 
     function zoomOut() {
-        const pixelsPerLatitude = viewport.z / 1.5;
+        const pixelsPerLatitude = root.pixelsPerLon / 1.5;
         adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
     }
 
     Component.onCompleted: updateTileModel();
-    onViewportChanged: updateTileModel()
+    onLatChanged: updateTileModel()
+    onLonChanged: updateTileModel()
+    onPixelsPerLonChanged: updateTileModel()
 
     Rectangle {
         id: mapRoot
@@ -51,8 +58,8 @@ Item {
 
             anchors.fill: parent
             onPinchStarted: function (event){
-                startPos = Qt.point(root.viewport.x, root.viewport.y);
-                startPixelsPerLongitude = root.viewport.z;
+                startPos = Qt.point(root.lon, root.lat);
+                startPixelsPerLongitude = root.pixelsPerLon;
 
             }
 
@@ -75,10 +82,12 @@ Item {
                 }
 
                 onPressed: function (mouse) {
-                    startPos = Qt.point(root.viewport.x, root.viewport.y);
+                    startPos = Qt.point(root.lon, root.lat);
                     mouseStartPos = Qt.point(mouse.x, mouse.y);
                     mouse.accept = false;
-                    statusBar.position = mapTile.offsetPosition(startPos, root.viewport.z, Qt.point(mouse.x, mouse.y));
+                    statusBar.position = mapTile.offsetPosition(startPos,
+                                                                root.pixelsPerLon,
+                                                                Qt.point(mouse.x, mouse.y));
                 }
 
                 MapTile {
@@ -89,16 +98,15 @@ Item {
                 onPositionChanged: function (mouse) {
                     if (pressed) {
                         let offset = mapTile.offsetPosition(mouseArea.startPos,
-                                                            root.viewport.z,
+                                                            root.pixelsPerLon,
                                                             Qt.point(mouseArea.mouseStartPos.x - mouse.x,
                                                                      mouseArea.mouseStartPos.y - mouse.y));
-                        root.viewport = Qt.vector3d(offset.x,
-                                                    offset.y,
-                                                    root.viewport.z)
+                        root.lon = offset.x;
+                        root.lat = offset.y;
                     } else {
-                        const topLeft = Qt.point(root.viewport.x, root.viewport.y);
+                        const topLeft = Qt.point(root.lon, root.lat);
                         const position = mapTile.offsetPosition(topLeft,
-                                                                root.viewport.z,
+                                                                root.pixelsPerLon,
                                                                 Qt.point(mouse.x, mouse.y));
                         statusBar.position = position;
                     }
@@ -106,7 +114,7 @@ Item {
 
                 onWheel: function (wheel) {
                     let zoomFactor = Math.pow(2, wheel.angleDelta.y / 500);
-                    adjustZoom(root.viewport.z * zoomFactor,
+                    adjustZoom(root.pixelsPerLon * zoomFactor,
                                Qt.point(wheel.x, wheel.y),
                                Qt.point(0, 0));
                 }
@@ -120,7 +128,10 @@ Item {
 
             MapTile {
                 id: tile
-                viewport: root.viewport
+
+                lat: root.lat
+                lon: root.lon
+                pixelsPerLon: root.pixelsPerLon
                 tileFactory: TileFactory
                 tileRef: model.tileRef
 
@@ -243,7 +254,9 @@ Item {
                 id: sceneGraphRenderer
 
                 tileFactory: TileFactory
-                viewport: root.viewport
+                lat: root.lat
+                lon: root.lon
+                pixelsPerLon: root.pixelsPerLon
                 tileModel: MapTileModel
             }
         }
@@ -252,7 +265,7 @@ Item {
     StatusBar {
         id: statusBar
         cryptReaderStatus: ChartModel.cryptReaderStatus
-        pixelsPerLongitude: root.viewport.z
+        pixelsPerLongitude: root.pixelsPerLon
         anchors {
             bottom: parent.bottom
             right: parent.right
@@ -268,9 +281,9 @@ Item {
     }
 
     function adjustZoom(newPixelsPerLongitude, zoomOrigin, offset) {
-        const topLeft = Qt.point(root.viewport.x, root.viewport.y);
+        const topLeft = Qt.point(root.lon, root.lat);
         let lockPosition = mapTile.offsetPosition(topLeft,
-                                                  root.viewport.z,
+                                                  root.pixelsPerLon,
                                                   zoomOrigin);
 
         newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude, 50), 100000);
@@ -279,8 +292,8 @@ Item {
                                                   newPixelsPerLongitude,
                                                   Qt.point(-zoomOrigin.x - offset.x,
                                                            -zoomOrigin.y - offset.y));
-        root.viewport = Qt.vector3d(newTopLeft.x,
-                                    newTopLeft.y,
-                                    newPixelsPerLongitude)
+        root.lon = newTopLeft.x;
+        root.lat = newTopLeft.y;
+        root.pixelsPerLon = newPixelsPerLongitude;
     }
 }

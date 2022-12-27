@@ -4,7 +4,6 @@
 
 #include <QHash>
 #include <QSet>
-#include <QVector3D>
 #include <QtQuick>
 
 #include "scene/tessellator.h"
@@ -20,17 +19,9 @@ class Scene : public QQuickItem
     Q_OBJECT
     Q_PROPERTY(TileFactoryWrapper *tileFactory READ tileFactory WRITE setTileFactory NOTIFY tileFactoryChanged)
     Q_PROPERTY(QAbstractListModel *tileModel READ tileModel WRITE setModel NOTIFY tileModelChanged)
-
-    /*!
-        \property viewport
-
-        The viewport is QVector3D where the x, y and z coordinates are (mis-)used
-        as follows:
-        - x longitude
-        - y longitude
-        - z pixelsPerLon
-    */
-    Q_PROPERTY(QVector3D viewport READ viewport WRITE setViewport NOTIFY viewportChanged)
+    Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
+    Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
+    Q_PROPERTY(double pixelsPerLon READ pixelsPerLon WRITE setPixelsPerLon NOTIFY pixelsPerLonChanged)
 
 public:
     Scene(QQuickItem *parent = 0);
@@ -40,8 +31,14 @@ public:
     TileFactoryWrapper *tileFactory() const;
     void setTileFactory(TileFactoryWrapper *newTileFactory);
 
-    const QVector3D &viewport() const;
-    void setViewport(const QVector3D &newViewport);
+    double lat() const;
+    void setLat(double newLat);
+
+    double lon() const;
+    void setLon(double newLon);
+
+    double pixelsPerLon() const;
+    void setPixelsPerLon(double newPixelsPerLon);
 
     QAbstractListModel *tileModel() const;
     void setModel(QAbstractListModel *newTileModel);
@@ -56,7 +53,9 @@ public slots:
 
 signals:
     void tileFactoryChanged();
-    void viewportChanged();
+    void latChanged();
+    void lonChanged();
+    void pixelsPerLonChanged();
     void tileModelChanged();
 
 private:
@@ -84,7 +83,10 @@ private:
     QSet<QString> m_tessellatorsWithPendingData;
     std::shared_ptr<SymbolImage> m_symbolImage;
     std::shared_ptr<FontImage> m_fontImage;
-    QVector3D m_viewport;
+
+    double m_lat = 0;
+    double m_lon = 0;
+    double m_pixelsPerLon = 300;
     QRectF m_boundingRect;
 
     /// The viewport in mercator coordinates

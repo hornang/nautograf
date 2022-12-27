@@ -10,7 +10,11 @@ static const QString appName = QStringLiteral("Nautograf");
 class UserSettings : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QVector3D viewport READ viewport WRITE setViewPort NOTIFY viewportChanged)
+
+    Q_PROPERTY(double lat READ lat WRITE setLat NOTIFY latChanged)
+    Q_PROPERTY(double lon READ lon WRITE setLon NOTIFY lonChanged)
+    Q_PROPERTY(double pixelsPerLon READ pixelsPerLon WRITE setPixelsPerLon NOTIFY pixelsPerLonChanged)
+
     Q_PROPERTY(QWindow::Visibility windowState READ windowState WRITE setWindowState NOTIFY windowStateChanged)
     Q_PROPERTY(QRect geometry READ geometry WRITE setGeometry NOTIFY geometryChanged)
     Q_PROPERTY(bool debugView READ debugView WRITE setDebugView NOTIFY debugViewChanged)
@@ -19,8 +23,6 @@ class UserSettings : public QObject
 public:
     UserSettings();
     ~UserSettings();
-    const QVector3D &viewport() const;
-    void setViewPort(const QVector3D &newViewport);
     QWindow::Visibility windowState() const;
     void setWindowState(QWindow::Visibility newWindowState);
     const QRect &geometry() const;
@@ -32,18 +34,31 @@ public:
     bool showLegacyRenderer() const;
     void setLegacyRender(bool newLegacyRender);
 
+    double lat() const;
+    void setLat(const double &newLat);
+
+    double lon() const;
+    void setLon(const double &newLon);
+
+    double pixelsPerLon() const;
+    void setPixelsPerLon(const double &newPixelsPerLon);
+
 private:
     static const QString showLegacyRendererKey;
-    QVector3D m_viewport = QVector3D((float)4.5, (float)61, (float)200);
     void write();
     void read();
     QWindow::Visibility m_windowState = QWindow::Windowed;
     QRect m_geometry = QRect(200, 200, 1280, 1024);
+    double m_lat = 61;
+    double m_lon = 4.5;
+    double m_pixelsPerLon = 200;
     bool m_debugView;
     bool m_showLegacyRenderer = false;
 
 signals:
-    void viewportChanged();
+    void latChanged();
+    void lonChanged();
+    void pixelsPerLonChanged();
     void windowStateChanged();
     void geometryChanged();
     void debugViewChanged();

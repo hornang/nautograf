@@ -67,24 +67,6 @@ QPointF MapTile::offsetPosition(QPointF startPosition,
     return point;
 }
 
-QPointF MapTile::positionFromViewport(const GeoRect &boundingBox,
-                                      const QVector3D &viewport)
-{
-    if (boundingBox.isNull()) {
-        return QPointF();
-    }
-
-    double x = Mercator::mercatorWidth(viewport.x(),
-                                       boundingBox.left(),
-                                       viewport.z());
-
-    double y = Mercator::mercatorHeight(viewport.y(),
-                                        boundingBox.top(),
-                                        viewport.z());
-
-    return QPointF(x - tilePadding, y - tilePadding);
-}
-
 void MapTile::setChartVisibility(const QString &name, bool visible)
 {
     if (visible && m_hiddenCharts.contains(name)) {
@@ -94,10 +76,10 @@ void MapTile::setChartVisibility(const QString &name, bool visible)
     } else {
         return;
     }
-    render(m_viewport);
+    render(m_lat, m_lon, m_pixelsPerLon);
 }
 
-void MapTile::render(const QVector3D &viewport)
+void MapTile::render(double lat, double lon, double pixelsPerLon)
 {
     if (m_renderResult.isRunning()) {
         m_pendingRender = true;
@@ -110,7 +92,7 @@ void MapTile::render(const QVector3D &viewport)
     renderConfig.size = m_imageSize;
     renderConfig.hiddenCharts = m_hiddenCharts;
     renderConfig.offset = QPointF(extraPixels.width() / 2, extraPixels.height() / 2);
-    renderConfig.pixelsPerLongitude = viewport.z();
+    renderConfig.pixelsPerLongitude = pixelsPerLon;
 
     if (m_chartDatas.empty()) {
         m_loading = true;
@@ -163,7 +145,7 @@ void MapTile::renderFinished()
     emit noDataChanged(m_noData);
 
     if (m_pendingRender) {
-        render(m_viewport);
+        render(m_lat, m_lon, m_pixelsPerLon);
     }
 }
 
@@ -236,7 +218,7 @@ QPointF MapTile::toMercator(const Pos &topLeft,
     return QPointF(x, y);
 }
 
-QSizeF MapTile::sizeFromViewport(const GeoRect &boundingBox, const QVector3D &viewport)
+QSizeF MapTile::sizeFromPixelsPerLon(const GeoRect &boundingBox, double pixelsPerLon)
 {
     if (boundingBox.isNull()) {
         return QSize();
@@ -244,11 +226,11 @@ QSizeF MapTile::sizeFromViewport(const GeoRect &boundingBox, const QVector3D &vi
 
     double width = Mercator::mercatorWidth(boundingBox.left(),
                                            boundingBox.right(),
-                                           viewport.z());
+                                           pixelsPerLon);
 
     double height = Mercator::mercatorHeight(boundingBox.top(),
                                              boundingBox.bottom(),
-                                             viewport.z());
+                                             pixelsPerLon);
     if (width > 8000) {
         qWarning() << "Width too large";
         width = 8000;
@@ -272,42 +254,77 @@ std::vector<std::shared_ptr<Chart>> MapTile::getChartData(TileFactoryWrapper *ti
 
 void MapTile::updateGeometry()
 {
-    if (m_updatedViewport == m_viewport || m_boundingBox.isNull()) {
+    if ((m_updatedPixelsPerLon == m_pixelsPerLon && m_updatedLat == m_lat && m_updatedLon == m_lon)
+        || m_boundingBox.isNull()) {
         return;
     }
 
-    const QPointF position = positionFromViewport(m_boundingBox, m_viewport);
+    if (m_boundingBox.isNull()) {
+        return;
+    }
 
-    if (m_updatedViewport.z() != m_viewport.z()) {
-        const QSizeF content = sizeFromViewport(m_boundingBox, m_viewport);
+    double x = Mercator::mercatorWidth(m_lon, m_boundingBox.left(), m_pixelsPerLon);
+    double y = Mercator::mercatorHeight(m_lat, m_boundingBox.top(), m_pixelsPerLon);
+    QPointF position(x - tilePadding, y - tilePadding);
+
+    if (m_updatedPixelsPerLon != m_pixelsPerLon) {
+        const QSizeF content = sizeFromPixelsPerLon(m_boundingBox, m_pixelsPerLon);
         m_imageSize = content.toSize() + extraPixels;
         const QSizeF size = QSize(content.width() + 2. * tilePadding,
                                   content.height() + 2. * tilePadding);
 
         setPosition(position);
         setSize(size);
-        render(m_viewport);
+        render(m_lat, m_lon, m_pixelsPerLon);
     } else {
         setPosition(position);
     }
 
-    m_updatedViewport = m_viewport;
+    m_updatedLat = m_lat;
+    m_updatedLon = m_lon;
+    m_updatedPixelsPerLon = m_pixelsPerLon;
 }
 
-void MapTile::setViewport(const QVector3D &viewport)
+double MapTile::lat() const
 {
-    if (m_viewport == viewport) {
-        return;
-    }
+    return m_lat;
+}
 
-    m_viewport = viewport;
-    emit viewportChanged(viewport);
+void MapTile::setLat(double newLat)
+{
+    if (qFuzzyCompare(m_lat, newLat))
+        return;
+    m_lat = newLat;
+    emit latChanged();
     updateGeometry();
 }
 
-QVector3D MapTile::viewport() const
+double MapTile::lon() const
 {
-    return m_viewport;
+    return m_lon;
+}
+
+void MapTile::setLon(double newLon)
+{
+    if (qFuzzyCompare(m_lon, newLon))
+        return;
+    m_lon = newLon;
+    emit lonChanged();
+    updateGeometry();
+}
+
+double MapTile::pixelsPerLon() const
+{
+    return m_pixelsPerLon;
+}
+
+void MapTile::setPixelsPerLon(double newPixelsPerLon)
+{
+    if (qFuzzyCompare(m_pixelsPerLon, newPixelsPerLon))
+        return;
+    m_pixelsPerLon = newPixelsPerLon;
+    emit pixelsPerLonChanged();
+    updateGeometry();
 }
 
 void MapTile::paint(QPainter *painter)
@@ -316,7 +333,7 @@ void MapTile::paint(QPainter *painter)
     renderConfig.offset = QPointF(extraPixels.width(), extraPixels.height() / 2);
     renderConfig.topLeft = m_boundingBox.topLeft();
     renderConfig.size = m_imageSize;
-    renderConfig.pixelsPerLongitude = m_viewport.z();
+    renderConfig.pixelsPerLongitude = m_pixelsPerLon;
 
     const QRectF targetRect = QRectF(tilePadding - extraPixels.width() / 2,
                                      tilePadding - extraPixels.height() / 2,
@@ -609,8 +626,7 @@ void MapTile::setTileRef(const QVariantMap &tileRef)
 
     // Used to trigger re-rendering when selecting a custom set of charts in the
     // debug view mode.
-    m_updatedViewport = QVector3D();
-
+    m_updatedPixelsPerLon = 0;
     updateGeometry();
 }
 

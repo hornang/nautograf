@@ -34,15 +34,15 @@ void Scene::updateBox()
 {
     QPointF topLeft;
     {
-        double x = Mercator::mercatorWidth(0, m_viewport.x(), Tessellator::pixelsPerLon());
-        double y = Mercator::mercatorHeight(0, m_viewport.y(), Tessellator::pixelsPerLon());
+        double x = Mercator::mercatorWidth(0, m_lon, Tessellator::pixelsPerLon());
+        double y = Mercator::mercatorHeight(0, m_lat, Tessellator::pixelsPerLon());
         topLeft = QPointF(x, y);
     }
 
     QRectF rect = boundingRect();
 
-    double lon = Mercator::mercatorWidthInverse(m_viewport.x(), rect.width(), m_viewport.z());
-    double lat = Mercator::mercatorHeightInverse(m_viewport.y(), rect.height(), m_viewport.z());
+    double lon = Mercator::mercatorWidthInverse(m_lon, rect.width(), m_pixelsPerLon);
+    double lat = Mercator::mercatorHeightInverse(m_lat, rect.height(), m_pixelsPerLon);
     QPointF gpsBottom(lon, lat);
 
     QPointF bottomRight;
@@ -236,17 +236,49 @@ void Scene::setTileFactory(TileFactoryWrapper *newTileFactory)
     fetchAll();
 }
 
-const QVector3D &Scene::viewport() const
+double Scene::lat() const
 {
-    return m_viewport;
+    return m_lat;
 }
 
-void Scene::setViewport(const QVector3D &newViewport)
+void Scene::setLat(double newLat)
 {
-    if (m_viewport == newViewport)
+    if (qFuzzyCompare(m_lat, newLat))
         return;
-    m_viewport = newViewport;
-    emit viewportChanged();
+    m_lat = newLat;
+    emit latChanged();
+
+    updateBox();
+    update();
+}
+
+double Scene::lon() const
+{
+    return m_lon;
+}
+
+void Scene::setLon(double newLon)
+{
+    if (qFuzzyCompare(m_lon, newLon))
+        return;
+    m_lon = newLon;
+    emit lonChanged();
+
+    updateBox();
+    update();
+}
+
+double Scene::pixelsPerLon() const
+{
+    return m_pixelsPerLon;
+}
+
+void Scene::setPixelsPerLon(double newPixelsPerLon)
+{
+    if (qFuzzyCompare(m_pixelsPerLon, newPixelsPerLon))
+        return;
+    m_pixelsPerLon = newPixelsPerLon;
+    emit pixelsPerLonChanged();
 
     updateBox();
     update();
