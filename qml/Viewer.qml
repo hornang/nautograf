@@ -141,13 +141,6 @@ Item {
                     running: tile.loading && !timer.running
                 }
 
-                onNewGeometry: function (x_, y_, w, h) {
-                    tile.x = x_;
-                    tile.y = y_;
-                    tile.width = w;
-                    tile.height = h;
-                }
-
                 Item {
                     id: overlayContent
                     anchors.fill: parent

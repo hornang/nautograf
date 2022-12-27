@@ -284,15 +284,8 @@ void MapTile::updateGeometry()
         const QSizeF size = QSize(content.width() + 2. * tilePadding,
                                   content.height() + 2. * tilePadding);
 
-        if (m_updatedViewport.isNull()) {
-            setPosition(position);
-            setSize(size);
-        } else {
-            emit newGeometry(position.x(),
-                             position.y(),
-                             size.width(),
-                             size.height());
-        }
+        setPosition(position);
+        setSize(size);
         render(m_viewport);
     } else {
         setPosition(position);

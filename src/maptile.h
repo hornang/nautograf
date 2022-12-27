@@ -159,15 +159,6 @@ private:
     bool m_error = false;
 
 signals:
-    /*!
-        Emitted when the tile has received a change in pixelsPerLon (and possibly
-        topLeft position).
-
-        This requires the tile to change width and height and this allows QML to
-        handle animating the change from old to new x, y, width and height.
-    */
-    void newGeometry(int x, int y, int width, int height);
-
     void chartsChanged();
     void viewportChanged(const QVector3D &viewport);
     void tileRefChanged();
