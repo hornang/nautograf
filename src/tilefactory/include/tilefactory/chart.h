@@ -124,14 +124,24 @@ private:
                               std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
 
     template <typename T>
-    static void fillList(typename capnp::List<T>::Builder &dst,
-                         const std::vector<ClippedPolygonItem<T>> &src,
-                         std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
+    static void copyPolygonsToBuilder(typename T::Builder builder,
+                                      const std::vector<ChartClipper::Polygon> &polygons);
 
     static inline void fromOesencPolygon(ChartData::Polygon::Builder dst,
                                          const oesenc::S57::MultiGeometry &srcPolygon);
-    static inline void loadPolygons(ChartData::Polygon::Builder dst,
-                                    const std::vector<std::vector<oesenc::Position>> &src);
+
+    template <typename T>
+    static void loadPolygonsFromS57(typename T::Builder dst, const oesenc::S57 *s57);
+
+    template <typename T>
+    static void loadLinesFromS57(typename T::Builder dst, const oesenc::S57 *s57);
+
+    static std::vector<ChartClipper::Polygon> clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
+                                                           const ChartClipper::Config &config);
+
+    template <typename T>
+    static void computeCentroidFromPolygons(typename T::Builder builder);
+
     static inline void fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
                                             const std::vector<oesenc::Position> &src);
 
