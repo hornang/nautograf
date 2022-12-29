@@ -988,9 +988,3 @@ void Chart::toCapnPolygons(::capnp::List<capnp::List<ChartData::Position>>::Buil
         polygonIndex++;
     }
 }
-
-void Chart::toCapnPosition(ChartData::Position::Builder &dst, const Pos &src)
-{
-    dst.setLatitude(src.lat());
-    dst.setLongitude(src.lon());
-}

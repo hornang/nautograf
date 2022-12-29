@@ -136,7 +136,6 @@ private:
                                     const std::vector<std::vector<oesenc::Position>> &src);
     static inline void fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
                                             const std::vector<oesenc::Position> &src);
-    static inline void toCapnPosition(ChartData::Position::Builder &dst, const Pos &src);
 
     using Polygon = std::vector<Pos>;
     static inline void toCapnPolygons(capnp::List<capnp::List<ChartData::Position>>::Builder dst,
