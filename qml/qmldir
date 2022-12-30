@@ -1,6 +1,8 @@
 module Nautograf
 Viewer 1.0 Viewer.qml
 ChartSelector 1.0 ChartSelector.qml
+ViewerMenu 1.0 ViewerMenu.qml
+ViewerMenuItem 1.0 ViewerMenuItem.qml
 StatusBar 1.0 StatusBar.qml
 OverlayText 1.0 OverlayText.qml
 TileInfo 1.0 TileInfo.qml

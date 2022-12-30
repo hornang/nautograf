@@ -100,6 +100,8 @@ Item {
                     }
                 }
 
+                onClicked: root.focus = true
+
                 onDoubleClicked: function (mouse) {
                     const topLeft = Qt.point(root.lon, root.lat);
                     const position = mapTile.offsetPosition(topLeft,

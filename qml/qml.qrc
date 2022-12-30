@@ -3,6 +3,8 @@
 <qresource prefix="/qml">
     <file>main.qml</file>
     <file>Viewer.qml</file>
+    <file>ViewerMenu.qml</file>
+    <file>ViewerMenuItem.qml</file>
     <file>ChartSelector.qml</file>
     <file>OverlayText.qml</file>
     <file>StatusBar.qml</file>
