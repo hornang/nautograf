@@ -91,6 +91,15 @@ Item {
                 property point mouseStartPos
                 property point startPos
                 hoverEnabled: true
+
+                onPressAndHold: function(mouse) {
+                    const distance = Math.sqrt(Math.pow(mouse.x - mouseStartPos.x, 2) +
+                                               Math.pow(mouse.y - mouseStartPos.y, 2));
+                    if (distance < 10) {
+                        root.showContextMenu(mouse.x, mouse.y);
+                    }
+                }
+
                 onDoubleClicked: function (mouse) {
                     const topLeft = Qt.point(root.lon, root.lat);
                     const position = mapTile.offsetPosition(topLeft,
