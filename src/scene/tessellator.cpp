@@ -124,7 +124,15 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                 std::shared_ptr<const FontImage> fontImage)
 {
     Q_ASSERT(tileFactory);
-    auto charts = tileFactory->create(recipe);
+
+    std::vector<std::shared_ptr<Chart>> charts;
+
+    try {
+        charts = tileFactory->create(recipe);
+    } catch(const std::exception &e) {
+        qWarning() << "Exception in tilefactory: " << e.what();
+        return {};
+    }
 
     TileData tileData;
     QList<Symbol> symbols;
