@@ -124,9 +124,6 @@ void SymbolImage::load()
                                                                   QColor(0, 0, 0) };
         }
     }
-
-    m_initialized = true;
-    m_image.save("symbols.png");
 }
 
 QString SymbolImage::beaconHash(ChartData::BeaconShape shape)

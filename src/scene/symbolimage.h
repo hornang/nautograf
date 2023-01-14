@@ -36,7 +36,6 @@ public:
 
     SymbolImage(const QString &baseDir);
     SymbolImage(const SymbolImage &other) = delete;
-    bool isInitialized() const { return m_initialized; }
     void load();
     const QImage image() const { return m_image; }
     std::optional<TextureSymbol> underwaterRock(const ChartData::UnderwaterRock::Reader &rock) const;
@@ -61,7 +60,5 @@ private:
 
     QHash<QString, TextureSymbol> m_symbols;
     QImage m_image;
-    QPoint m_position;
     QString m_baseDir;
-    bool m_initialized = false;
 };
