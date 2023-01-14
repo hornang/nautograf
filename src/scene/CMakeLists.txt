@@ -72,8 +72,8 @@ target_link_libraries(scene PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::Concurrent
-    msdfgen::msdfgen-core
-    msdfgen::msdfgen-ext
+    msdfgen-core
+    msdfgen-ext
     freetype-gl
     tilefactory
 )
