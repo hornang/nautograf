@@ -8,7 +8,7 @@ Because getting chart data is not free for many geographic areas, Nautograf only
 
 ## Development status
 
-![Windows](https://github.com/hornang/nautograf/actions/workflows/windows.yaml/badge.svg)
+![Windows](https://github.com/hornang/nautograf/actions/workflows/ci.yml/badge.svg)
 
 Nautograf is a spare time project so progress is varying and non-deterministic. It is likely that it will never come up to a point of being sufficient for navigation. The current feature set is limited and **not sufficient for nautical navigation**. 
 
