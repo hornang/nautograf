@@ -6,7 +6,9 @@
 #include "chart.h"
 #include "georect.h"
 
-class ITileSource
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT ITileSource
 {
 public:
     virtual std::shared_ptr<Chart> create(const GeoRect &boundingBox,

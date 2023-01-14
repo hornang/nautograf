@@ -6,7 +6,7 @@
 #include <algorithm>
 
 #include "maptile.h"
-#include "tilefactorywrapper.h"
+#include "scene/tilefactorywrapper.h"
 #include "tilefactory/mercator.h"
 
 static const QColor builtUpAreaColor(228, 228, 177);

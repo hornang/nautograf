@@ -1,4 +1,4 @@
-#include "tilefactorywrapper.h"
+#include "scene/tilefactorywrapper.h"
 
 std::vector<std::shared_ptr<Chart>> TileFactoryWrapper::create(TileRecipe recipe)
 {

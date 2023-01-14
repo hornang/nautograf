@@ -9,7 +9,9 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
-class TileFactory
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT TileFactory
 {
 public:
     TileFactory() = default;

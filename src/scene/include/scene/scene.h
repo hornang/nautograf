@@ -6,15 +6,18 @@
 #include <QSet>
 #include <QtQuick>
 
-#include "scene/tessellator.h"
 #include "tilefactory/chart.h"
 #include "tilefactory/georect.h"
 #include "tilefactorywrapper.h"
 
+#include "scene_export.h"
+
 class SymbolImage;
 class FontImage;
+class Tessellator;
+class TileData;
 
-class Scene : public QQuickItem
+class SCENE_EXPORT Scene : public QQuickItem
 {
     Q_OBJECT
     Q_PROPERTY(TileFactoryWrapper *tileFactory READ tileFactory WRITE setTileFactory NOTIFY tileFactoryChanged)
@@ -79,7 +82,7 @@ private:
     void updateNodeData(const QString &tileId,
                         QSGNode *parent,
                         const QHash<QString, T *> &existingNodes,
-                        std::function<QList<typename T::Vertex>(const Tessellator::TileData &tileData)> getter,
+                        std::function<QList<typename T::Vertex>(const TileData &tileData)> getter,
                         QSGMaterial *material);
 
     template <typename T>

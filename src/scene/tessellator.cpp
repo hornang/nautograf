@@ -118,10 +118,10 @@ QPointF Tessellator::labelOffset(const QRectF &labelBox,
     }
 }
 
-Tessellator::TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
-                                             TileFactoryWrapper::TileRecipe recipe,
-                                             std::shared_ptr<const SymbolImage> symbolImage,
-                                             std::shared_ptr<const FontImage> fontImage)
+TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
+                                TileFactoryWrapper::TileRecipe recipe,
+                                std::shared_ptr<const SymbolImage> symbolImage,
+                                std::shared_ptr<const FontImage> fontImage)
 {
     Q_ASSERT(tileFactory);
     auto charts = tileFactory->create(recipe);

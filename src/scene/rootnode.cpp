@@ -2,10 +2,10 @@
 #include <QSGTexture>
 
 #include "annotation/annotationmaterial.h"
+#include "fontimage.h"
 #include "polygon/polygonmaterial.h"
 #include "rootnode.h"
-#include "scene/fontimage.h"
-#include "scene/symbolimage.h"
+#include "symbolimage.h"
 
 RootNode::RootNode(const QImage &symbolImage,
                    const QImage &fontImage,

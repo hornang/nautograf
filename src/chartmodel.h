@@ -9,7 +9,7 @@
 #include <oesenc/keylistreader.h>
 
 #include "cryptreader.h"
-#include "tilefactorywrapper.h"
+#include "scene/tilefactorywrapper.h"
 #include "tilefactory/tilefactory.h"
 #include <QAbstractListModel>
 

@@ -3,7 +3,9 @@
 #include <array>
 #include <vector>
 
-class Triangulator
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT Triangulator
 {
 public:
     Triangulator() = delete;

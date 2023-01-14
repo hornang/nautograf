@@ -4,7 +4,7 @@
 #include <ext/import-svg.h>
 #include <msdfgen.h>
 
-#include "scene/symbolimage.h"
+#include "symbolimage.h"
 
 const int imageWidth = 300;
 const int imageHeight = 300;

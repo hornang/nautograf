@@ -9,7 +9,9 @@
 #include "oesenc/chartfile.h"
 #include "tilefactory/chart.h"
 
-class OesencTileSource : public ITileSource
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT OesencTileSource : public ITileSource
 {
 public:
     OesencTileSource(const std::string &chartFile,

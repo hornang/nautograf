@@ -2,8 +2,8 @@
 #include <QString>
 #include <QVariantMap>
 
+#include "scene/tilefactorywrapper.h"
 #include "tilefactory/tilefactory.h"
-#include "tilefactorywrapper.h"
 
 class TileInfoBackend : public QObject
 {

@@ -1,6 +1,8 @@
 #pragma once
 
-class Mercator
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT Mercator
 {
 public:
     static double mercatorWidth(double leftLongitude,

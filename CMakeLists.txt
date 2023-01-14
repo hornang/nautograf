@@ -11,10 +11,15 @@ find_package(Qt6
     CMAKE_FIND_ROOT_PATH_BOTH
 )
 
-# Used for creating signed distance field for symbols. Only the traditional
-# single channel mode is used.
-set(MSDFGEN_BUILD_STANDALONE false)
-add_subdirectory(msdfgen)
+function(AddMdfgen)
+    # Used for creating signed distance field for symbols. Only the traditional
+    # single channel mode is used.
+    set(BUILD_SHARED_LIBS OFF)
+    set(MSDFGEN_BUILD_STANDALONE false)
+    add_subdirectory(msdfgen)
+endfunction()
+
+AddMdfgen()
 
 find_package(freetype-gl CONFIG REQUIRED)
 
@@ -31,11 +36,16 @@ find_package(UnixCommands)
 add_subdirectory(oesenc)
 add_subdirectory(src/tilefactory)
 
-set(CLIPPER2_TESTS OFF)
-set(CLIPPER2_EXAMPLES OFF)
-set(CLIPPER2_TESTS OFF)
-set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-add_subdirectory(Clipper2/CPP)
+function(AddClipper2)
+    set(BUILD_SHARED_LIBS OFF)
+    set(CLIPPER2_TESTS OFF)
+    set(CLIPPER2_EXAMPLES OFF)
+    set(CLIPPER2_TESTS OFF)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    add_subdirectory(Clipper2/CPP)
+endfunction()
+
+AddClipper2()
 
 option(RESOURCE_DEV "Load QML from file system not from Qt resource" "")
 
@@ -77,8 +87,6 @@ add_executable(nautograf WIN32
     src/maptile.cpp
     src/maptilemodel.h
     src/maptilemodel.cpp
-    src/tilefactorywrapper.cpp
-    src/tilefactorywrapper.h
     src/chartmodel.cpp
     src/chartmodel.h
     src/tileinfobackend.cpp
@@ -138,13 +146,25 @@ if(WIN32)
         ${CMAKE_CURRENT_BINARY_DIR}/deploy-qt-windows.cmake
     )
 
-    install(IMPORTED_RUNTIME_ARTIFACTS nautograf
+    install(
+        TARGETS nautograf scene tilefactory oesenc
+        RUNTIME_DEPENDENCY_SET dependency_set
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
+    )
+
+    install(
+        IMPORTED_RUNTIME_ARTIFACTS nautograf
         RUNTIME_DEPENDENCY_SET dependency_set
     )
 
-    install(RUNTIME_DEPENDENCY_SET dependency_set
-        PRE_INCLUDE_REGEXES "tinyxml" "freetype" "bz2" "brotli" "libpng" "zlib"
+    install(
+        RUNTIME_DEPENDENCY_SET dependency_set
+        PRE_INCLUDE_REGEXES "tinyxml2" "freetype" "bz2" "brotli" "libpng" "zlib"
         PRE_EXCLUDE_REGEXES ".*"
+
+        # tinyxml exists as runtime dependency for more than one target. Exclude
+        # one of them to avoid conflict during install.
+        POST_EXCLUDE_REGEXES ".*/scene/.*tinyxml2.*"
     )
 
     set(CPACK_GENERATOR "ZIP")

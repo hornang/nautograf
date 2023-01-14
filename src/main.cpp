@@ -8,8 +8,8 @@
 #include "maptilemodel.h"
 #include "oesenc/chartfile.h"
 #include "scene/scene.h"
+#include "scene/tilefactorywrapper.h"
 #include "tilefactory/tilefactory.h"
-#include "tilefactorywrapper.h"
 #include "tileinfobackend.h"
 #include "usersettings.h"
 

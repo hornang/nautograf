@@ -102,7 +102,7 @@ template <typename T>
 void Scene::updateNodeData(const QString &tileId,
                            QSGNode *parent,
                            const QHash<QString, T *> &existingNodes,
-                           std::function<QList<typename T::Vertex>(const Tessellator::TileData &tileData)> getter,
+                           std::function<QList<typename T::Vertex>(const TileData &tileData)> getter,
                            QSGMaterial *material)
 {
     const std::shared_ptr<Tessellator> &tessellator = m_tessellators[tileId];
@@ -183,7 +183,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 tileId,
                 polygonNodesParent,
                 polygonNodes,
-                [&](const Tessellator::TileData &tileData) {
+                [&](const TileData &tileData) {
                     return tileData.polygonVertices;
                 },
                 polygonMaterial);
@@ -192,7 +192,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 tileId,
                 symbolNodesParent,
                 symbolNodes,
-                [&](const Tessellator::TileData &tileData) {
+                [&](const TileData &tileData) {
                     return tileData.symbolVertices;
                 },
                 symbolMaterial);
@@ -201,7 +201,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 tileId,
                 textNodesParent,
                 textNodes,
-                [&](const Tessellator::TileData &tileData) {
+                [&](const TileData &tileData) {
                     return tileData.textVertices;
                 },
                 textMaterial);

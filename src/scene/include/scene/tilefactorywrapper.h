@@ -11,9 +11,11 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/tilefactory.h"
 
+#include "scene_export.h"
+
 class Chart;
 
-class TileFactoryWrapper : public QObject
+class SCENE_EXPORT TileFactoryWrapper : public QObject
 {
     Q_OBJECT
 

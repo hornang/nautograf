@@ -14,7 +14,9 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
-class Chart
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT Chart
 {
 public:
     struct Sounding

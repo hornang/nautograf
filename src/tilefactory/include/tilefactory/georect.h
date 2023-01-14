@@ -4,7 +4,9 @@
 
 #include "pos.h"
 
-class GeoRect
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT GeoRect
 {
 public:
     GeoRect() = default;

@@ -2,7 +2,9 @@
 
 #include <iostream>
 
-class Pos
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT Pos
 {
 public:
     Pos() = default;

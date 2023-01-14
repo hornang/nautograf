@@ -8,7 +8,9 @@
 #include "tilefactory/georect.h"
 #include "tilefactory/pos.h"
 
-class ChartClipper
+#include "tilefactory_export.h"
+
+class TILEFACTORY_EXPORT ChartClipper
 {
 public:
     using Line = std::vector<Pos>;

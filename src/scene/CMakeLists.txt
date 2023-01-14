@@ -36,6 +36,11 @@ add_library(scene
 
     tessellator.cpp
     tessellator.h
+
+    tilefactorywrapper.cpp
+    include/scene/tilefactorywrapper.h
+
+    tiledata.h
 )
 
 qt6_add_shaders(scene "shaders"
@@ -48,14 +53,18 @@ qt6_add_shaders(scene "shaders"
         "polygon/polygon.vert"
 )
 
+include(GenerateExportHeader)
+generate_export_header(scene)
+
 target_compile_definitions(scene PRIVATE SYMBOLS_DIR="${SYMBOLS_DIR}")
 
 set_target_properties(scene PROPERTIES AUTOMOC TRUE)
 
 target_include_directories(scene
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
+        .
     PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}
         include
 )
 

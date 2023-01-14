@@ -7,12 +7,14 @@
 #include <QSGTexture>
 #include <QtConcurrent>
 
-#include "scene/annotation/annotationnode.h"
-#include "scene/fontimage.h"
-#include "scene/polygon/polygonnode.h"
-#include "scene/symbolimage.h"
+#include "annotation/annotationnode.h"
+#include "fontimage.h"
+#include "polygon/polygonnode.h"
+#include "scene/tilefactorywrapper.h"
+#include "symbolimage.h"
 #include "tilefactory/chart.h"
-#include "tilefactorywrapper.h"
+
+#include "tiledata.h"
 
 /*!
     Processes chart data for a tile an creates vertices for scene graph
@@ -21,13 +23,6 @@ class Tessellator : public QObject
 {
     Q_OBJECT
 public:
-    struct TileData
-    {
-        QList<AnnotationNode::Vertex> symbolVertices;
-        QList<AnnotationNode::Vertex> textVertices;
-        QList<PolygonNode::Vertex> polygonVertices;
-    };
-
     Tessellator(TileFactoryWrapper *tileFactory,
                 TileFactoryWrapper::TileRecipe,
                 std::shared_ptr<const SymbolImage> symbolImage,
