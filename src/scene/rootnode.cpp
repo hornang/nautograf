@@ -2,7 +2,6 @@
 #include <QSGTexture>
 
 #include "annotation/annotationmaterial.h"
-#include "fontimage.h"
 #include "polygon/polygonmaterial.h"
 #include "rootnode.h"
 #include "symbolimage.h"
