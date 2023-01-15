@@ -9,9 +9,17 @@
 #include "tilefactory/mercator.h"
 #include "tilefactory/triangulator.h"
 
+static const QColor labelColor = Qt::black;
+static const QColor symbolLabelColor = Qt::black;
 static const QColor criticalWaterColor(165, 202, 159);
 static const QColor landAreaColor(255, 240, 190);
-static const QColor builtUpAreaColor(221, 205, 153);
+static const QColor builtUpAreaColor(240, 220, 160);
+static const QColor coastLineColor = landAreaColor.darker(200);
+static const QColor builtUpAreaColorBorder = builtUpAreaColor.darker(150);
+static const QColor pontoonColor = builtUpAreaColor.darker(120);
+static const QColor pontoonBorderColor = pontoonColor.darker(150);
+static const QColor roadColor = landAreaColor.darker(120);
+static const QColor roadColorBorder = roadColor.darker(150);
 
 // Arbitrary chosen conversion factor to transform lat/lon to an internal mercator
 // projection that can be linearly transformed in scene graph/vertex shader.
@@ -207,7 +215,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  labelOffset(boundingBox, symbol.value(), LabelPlacement::Below),
                                  boundingBox,
                                  FontImage::FontType::Soundings,
-                                 QColor(0, 0, 0),
+                                 symbolLabelColor,
                                  rockPointSize,
                                  std::nullopt,
                                  std::nullopt } },
@@ -236,7 +244,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  labelOffset(labelBox, symbol.value(), LabelPlacement::Below),
                                  labelBox,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 symbolLabelColor,
                                  soundingPointSize,
                                  std::nullopt } },
                              2,
@@ -257,7 +265,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
                                  labelBox,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 labelColor,
                                  landRegionPointSize,
                                  std::nullopt } },
                              3,
@@ -282,7 +290,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
                                  labelBox,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 labelColor,
                                  builtUpPointSize,
                                  std::nullopt } },
                              4,
@@ -318,7 +326,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
                                  labelBox,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 symbolLabelColor,
                                  landAreaPointSize,
                                  std::nullopt } },
                              4,
@@ -355,7 +363,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  labelOffset,
                                  metrics,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 symbolLabelColor,
                                  builtUpAreaPointSize,
                                  std::nullopt } },
                              4,
@@ -383,7 +391,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                                  labelOffset(metrics, symbol.value(), LabelPlacement::Below),
                                  metrics,
                                  FontImage::FontType::Normal,
-                                 Qt::black,
+                                 symbolLabelColor,
                                  beaconPointSize,
                                  std::nullopt } },
                              5,
