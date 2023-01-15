@@ -26,6 +26,8 @@ add_library(scene
 
     fontimage.cpp
     fontimage.h
+    geometrynode.cpp
+    geometrynode.h
     rootnode.cpp
     rootnode.h
     symbolimage.cpp

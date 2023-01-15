@@ -536,30 +536,21 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
     tileData.symbolVertices = addSymbols(symbols);
     tileData.textVertices = addLabels(labels, fontImage.get());
 
-    int chartCounter = 0;
-
-    // Controlling the z-value is an attempt to layer the polygons in the correct
-    // order both within the chart so that coverage area is at the bottom and
-    // also between charts for multi-chart tiles. E.g. high-res map that doesn't
-    // cover the entire tile must be shown on top.
-    //
-    // z-values must be between 0 and 1 in Qt scene graph so zSpan and zBase
-    // is used to compress the values to this range.
-    float zSpan = 1.0f / (charts.size() + 1);
-
     for (const std::shared_ptr<Chart> &chart : charts) {
-        float zBase = static_cast<float>(charts.size() - chartCounter) * zSpan;
 
-        tileData.polygonVertices += drawPolygons<ChartData::CoverageArea>(
+        GeometryLayer geometryLayer;
+        float zBase = 1;
+
+        geometryLayer.polygonVertices += drawPolygons<ChartData::CoverageArea>(
             chart->coverage(),
-            zBase,
+            zBase - 0.1,
             [](const ChartData::CoverageArea::Reader &area) -> QColor {
                 return Qt::white;
             });
 
-        tileData.polygonVertices += drawPolygons<ChartData::DepthArea>(
+        geometryLayer.polygonVertices += drawPolygons<ChartData::DepthArea>(
             chart->depthAreas(),
-            zBase - 0.2 * zSpan,
+            zBase - 0.2,
             [](const ChartData::DepthArea::Reader &depthArea) -> QColor {
                 float depth = depthArea.getDepth();
                 if (depth < 0.5) {
@@ -574,20 +565,20 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                               255 - 0.2 * factor);
             });
 
-        tileData.polygonVertices += drawPolygons<ChartData::LandArea>(
+        geometryLayer.polygonVertices += drawPolygons<ChartData::LandArea>(
             chart->landAreas(),
-            zBase - 0.5 * zSpan,
+            zBase - 0.5,
             [](const ChartData::LandArea::Reader &landArea) -> QColor {
                 return landAreaColor;
             });
 
-        tileData.polygonVertices += drawPolygons<ChartData::BuiltUpArea>(
+        geometryLayer.polygonVertices += drawPolygons<ChartData::BuiltUpArea>(
             chart->builtUpAreas(),
-            zBase - 0.8 * zSpan,
+            zBase - 0.8,
             [](const ChartData::BuiltUpArea::Reader &depthArea) -> QColor {
                 return builtUpAreaColor;
             });
-        chartCounter++;
+        tileData.geometryLayers.append(geometryLayer);
     }
 
     return tileData;

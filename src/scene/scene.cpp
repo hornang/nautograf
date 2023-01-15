@@ -3,6 +3,7 @@
 #include "annotation/annotationmaterial.h"
 #include "annotation/annotationnode.h"
 #include "fontimage.h"
+#include "geometrynode.h"
 #include "polygon/polygonmaterial.h"
 #include "polygon/polygonnode.h"
 #include "rootnode.h"
@@ -63,29 +64,12 @@ void Scene::removeStaleNodes(QSGNode *parent) const
     T *tile = static_cast<T *>(parent->firstChild());
     while (tile) {
         auto *next = static_cast<T *>(tile->nextSibling());
-        if (!m_tessellators.contains(tile->tileId())) {
+        if (!m_tessellators.contains(tile->id())) {
             parent->removeChildNode(tile);
             delete tile;
         }
         tile = next;
     }
-}
-
-template <typename T>
-QHash<QString, T *> Scene::currentNodes(const QSGNode *parent)
-{
-    Q_ASSERT(parent);
-
-    QHash<QString, T *> nodes;
-
-    T *tile = static_cast<T *>(parent->firstChild());
-    while (tile) {
-        nodes[tile->tileId()] = tile;
-        auto *next = static_cast<T *>(tile->nextSibling());
-        tile = next;
-    }
-
-    return nodes;
 }
 
 void Scene::markChildrensDirtyMaterial(QSGNode *parent)
@@ -98,27 +82,91 @@ void Scene::markChildrensDirtyMaterial(QSGNode *parent)
     }
 }
 
-template <typename T>
-void Scene::updateNodeData(const QString &tileId,
-                           QSGNode *parent,
-                           const QHash<QString, T *> &existingNodes,
-                           std::function<QList<typename T::Vertex>(const TileData &tileData)> getter,
-                           QSGMaterial *material)
-{
-    const std::shared_ptr<Tessellator> &tessellator = m_tessellators[tileId];
+namespace {
 
-    if (existingNodes.contains(tileId)) {
-        existingNodes[tileId]->updateVertices(getter(tessellator->data()));
-    } else {
-        parent->appendChildNode(new T(tileId, material, getter(tessellator->data())));
+struct Materials
+{
+    PolygonMaterial *polygon = nullptr;
+    AnnotationMaterial *symbol = nullptr;
+    AnnotationMaterial *text = nullptr;
+};
+
+void deleteChildNodes(QSGNode *parent)
+{
+    QSGNode *child = parent->firstChild();
+    while (child) {
+        QSGNode *nextChild = child->nextSibling();
+        delete child;
+        child = nextChild;
     }
+    parent->removeAllChildNodes();
+}
+
+template <typename T>
+T *findChild(const QSGNode *parent, const QString &id)
+{
+    Q_ASSERT(parent);
+
+    T *tile = static_cast<T *>(parent->firstChild());
+    while (tile) {
+        if (id == tile->id()) {
+            return tile;
+        }
+        tile = static_cast<T *>(tile->nextSibling());
+    }
+
+    return nullptr;
+}
+
+void updateGeometryLayers(const QString &tileId,
+                          QSGNode *parent,
+                          const QList<GeometryLayer> &newData,
+                          const Materials &materials)
+{
+    GeometryNode *geometryNode = findChild<GeometryNode>(parent, tileId);
+
+    if (geometryNode) {
+        deleteChildNodes(geometryNode);
+    } else {
+        geometryNode = new GeometryNode(tileId);
+        geometryNode->setFlag(QSGNode::OwnedByParent, true);
+        parent->appendChildNode(geometryNode);
+    }
+
+    assert(geometryNode);
+
+    for (const GeometryLayer &layer : newData) {
+        QSGNode *layerNode = new QSGNode();
+        layerNode->setFlag(QSGNode::OwnedByParent, true);
+        geometryNode->appendChildNode(layerNode);
+        layerNode->appendChildNode(new PolygonNode(tileId,
+                                                   materials.polygon,
+                                                   layer.polygonVertices));
+    }
+}
+
+void updateAnnotationNode(const QString &tileId,
+                          QSGNode *parent,
+                          std::function<QList<AnnotationNode::Vertex>(const TileData &tileData)> getter,
+                          QSGMaterial *material,
+                          const QHash<QString, std::shared_ptr<Tessellator>> &tessellators)
+{
+    auto *node = findChild<AnnotationNode>(parent, tileId);
+    const std::shared_ptr<Tessellator> &tessellator = tessellators[tileId];
+
+    if (node) {
+        node->updateVertices(getter(tessellator->data()));
+    } else {
+        parent->appendChildNode(new AnnotationNode(tileId, material, getter(tessellator->data())));
+    }
+}
 }
 
 QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 {
     RootNode *rootNode = static_cast<RootNode *>(old);
 
-    QSGNode *polygonNodesParent = nullptr;
+    QSGNode *geometryNodesParent = nullptr;
     QSGNode *symbolNodesParent = nullptr;
     QSGNode *textNodesParent = nullptr;
     QSGNode *overlayNodesParent = nullptr;
@@ -128,29 +176,30 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                                 m_fontImage->image(),
                                 window());
 
-        polygonNodesParent = new QSGNode();
-        rootNode->appendChildNode(polygonNodesParent);
+        geometryNodesParent = new QSGNode();
+        rootNode->appendChildNode(geometryNodesParent);
         symbolNodesParent = new QSGNode();
         rootNode->appendChildNode(symbolNodesParent);
         textNodesParent = new QSGNode();
         rootNode->appendChildNode(textNodesParent);
         overlayNodesParent = new QSGNode();
         rootNode->appendChildNode(overlayNodesParent);
+
     } else {
-        polygonNodesParent = rootNode->firstChild();
-        symbolNodesParent = polygonNodesParent->nextSibling();
+        geometryNodesParent = rootNode->firstChild();
+        Q_ASSERT(geometryNodesParent);
+        symbolNodesParent = geometryNodesParent->nextSibling();
+        Q_ASSERT(symbolNodesParent);
         textNodesParent = symbolNodesParent->nextSibling();
+        Q_ASSERT(textNodesParent);
         overlayNodesParent = textNodesParent->nextSibling();
+        Q_ASSERT(overlayNodesParent);
     }
 
-    Q_ASSERT(polygonNodesParent);
-    Q_ASSERT(symbolNodesParent);
-    Q_ASSERT(textNodesParent);
-    Q_ASSERT(overlayNodesParent);
-
-    PolygonMaterial *polygonMaterial = rootNode->polygonMaterial();
-    AnnotationMaterial *symbolMaterial = rootNode->symbolMaterial();
-    AnnotationMaterial *textMaterial = rootNode->textMaterial();
+    Materials materials;
+    materials.polygon = rootNode->polygonMaterial();
+    materials.symbol = rootNode->symbolMaterial();
+    materials.text = rootNode->textMaterial();
 
     QRectF box = boundingRect();
 
@@ -166,45 +215,35 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     }
 
     if (m_tessellatorRemoved) {
-        removeStaleNodes<PolygonNode>(polygonNodesParent);
+        removeStaleNodes<GeometryNode>(geometryNodesParent);
         removeStaleNodes<AnnotationNode>(symbolNodesParent);
         removeStaleNodes<AnnotationNode>(textNodesParent);
     }
 
     if (!m_tessellatorsWithPendingData.empty()) {
-        QHash<QString, PolygonNode *> polygonNodes = currentNodes<PolygonNode>(polygonNodesParent);
-        QHash<QString, AnnotationNode *> symbolNodes = currentNodes<AnnotationNode>(symbolNodesParent);
-        QHash<QString, AnnotationNode *> textNodes = currentNodes<AnnotationNode>(textNodesParent);
-
         for (const auto &tileId : m_tessellatorsWithPendingData) {
             Q_ASSERT(m_tessellators.contains(tileId));
 
-            updateNodeData<PolygonNode>(
-                tileId,
-                polygonNodesParent,
-                polygonNodes,
-                [&](const TileData &tileData) {
-                    return tileData.polygonVertices;
-                },
-                polygonMaterial);
+            updateGeometryLayers(tileId,
+                                 geometryNodesParent,
+                                 m_tessellators[tileId]->data().geometryLayers,
+                                 materials);
 
-            updateNodeData<AnnotationNode>(
-                tileId,
-                symbolNodesParent,
-                symbolNodes,
+            updateAnnotationNode(
+                tileId, symbolNodesParent,
                 [&](const TileData &tileData) {
                     return tileData.symbolVertices;
                 },
-                symbolMaterial);
+                materials.symbol,
+                m_tessellators);
 
-            updateNodeData<AnnotationNode>(
-                tileId,
-                textNodesParent,
-                textNodes,
+            updateAnnotationNode(
+                tileId, textNodesParent,
                 [&](const TileData &tileData) {
                     return tileData.textVertices;
                 },
-                textMaterial);
+                materials.text,
+                m_tessellators);
         }
         m_tessellatorsWithPendingData.clear();
     }
@@ -237,9 +276,9 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     m_newTessellators.clear();
 
     if (m_zoom != zoom) {
-        symbolMaterial->setScale(zoom);
+        materials.symbol->setScale(zoom);
         markChildrensDirtyMaterial(symbolNodesParent);
-        textMaterial->setScale(zoom);
+        materials.text->setScale(zoom);
         markChildrensDirtyMaterial(textNodesParent);
     }
     m_zoom = zoom;

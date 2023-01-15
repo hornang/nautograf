@@ -20,9 +20,9 @@ public:
     PolygonNode(const QString &tileId,
                 QSGMaterial *material,
                 const QList<PolygonNode::Vertex> &vertices);
-    const QString &tileId() const { return m_tileId; }
+    const QString &id() const { return m_id; }
     void updateVertices(const QList<Vertex> &vertices);
 
 private:
-    QString m_tileId;
+    QString m_id;
 };

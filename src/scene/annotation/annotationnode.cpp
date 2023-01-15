@@ -13,10 +13,10 @@ static const QSGGeometry::AttributeSet attributeSet = { static_cast<int>(std::si
 
 static_assert(sizeof(AnnotationNode::Vertex) == 32, "Incorrect sizeof(AnnotationNode::Vertex)");
 
-AnnotationNode::AnnotationNode(const QString &tileId,
+AnnotationNode::AnnotationNode(const QString &id,
                                QSGMaterial *material,
                                const QList<AnnotationNode::Vertex> &vertices)
-    : m_tileId(tileId)
+    : m_id(id)
 {
     setMaterial(material);
 
