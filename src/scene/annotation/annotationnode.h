@@ -29,11 +29,11 @@ public:
                    QSGMaterial *material,
                    const QList<AnnotationNode::Vertex> &vertices);
     ~AnnotationNode();
-    const QString &tileId() const { return m_tileId; }
+    const QString &id() const { return m_id; }
 
 public:
     void updateVertices(const QList<AnnotationNode::Vertex> &vertices);
 
 private:
-    QString m_tileId;
+    QString m_id;
 };

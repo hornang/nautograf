@@ -77,16 +77,6 @@ signals:
 private:
     template <typename T>
     void removeStaleNodes(QSGNode *parent) const;
-
-    template <typename T>
-    void updateNodeData(const QString &tileId,
-                        QSGNode *parent,
-                        const QHash<QString, T *> &existingNodes,
-                        std::function<QList<typename T::Vertex>(const TileData &tileData)> getter,
-                        QSGMaterial *material);
-
-    template <typename T>
-    static QHash<QString, T *> currentNodes(const QSGNode *parent);
     void markChildrensDirtyMaterial(QSGNode *parent);
     void addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first, int last);
     void updateBox();
