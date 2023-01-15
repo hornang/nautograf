@@ -35,5 +35,5 @@ void PolygonNode::updateVertices(const QList<PolygonNode::Vertex> &vertices)
 {
     geometry()->allocate(vertices.length());
     memcpy(geometry()->vertexData(), vertices.constData(), vertices.length() * sizeof(Vertex));
-    markDirty(DirtyGeometry | DirtyMaterial);
+    markDirty(DirtyGeometry);
 }
