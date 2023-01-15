@@ -33,6 +33,7 @@ find_program(RSVG-CONVERT
 
 find_package(UnixCommands)
 
+add_subdirectory(cutlines)
 add_subdirectory(oesenc)
 add_subdirectory(src/tilefactory)
 
