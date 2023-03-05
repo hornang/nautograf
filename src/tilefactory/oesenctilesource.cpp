@@ -9,7 +9,7 @@
 #include "tilefactory/mercator.h"
 #include "tilefactory/oesenctilesource.h"
 
-static constexpr int clippingMarginInPixels = 2;
+static constexpr int clippingMarginInPixels = 6;
 
 OesencTileSource::OesencTileSource(const std::string &file,
                                    const std::string &name,
