@@ -14,5 +14,6 @@ public:
                                     const std::string &name,
                                     const std::string &id);
     static std::string internalChartFileName(const std::string &tileDir,
-                                             const std::string &name);
+                                             const std::string &name,
+                                             int pixelsPerLon);
 };

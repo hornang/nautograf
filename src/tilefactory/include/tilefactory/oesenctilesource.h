@@ -27,7 +27,7 @@ public:
     std::shared_ptr<Chart> create(const GeoRect &boundingBox, int pixelsPerLongitude) override;
 
 private:
-    bool convertChartToInternalFormat();
+    bool convertChartToInternalFormat(float lineEpsilon, int pixelsPerLon);
     void readOesencMetaData(const oesenc::ChartFile *chart);
     static GeoRect fromOesencRect(const oesenc::Rect &src);
 

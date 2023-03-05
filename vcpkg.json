@@ -1,5 +1,5 @@
 {
     "name": "nautograf",
     "version": "0.1.0",
-    "dependencies": ["capnproto", "tinyxml2", "freetype-gl", "earcut-hpp"]
+    "dependencies": ["capnproto", "tinyxml2", "freetype-gl", "earcut-hpp", "boost-geometry"]
 }

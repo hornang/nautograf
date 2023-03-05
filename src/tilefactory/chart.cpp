@@ -9,30 +9,6 @@
 
 namespace {
 
-using Line = cutlines::Line;
-using Point = cutlines::Point;
-
-std::vector<Line> downsample(const std::vector<Line> &input, float epsilon)
-{
-    std::vector<Line> output;
-
-    for (const Line &line : input) {
-        Line outputLine;
-
-        Point prevPoint;
-        for (const Point &point : line) {
-            if (std::fabs(point[0] - prevPoint[0]) + std::fabs(point[1] - prevPoint[1]) > epsilon) {
-                outputLine.push_back(point);
-                prevPoint = point;
-            }
-        }
-
-        output.push_back(outputLine);
-    }
-
-    return output;
-}
-
 template <typename T>
 void copyLinesToBuilder(typename T::Builder dst, const std::vector<cutlines::Line> &lines)
 {
@@ -150,8 +126,7 @@ void clipPolygonItems(const typename capnp::List<T>::Reader &src,
 }
 
 std::vector<cutlines::Line> clipLines(const capnp::List<ChartData::Line>::Reader &lines,
-                                      const cutlines::Rect &clipRect,
-                                      float epsilon)
+                                      const cutlines::Rect &clipRect)
 {
     std::vector<cutlines::Line> clipped;
 
@@ -162,9 +137,8 @@ std::vector<cutlines::Line> clipLines(const capnp::List<ChartData::Line>::Reader
             dstLine.push_back({ pos.getLongitude(), pos.getLatitude() });
         }
 
-        std::vector<cutlines::Line> newLines = cutlines::clip(dstLine, clipRect);
-        newLines = downsample(newLines, epsilon);
-        clipped.insert(clipped.end(), newLines.begin(), newLines.end());
+        std::vector<cutlines::Line> clippedLines = cutlines::clip(dstLine, clipRect);
+        clipped.insert(clipped.end(), clippedLines.begin(), clippedLines.end());
     }
 
     return clipped;
@@ -188,8 +162,7 @@ void clipLineItems(const typename capnp::List<T>::Reader &src,
 
     for (const typename T::Reader &element : src) {
         std::vector<cutlines::Line> lines = clipLines(element.getLines(),
-                                                      toCutlinesRect(config.box, config),
-                                                      config.lineEpsilon);
+                                                      toCutlinesRect(config.box, config));
 
         if (!lines.empty()) {
             clippedItems.push_back({ {}, lines, element });
@@ -220,8 +193,7 @@ void clipPolygonOrLineItems(const typename capnp::List<T>::Reader &src,
     for (const typename T::Reader &element : src) {
         std::vector<ChartClipper::Polygon> polygons = clipPolygons(element.getPolygons(), config);
         std::vector<cutlines::Line> lines = clipLines(element.getLines(),
-                                                      toCutlinesRect(config.box, config),
-                                                      config.lineEpsilon);
+                                                      toCutlinesRect(config.box, config));
 
         if (!polygons.empty() || !lines.empty()) {
             clippedItems.push_back({ polygons, lines, element });
@@ -917,6 +889,10 @@ bool Chart::write(capnp::MallocMessageBuilder *message, const std::string &filen
 
 std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::Config config) const
 {
+    // Hack to ensure that resolution in clipper is high enough.
+    config.latitudeResolution /= 10;
+    config.longitudeResolution /= 10;
+
     // Ugly to add this here
     config.chartBoundingBox = boundingBox();
 
