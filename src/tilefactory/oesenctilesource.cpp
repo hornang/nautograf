@@ -53,29 +53,56 @@ GeoRect OesencTileSource::fromOesencRect(const oesenc::Rect &src)
     return GeoRect(src.top(), src.bottom(), src.left(), src.right());
 }
 
-bool OesencTileSource::convertChartToInternalFormat()
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/adapted/std_array.hpp>
+#include <boost/geometry/geometries/linestring.hpp>
+#include <boost/geometry/geometries/register/linestring.hpp>
+#include <boost/geometry/geometries/register/point.hpp>
+
+BOOST_GEOMETRY_REGISTER_POINT_2D_GET_SET(oesenc::Position,
+                                         double,
+                                         cs::cartesian,
+                                         latitude,
+                                         longitude,
+                                         setLatitude,
+                                         setLongitude)
+
+BOOST_GEOMETRY_REGISTER_LINESTRING(std::vector<oesenc::Position>)
+
+bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixelsPerLon)
 {
     if (m_oesencSourceType == OesencSourceType::Invalid) {
         return false;
     }
 
-    std::string filename = FileHelper::internalChartFileName(m_tileDir, m_name);
+    std::string decimatedFileName = FileHelper::internalChartFileName(m_tileDir,
+                                                                      m_name,
+                                                                      pixelsPerLon);
 
     const std::lock_guard<std::mutex> lock(m_internalChartMutex);
 
-    if (std::filesystem::exists(filename)) {
+    if (std::filesystem::exists(decimatedFileName)) {
         return true;
     }
 
     std::unique_ptr<capnp::MallocMessageBuilder> capnpMessage;
     std::unique_ptr<oesenc::ChartFile> oesencChart;
 
+    using Line = std::vector<oesenc::Position>;
+
+    oesenc::ChartFile::Config oesencConfig;
+    oesencConfig.vectorEdgeDecimator = [=](const Line &line) -> Line {
+        Line simplifiedLine;
+        boost::geometry::simplify(line, simplifiedLine, lineEpsilon);
+        return simplifiedLine;
+    };
+
     switch (m_oesencSourceType) {
     case OesencSourceType::File:
-        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencFile);
+        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencFile, oesencConfig);
         break;
     case OesencSourceType::Vector:
-        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencData);
+        oesencChart = std::make_unique<oesenc::ChartFile>(m_oesencData, oesencConfig);
         break;
     }
 
@@ -86,7 +113,7 @@ bool OesencTileSource::convertChartToInternalFormat()
     readOesencMetaData(oesencChart.get());
     capnpMessage = Chart::buildFromS57(oesencChart->s57(), m_extent, m_name, m_scale);
 
-    std::filesystem::path targetPath(filename);
+    std::filesystem::path targetPath = decimatedFileName;
 
     if (!std::filesystem::exists(targetPath.parent_path())) {
         std::error_code errorCode;
@@ -95,7 +122,7 @@ bool OesencTileSource::convertChartToInternalFormat()
         }
     }
 
-    if (!Chart::write(capnpMessage.get(), filename)) {
+    if (!Chart::write(capnpMessage.get(), decimatedFileName)) {
         return false;
     }
 
@@ -174,10 +201,13 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
                                                                 pixelsPerLongitude)
         - boundingBox.left();
 
-    std::string internalChartFileName = FileHelper::internalChartFileName(m_tileDir, m_name);
+    std::string internalChartFileName = FileHelper::internalChartFileName(m_tileDir,
+                                                                          m_name,
+                                                                          pixelsPerLongitude);
 
     if (!std::filesystem::exists(internalChartFileName)) {
-        if (!convertChartToInternalFormat()) {
+        float epsilon = 2 * std::min(longitudeResolution, latitudeResolution);
+        if (!convertChartToInternalFormat(epsilon, pixelsPerLongitude)) {
             std::cerr << "Failed to convert chart to internal format" << std::endl;
             return {};
         }
@@ -200,7 +230,6 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
     clipConfig.longitudeResolution = longitudeResolution;
     clipConfig.latitudeResolution = latitudeResolution;
     clipConfig.maxPixelsPerLongitude = pixelsPerLongitude;
-    clipConfig.lineEpsilon = 2 * std::min(longitudeResolution, latitudeResolution);
 
     std::unique_ptr<capnp::MallocMessageBuilder> clippedChart = entireChart->buildClipped(clipConfig);
 

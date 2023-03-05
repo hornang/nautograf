@@ -54,8 +54,12 @@ std::string FileHelper::tileFileName(const std::string &tileDir,
 }
 
 std::string FileHelper::internalChartFileName(const std::string &tileDir,
-                                              const std::string &name)
+                                              const std::string &name,
+                                              int pixelsPerLon)
 {
     std::filesystem::path path(tileDir);
-    return (path / name / "all.bin").string();
+    std::stringstream ss;
+    ss << pixelsPerLon;
+    std::string baseName = "all_" + ss.str() + ".bin";
+    return (path / name / baseName).string();
 }

@@ -1,4 +1,6 @@
 find_package(CapnProto CONFIG REQUIRED)
+find_package(Boost REQUIRED)
+
 find_path(EARCUT_HPP_INCLUDE_DIRS "mapbox/earcut.hpp")
 
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS chartdata.capnp)
@@ -47,4 +49,5 @@ target_link_libraries(tilefactory
     Clipper2
     oesenc
     cutlines
+    Boost::boost
 )
