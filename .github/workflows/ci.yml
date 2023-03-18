@@ -1,3 +1,5 @@
+name: Build packages
+
 on:
   push:
     branches:
@@ -8,7 +10,7 @@ on:
       - main
 
 jobs:
-  build:
+  Windows:
     runs-on: windows-latest
     env:
       buildDir: '${{ github.workspace }}/build'
