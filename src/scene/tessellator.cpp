@@ -1055,6 +1055,13 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                 return roadColor;
             });
 
+        geometryLayer.polygonVertices += drawPolygons<ChartData::Pontoon>(
+            chart->pontoons(),
+            zBase - 0.8,
+            [](const ChartData::Pontoon::Reader &pontoon) -> QColor {
+                return pontoonColor;
+            });
+
         geometryLayer.lineVertices += strokePolygons<ChartData::Road>(
             chart->roads(),
             [](const ChartData::Road::Reader &road) -> QColor {
@@ -1067,6 +1074,19 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             [](const ChartData::Road::Reader &road) -> QColor {
                 return roadColor;
             });
+
+        geometryLayer.lineVertices += drawLines<ChartData::Pontoon>(
+            chart->pontoons(),
+            [](const ChartData::Pontoon::Reader &pontoon) -> QColor {
+                return pontoonColor;
+            });
+
+        geometryLayer.lineVertices += drawLines<ChartData::CoastLine>(
+            chart->coastLines(),
+            [](const ChartData::CoastLine::Reader &coastLine) -> QColor {
+                return coastLineColor;
+            });
+
         tileData.geometryLayers.append(geometryLayer);
     }
 
