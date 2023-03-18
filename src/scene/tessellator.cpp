@@ -1043,9 +1043,29 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
         geometryLayer.polygonVertices += drawPolygons<ChartData::BuiltUpArea>(
             chart->builtUpAreas(),
-            zBase - 0.8,
+            zBase - 0.7,
             [](const ChartData::BuiltUpArea::Reader &depthArea) -> QColor {
                 return builtUpAreaColor;
+            });
+
+        geometryLayer.polygonVertices += drawPolygons<ChartData::Road>(
+            chart->roads(),
+            zBase - 0.8,
+            [](const ChartData::Road::Reader &road) -> QColor {
+                return roadColor;
+            });
+
+        geometryLayer.lineVertices += strokePolygons<ChartData::Road>(
+            chart->roads(),
+            [](const ChartData::Road::Reader &road) -> QColor {
+                return roadColorBorder;
+            },
+            lineClippingRect);
+
+        geometryLayer.lineVertices += drawLines<ChartData::Road>(
+            chart->roads(),
+            [](const ChartData::Road::Reader &road) -> QColor {
+                return roadColor;
             });
         tileData.geometryLayers.append(geometryLayer);
     }
