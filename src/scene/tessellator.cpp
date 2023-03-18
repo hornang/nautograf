@@ -25,96 +25,331 @@ static const QColor roadColorBorder = roadColor.darker(150);
 // projection that can be linearly transformed in scene graph/vertex shader.
 const int s_pixelsPerLon = 1000;
 
-Tessellator::Tessellator(TileFactoryWrapper *tileFactory,
-                         TileFactoryWrapper::TileRecipe recipe,
-                         std::shared_ptr<const SymbolImage> symbolImage,
-                         std::shared_ptr<const FontImage> fontImage)
-    : m_fontImage(fontImage)
-    , m_symbolImage(symbolImage)
-    , m_tileFactory(tileFactory)
-    , m_recipe(recipe)
-{
-    connect(&m_watcher, &QFutureWatcher<TileData>::finished, this, &Tessellator::finished);
-}
-
-void Tessellator::setId(const QString &id)
-{
-    m_id = id;
-}
-
-int Tessellator::pixelsPerLon()
-{
-    return s_pixelsPerLon;
-}
-
-void Tessellator::setTileFactory(TileFactoryWrapper *tileFactory)
-{
-    if (m_tileFactory == tileFactory) {
-        return;
-    }
-    m_tileFactory = tileFactory;
-    fetchAgain();
-}
-
-void Tessellator::fetchAgain()
-{
-    if (!m_tileFactory) {
-        return;
-    }
-
-    if (m_watcher.isRunning()) {
-        m_fetchAgain = true;
-        return;
-    }
-
-    m_result = QtConcurrent::run(fetchData,
-                                 m_tileFactory,
-                                 m_recipe,
-                                 m_symbolImage,
-                                 m_fontImage);
-    m_watcher.setFuture(m_result);
-
-    if (m_result.isFinished()) {
-        finished();
-    }
-    m_fetchAgain = false;
-}
-
-void Tessellator::finished()
-{
-    if (m_fetchAgain) {
-        fetchAgain();
-    } else {
-        m_ready = true;
-        m_dataChanged = true;
-        m_data = m_result.result();
-        emit dataChanged(m_id);
-    }
-}
-
-void Tessellator::setRemoved()
-{
-    m_removed = true;
-}
-
-QRectF Tessellator::computeSymbolBox(const QTransform &transform,
-                                     const QPointF &pos,
-                                     SymbolImage::TextureSymbol &textureSymbol)
-{
-    const auto topLeft = transform.map(pos) - textureSymbol.center;
-    return QRectF(topLeft + textureSymbol.roi.topLeft(),
-                  textureSymbol.roi.size());
-}
-
-QPointF Tessellator::posToMercator(const ChartData::Position::Reader &pos)
+namespace {
+QPointF posToMercator(const ChartData::Position::Reader &pos)
 {
     return { Mercator::mercatorWidth(0, pos.getLongitude(), s_pixelsPerLon),
              Mercator::mercatorHeight(0, pos.getLatitude(), s_pixelsPerLon) };
 }
 
-QPointF Tessellator::labelOffset(const QRectF &labelBox,
-                                 const SymbolImage::TextureSymbol &symbol,
-                                 LabelPlacement placement)
+QPointF posToMercator(const Pos &pos)
+{
+    return { Mercator::mercatorWidth(0, pos.lon(), s_pixelsPerLon),
+             Mercator::mercatorHeight(0, pos.lat(), s_pixelsPerLon) };
+}
+
+enum class LabelPlacement {
+    Below,
+};
+
+template <typename T>
+QList<PolygonNode::Vertex> drawPolygons(const typename capnp::List<T>::Reader &areas,
+                                        float z,
+                                        std::function<QColor(const typename T::Reader &)> colorFunc)
+{
+    QList<PolygonNode::Vertex> vertices;
+    int vertexCount = 0;
+
+    for (const auto &area : areas) {
+        QColor color = colorFunc(area);
+
+        if (!color.isValid()) {
+            continue;
+        }
+
+        for (const ChartData::Polygon::Reader &polygon : area.getPolygons()) {
+            std::vector<std::vector<Triangulator::Point>> polylines;
+            std::vector<Triangulator::Point> polyline;
+
+            capnp::List<ChartData::Position>::Reader main = polygon.getMain();
+            for (ChartData::Position::Reader pos : main) {
+                QPointF p = posToMercator(pos);
+                polyline.push_back({ p.x(), p.y() });
+            }
+            polylines.push_back(polyline);
+
+            for (const auto &hole : polygon.getHoles()) {
+                std::vector<Triangulator::Point> polyline;
+
+                for (const auto &pos : hole) {
+                    QPointF p = posToMercator(pos);
+                    polyline.push_back({ p.x(), p.y() });
+                }
+                polylines.push_back(polyline);
+            }
+
+            std::vector<Triangulator::Point> triangles = Triangulator::calc(polylines);
+            vertices.resize(vertices.size() + triangles.size());
+
+            for (const auto &point : triangles) {
+                vertices[vertexCount] = { static_cast<float>(point[0]),
+                                          static_cast<float>(point[1]),
+                                          z,
+                                          static_cast<uchar>(color.red()),
+                                          static_cast<uchar>(color.green()),
+                                          static_cast<uchar>(color.blue()),
+                                          static_cast<uchar>(color.alpha()) };
+                vertexCount++;
+            }
+        }
+    }
+
+    return vertices;
+}
+
+// This only applies to symbol collisions. Labels are always checked.
+enum class CollisionRule {
+    NoCheck,
+    Always,
+    OnlyWithSameType
+};
+
+struct SymbolLabel
+{
+    QPointF pos;
+    QString text;
+    QPointF offset;
+    QRectF boundingBox;
+    FontImage::FontType font;
+    QColor color;
+    float pointSize;
+    std::optional<float> scaleLimit;
+    std::optional<float> parentScaleLimit;
+};
+
+struct Symbol
+{
+    QPointF pos;
+    std::optional<SymbolImage::TextureSymbol> symbol;
+    std::optional<float> scaleLimit;
+    QList<SymbolLabel> labels;
+    int priority = 0;
+    CollisionRule collisionRule;
+};
+
+QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
+{
+    int validSymbols = 0;
+
+    for (const Symbol &element : input) {
+        if (element.symbol.has_value()) {
+            validSymbols++;
+        }
+    }
+
+    QList<AnnotationNode::Vertex> vertices(validSymbols * 6);
+    AnnotationNode::Vertex *data = vertices.data();
+
+    for (const auto &element : input) {
+        if (!element.symbol.has_value()) {
+            continue;
+        }
+
+        const auto &symbol = element.symbol.value();
+        const auto &center = symbol.center;
+        const auto &pos = element.pos;
+        const auto &sourceRect = symbol.coords;
+        const auto &symbolSize = symbol.size;
+        const auto &color = symbol.color;
+
+        float scaleLimit = 1000;
+
+        if (element.scaleLimit) {
+            scaleLimit = element.scaleLimit.value();
+        }
+
+        data[0] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.top()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data[1] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.top()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data[2] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.bottom()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data[3] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.left()),
+                    static_cast<float>(sourceRect.bottom()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data[4] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.top()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data[5] = { static_cast<float>(pos.x()),
+                    static_cast<float>(pos.y()),
+                    static_cast<float>(-center.x() + symbolSize.width()),
+                    static_cast<float>(-center.y() + symbolSize.height()),
+                    static_cast<float>(sourceRect.right()),
+                    static_cast<float>(sourceRect.bottom()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    static_cast<uchar>(color.alpha()),
+                    scaleLimit };
+
+        data += 6;
+    }
+
+    return vertices;
+}
+
+QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
+                                        const FontImage *fontImage)
+{
+    QList<AnnotationNode::Vertex> list;
+    int glyphCounter = 0;
+
+    for (const auto &label : labels) {
+        if (!label.scaleLimit.has_value()) {
+            continue;
+        }
+
+        float scaleLimit = label.scaleLimit.value();
+
+        auto glyphs = fontImage->glyphs(label.text,
+                                        label.pointSize,
+                                        label.font);
+        const QColor &color = label.color;
+
+        for (const auto glyph : glyphs) {
+            const QPointF metricsOffset(0, -label.boundingBox.top());
+            QPointF glyphPos = glyph.target.topLeft();
+            glyphPos += label.offset + metricsOffset;
+            QRectF texture = glyph.texture;
+            const auto glyphWidth = static_cast<float>(glyph.target.width());
+            const auto glyphHeight = static_cast<float>(glyph.target.height());
+            const auto &pos = label.pos;
+
+            list.resize(list.size() + 6);
+            AnnotationNode::Vertex *data = list.data();
+            data += glyphCounter * 6;
+
+            data[0] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.top()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            data[1] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.top()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            data[2] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.bottom()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            data[3] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x()),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.left()),
+                        static_cast<float>(texture.bottom()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            data[4] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y()),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.top()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            data[5] = { static_cast<float>(pos.x()),
+                        static_cast<float>(pos.y()),
+                        static_cast<float>(glyphPos.x() + glyphWidth),
+                        static_cast<float>(glyphPos.y() + glyphHeight),
+                        static_cast<float>(texture.right()),
+                        static_cast<float>(texture.bottom()),
+                        static_cast<uchar>(color.red()),
+                        static_cast<uchar>(color.green()),
+                        static_cast<uchar>(color.blue()),
+                        static_cast<uchar>(color.alpha()),
+                        scaleLimit };
+
+            glyphCounter++;
+        }
+    }
+
+    Q_ASSERT(glyphCounter * 6 == list.size());
+    return list;
+}
+
+QPointF labelOffset(const QRectF &labelBox,
+                    const SymbolImage::TextureSymbol &symbol,
+                    LabelPlacement placement)
 {
     const int labelMargin = 2;
 
@@ -126,10 +361,22 @@ QPointF Tessellator::labelOffset(const QRectF &labelBox,
     }
 }
 
-TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
-                                TileFactoryWrapper::TileRecipe recipe,
-                                std::shared_ptr<const SymbolImage> symbolImage,
-                                std::shared_ptr<const FontImage> fontImage)
+QRectF computeSymbolBox(const QTransform &transform,
+                        const QPointF &pos,
+                        SymbolImage::TextureSymbol &textureSymbol)
+{
+    const auto topLeft = transform.map(pos) - textureSymbol.center;
+    return QRectF(topLeft + textureSymbol.roi.topLeft(),
+                  textureSymbol.roi.size());
+}
+
+/*!
+    Fetch data from the tilefactory and converts to vertex data
+*/
+TileData fetchData(TileFactoryWrapper *tileFactory,
+                   TileFactoryWrapper::TileRecipe recipe,
+                   std::shared_ptr<const SymbolImage> symbolImage,
+                   std::shared_ptr<const FontImage> fontImage)
 {
     Q_ASSERT(tileFactory);
 
@@ -137,7 +384,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
 
     try {
         charts = tileFactory->create(recipe);
-    } catch(const std::exception &e) {
+    } catch (const std::exception &e) {
         qWarning() << "Exception in tilefactory: " << e.what();
         return {};
     }
@@ -149,7 +396,6 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
     const float soundingPointSize = 16;
     const float rockPointSize = 17;
     const float beaconPointSize = 20;
-
 
     const float landRegionPointSize = 16;
     const float builtUpPointSize = 22;
@@ -205,8 +451,8 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
             const auto pos = posToMercator(rock.getPosition());
             const auto depthLabel = locale.toString(rock.getDepth(), 'f', precision);
             const auto boundingBox = fontImage->boundingBox(depthLabel,
-                                                         rockPointSize,
-                                                         FontImage::FontType::Soundings);
+                                                            rockPointSize,
+                                                            FontImage::FontType::Soundings);
             symbols.append({ pos,
                              symbol.value(),
                              std::nullopt,
@@ -583,286 +829,78 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
 
     return tileData;
 }
-
-QList<AnnotationNode::Vertex> Tessellator::addLabels(const QList<SymbolLabel> &labels,
-                                                     const FontImage *fontImage)
-{
-    QList<AnnotationNode::Vertex> list;
-    int glyphCounter = 0;
-
-    for (const auto &label : labels) {
-        if (!label.scaleLimit.has_value()) {
-            continue;
-        }
-
-        float scaleLimit = label.scaleLimit.value();
-
-        auto glyphs = fontImage->glyphs(label.text,
-                                        label.pointSize,
-                                        label.font);
-        const QColor &color = label.color;
-
-        for (const auto glyph : glyphs) {
-            const QPointF metricsOffset(0, -label.boundingBox.top());
-            QPointF glyphPos = glyph.target.topLeft();
-            glyphPos += label.offset + metricsOffset;
-            QRectF texture = glyph.texture;
-            const auto glyphWidth = static_cast<float>(glyph.target.width());
-            const auto glyphHeight = static_cast<float>(glyph.target.height());
-            const auto &pos = label.pos;
-
-            list.resize(list.size() + 6);
-            AnnotationNode::Vertex *data = list.data();
-            data += glyphCounter * 6;
-
-            data[0] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x()),
-                        static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.top()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            data[1] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x() + glyphWidth),
-                        static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.top()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            data[2] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x()),
-                        static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.bottom()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            data[3] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x()),
-                        static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.bottom()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            data[4] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x() + glyphWidth),
-                        static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.top()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            data[5] = { static_cast<float>(pos.x()),
-                        static_cast<float>(pos.y()),
-                        static_cast<float>(glyphPos.x() + glyphWidth),
-                        static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.bottom()),
-                        static_cast<uchar>(color.red()),
-                        static_cast<uchar>(color.green()),
-                        static_cast<uchar>(color.blue()),
-                        static_cast<uchar>(color.alpha()),
-                        scaleLimit };
-
-            glyphCounter++;
-        }
-    }
-
-    Q_ASSERT(glyphCounter * 6 == list.size());
-    return list;
 }
 
-QList<AnnotationNode::Vertex> Tessellator::addSymbols(const QList<Symbol> &input)
+Tessellator::Tessellator(TileFactoryWrapper *tileFactory,
+                         TileFactoryWrapper::TileRecipe recipe,
+                         std::shared_ptr<const SymbolImage> symbolImage,
+                         std::shared_ptr<const FontImage> fontImage)
+    : m_fontImage(fontImage)
+    , m_symbolImage(symbolImage)
+    , m_tileFactory(tileFactory)
+    , m_recipe(recipe)
 {
-    int validSymbols = 0;
-
-    for (const Symbol &element : input) {
-        if (element.symbol.has_value()) {
-            validSymbols++;
-        }
-    }
-
-    QList<AnnotationNode::Vertex> vertices(validSymbols * 6);
-    AnnotationNode::Vertex *data = vertices.data();
-
-    for (const auto &element : input) {
-        if (!element.symbol.has_value()) {
-            continue;
-        }
-
-        const auto &symbol = element.symbol.value();
-        const auto &center = symbol.center;
-        const auto &pos = element.pos;
-        const auto &sourceRect = symbol.coords;
-        const auto &symbolSize = symbol.size;
-        const auto &color = symbol.color;
-
-        float scaleLimit = 1000;
-
-        if (element.scaleLimit) {
-            scaleLimit = element.scaleLimit.value();
-        }
-
-        data[0] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x()),
-                    static_cast<float>(-center.y()),
-                    static_cast<float>(sourceRect.left()),
-                    static_cast<float>(sourceRect.top()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data[1] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x() + symbolSize.width()),
-                    static_cast<float>(-center.y()),
-                    static_cast<float>(sourceRect.right()),
-                    static_cast<float>(sourceRect.top()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data[2] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x()),
-                    static_cast<float>(-center.y() + symbolSize.height()),
-                    static_cast<float>(sourceRect.left()),
-                    static_cast<float>(sourceRect.bottom()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data[3] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x()),
-                    static_cast<float>(-center.y() + symbolSize.height()),
-                    static_cast<float>(sourceRect.left()),
-                    static_cast<float>(sourceRect.bottom()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data[4] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x() + symbolSize.width()),
-                    static_cast<float>(-center.y()),
-                    static_cast<float>(sourceRect.right()),
-                    static_cast<float>(sourceRect.top()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data[5] = { static_cast<float>(pos.x()),
-                    static_cast<float>(pos.y()),
-                    static_cast<float>(-center.x() + symbolSize.width()),
-                    static_cast<float>(-center.y() + symbolSize.height()),
-                    static_cast<float>(sourceRect.right()),
-                    static_cast<float>(sourceRect.bottom()),
-                    static_cast<uchar>(color.red()),
-                    static_cast<uchar>(color.green()),
-                    static_cast<uchar>(color.blue()),
-                    static_cast<uchar>(color.alpha()),
-                    scaleLimit };
-
-        data += 6;
-    }
-
-    return vertices;
+    connect(&m_watcher, &QFutureWatcher<TileData>::finished, this, &Tessellator::finished);
 }
 
-template <typename T>
-QList<PolygonNode::Vertex> Tessellator::drawPolygons(const typename capnp::List<T>::Reader &areas,
-                                                     float z,
-                                                     std::function<QColor(const typename T::Reader &)> colorFunc)
+void Tessellator::setId(const QString &id)
 {
-    QList<PolygonNode::Vertex> vertices;
-    int vertexCount = 0;
-
-    for (const auto &area : areas) {
-        QColor color = colorFunc(area);
-
-        if (!color.isValid()) {
-            continue;
-        }
-
-        for (const ChartData::Polygon::Reader &polygon : area.getPolygons()) {
-            std::vector<std::vector<Triangulator::Point>> polylines;
-            std::vector<Triangulator::Point> polyline;
-
-            capnp::List<ChartData::Position>::Reader main = polygon.getMain();
-            for (ChartData::Position::Reader pos : main) {
-                QPointF p = posToMercator(pos);
-                polyline.push_back({ p.x(), p.y() });
-            }
-            polylines.push_back(polyline);
-
-            for (const auto &hole : polygon.getHoles()) {
-                std::vector<Triangulator::Point> polyline;
-
-                for (const auto &pos : hole) {
-                    QPointF p = posToMercator(pos);
-                    polyline.push_back({ p.x(), p.y() });
-                }
-                polylines.push_back(polyline);
-            }
-
-            std::vector<Triangulator::Point> triangles = Triangulator::calc(polylines);
-            vertices.resize(vertices.size() + triangles.size());
-
-            for (const auto &point : triangles) {
-                vertices[vertexCount] = { static_cast<float>(point[0]),
-                                          static_cast<float>(point[1]),
-                                          z,
-                                          static_cast<uchar>(color.red()),
-                                          static_cast<uchar>(color.green()),
-                                          static_cast<uchar>(color.blue()),
-                                          static_cast<uchar>(color.alpha()) };
-                vertexCount++;
-            }
-        }
-    }
-
-    return vertices;
+    m_id = id;
 }
 
-QPointF Tessellator::posToMercator(const Pos &pos)
+int Tessellator::pixelsPerLon()
 {
-    return { Mercator::mercatorWidth(0, pos.lon(), s_pixelsPerLon),
-             Mercator::mercatorHeight(0, pos.lat(), s_pixelsPerLon) };
+    return s_pixelsPerLon;
+}
+
+void Tessellator::setTileFactory(TileFactoryWrapper *tileFactory)
+{
+    if (m_tileFactory == tileFactory) {
+        return;
+    }
+    m_tileFactory = tileFactory;
+    fetchAgain();
+}
+
+void Tessellator::fetchAgain()
+{
+    if (!m_tileFactory) {
+        return;
+    }
+
+    if (m_watcher.isRunning()) {
+        m_fetchAgain = true;
+        return;
+    }
+
+    m_result = QtConcurrent::run(fetchData,
+                                 m_tileFactory,
+                                 m_recipe,
+                                 m_symbolImage,
+                                 m_fontImage);
+    m_watcher.setFuture(m_result);
+
+    if (m_result.isFinished()) {
+        finished();
+    }
+    m_fetchAgain = false;
+}
+
+void Tessellator::finished()
+{
+    if (m_fetchAgain) {
+        fetchAgain();
+    } else {
+        m_ready = true;
+        m_dataChanged = true;
+        m_data = m_result.result();
+        emit dataChanged(m_id);
+    }
+}
+
+void Tessellator::setRemoved()
+{
+    m_removed = true;
 }
 
 QList<PolygonNode::Vertex> Tessellator::overlayVertices(const QColor &color) const

@@ -50,68 +50,6 @@ signals:
     void dataChanged(const QString &id);
 
 private:
-    static QPointF posToMercator(const Pos &pos);
-
-    // This only applies to symbol collisions. Labels are always checked.
-    enum class CollisionRule {
-        NoCheck,
-        Always,
-        OnlyWithSameType
-    };
-
-    struct SymbolLabel
-    {
-        QPointF pos;
-        QString text;
-        QPointF offset;
-        QRectF boundingBox;
-        FontImage::FontType font;
-        QColor color;
-        float pointSize;
-        std::optional<float> scaleLimit;
-        std::optional<float> parentScaleLimit;
-    };
-
-    struct Symbol
-    {
-        QPointF pos;
-        std::optional<SymbolImage::TextureSymbol> symbol;
-        std::optional<float> scaleLimit;
-        QList<SymbolLabel> labels;
-        int priority = 0;
-        CollisionRule collisionRule;
-    };
-
-    static QPointF posToMercator(const ChartData::Position::Reader &pos);
-    static QRectF computeSymbolBox(const QTransform &transform,
-                                   const QPointF &pos,
-                                   SymbolImage::TextureSymbol &textureSymbol);
-
-    static QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input);
-    static QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
-                                                   const FontImage *fontImage);
-
-    enum class LabelPlacement {
-        Below,
-    };
-
-    static QPointF labelOffset(const QRectF &labelBox,
-                               const SymbolImage::TextureSymbol &symbol,
-                               LabelPlacement placement);
-
-    /*!
-        Fetch data from the tilefactory and converts to vertex data
-    */
-    static TileData fetchData(TileFactoryWrapper *tileFactory,
-                              TileFactoryWrapper::TileRecipe recipe,
-                              std::shared_ptr<const SymbolImage> symbolImage,
-                              std::shared_ptr<const FontImage> fontImage);
-
-    template <typename T>
-    static QList<PolygonNode::Vertex> drawPolygons(const typename capnp::List<T>::Reader &depthAreas,
-                                                   float z,
-                                                   std::function<QColor(const typename T::Reader &)> colorFunc);
-
     QFuture<TileData> m_result;
     QFutureWatcher<TileData> m_watcher;
     QString m_id;
