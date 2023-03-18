@@ -19,13 +19,6 @@
 class TILEFACTORY_EXPORT Chart
 {
 public:
-    struct Sounding
-    {
-        Pos pos;
-        double depth = 0;
-        bool hasValue = false;
-    };
-
     static std::shared_ptr<Chart> open(const std::string &filename);
     static bool write(capnp::MallocMessageBuilder *message, const std::string &filename);
     static std::unique_ptr<capnp::MallocMessageBuilder>
@@ -66,55 +59,7 @@ public:
 
 private:
     Chart(FILE *fd);
-
-    using S57Vector = const std::vector<const oesenc::S57 *>;
-
-    static void loadCoverage(ChartData::Builder &root, S57Vector &src);
-    static void loadLandAreas(ChartData::Builder &root, S57Vector &src);
-    static void loadDepthAreas(ChartData::Builder &root, S57Vector &objs);
-    static void loadBuiltUpAreas(ChartData::Builder &root, S57Vector &objs);
-    static void loadSoundings(ChartData::Builder &root, S57Vector &objs);
-    static void loadLandRegions(ChartData::Builder &root, S57Vector &objs);
-    static void loadBeacons(ChartData::Builder &root, S57Vector &objs);
-    static void loadUnderwaterRocks(ChartData::Builder &root, S57Vector &objs);
-    static void loadRoads(ChartData::Builder &root, S57Vector &objs);
-    static void loadBuoyLateral(ChartData::Builder &root, S57Vector &src);
-    static Pos calcAveragePosition(const capnp::List<ChartData::Position>::Reader &positions);
-    static inline int countPolygonObjects(S57Vector &s57);
-    static inline int countPointObjects(S57Vector &s57);
-    static inline bool isPolygonObject(const oesenc::S57 *obj);
-    static inline bool isPointObject(const oesenc::S57 *obj);
-
     void read(const std::string &filename);
-
-    template <typename T>
-    struct ClippedPointItem
-    {
-        Pos pos;
-        typename T::Reader item;
-    };
-
-    template <typename T>
-    static void clipPointItems(const typename capnp::List<T>::Reader &src,
-                               ChartClipper::Config config,
-                               std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
-                               std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
-
-    template <typename T>
-    static void loadPolygonsFromS57(typename T::Builder dst, const oesenc::S57 *s57);
-
-    template <typename T>
-    static void loadLinesFromS57(typename T::Builder dst, const oesenc::S57 *s57);
-
-    static std::vector<ChartClipper::Polygon> clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
-                                                           const ChartClipper::Config &config);
-
-    template <typename T>
-    static void computeCentroidFromPolygons(typename T::Builder builder);
-
-    static inline void fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
-                                            const std::vector<oesenc::Position> &src);
-
     std::unique_ptr<::capnp::PackedFdMessageReader> m_capnpReader;
     FILE *m_file = nullptr;
 };
