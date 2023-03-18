@@ -428,6 +428,16 @@ void loadBuiltUpAreas(ChartData::Builder &root, const S57Vector &src)
     }
 }
 
+void loadCoastLines(ChartData::Builder &root, const S57Vector &src)
+{
+    auto coastLines = root.initCoastLines(static_cast<unsigned int>(src.size()));
+
+    int i = 0;
+    for (const oesenc::S57 *s57 : src) {
+        loadLinesFromS57<ChartData::CoastLine>(coastLines[i++], s57);
+    }
+}
+
 void loadCoverage(ChartData::Builder &root, const S57Vector &src)
 {
     std::vector<const oesenc::S57 *> coverageRecords;
@@ -707,6 +717,24 @@ void loadBuoyLateral(ChartData::Builder &root, const S57Vector &src)
     }
 }
 
+void loadPontoons(ChartData::Builder &root, const S57Vector &src)
+{
+    auto dst = root.initPontoons(static_cast<unsigned int>(src.size()));
+
+    unsigned int i = 0;
+    for (const oesenc::S57 *s57 : src) {
+        ChartData::Pontoon::Builder pontoon = dst[i++];
+
+        auto name = s57->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
+        if (name.has_value()) {
+            pontoon.setName(name.value());
+        }
+
+        loadPolygonsFromS57<ChartData::Pontoon>(pontoon, s57);
+        loadLinesFromS57<ChartData::Pontoon>(pontoon, s57);
+    }
+}
+
 void loadRoads(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initRoads(static_cast<unsigned int>(src.size()));
@@ -801,6 +829,7 @@ Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
     bottomRight.setLongitude(boundingBox.right());
 
     loadCoverage(root, sortedObjects[oesenc::S57::Type::Coverage]);
+    loadCoastLines(root, sortedObjects[oesenc::S57::Type::CoastLine]);
     loadLandAreas(root, sortedObjects[oesenc::S57::Type::LandArea]);
     loadLandRegions(root, sortedObjects[oesenc::S57::Type::LandRegion]);
     loadDepthAreas(root, sortedObjects[oesenc::S57::Type::DepthArea]);
@@ -810,6 +839,7 @@ Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
     loadBeacons(root, sortedObjects[oesenc::S57::Type::Beacon]);
     loadUnderwaterRocks(root, sortedObjects[oesenc::S57::Type::UnderwaterRock]);
     loadBuoyLateral(root, sortedObjects[oesenc::S57::Type::BuoyLateral]);
+    loadPontoons(root, sortedObjects[oesenc::S57::Type::Pontoon]);
 
     return message;
 }
@@ -1011,6 +1041,24 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
             dst.setCategory(src.getCategory());
             dst.setShape(src.getShape());
             dst.setColor(src.getColor());
+        });
+
+    clipLineItems<ChartData::CoastLine>(
+        coastLines(),
+        config,
+        [&](unsigned int length) {
+            return root.initCoastLines(length);
+        },
+        {});
+
+    clipPolygonOrLineItems<ChartData::Pontoon>(
+        pontoons(),
+        config,
+        [&](unsigned int length) {
+            return root.initPontoons(length);
+        },
+        [](ChartData::Pontoon::Builder &dst, const ChartData::Pontoon::Reader &src) {
+            dst.setName(src.getName());
         });
 
     clipPolygonOrLineItems<ChartData::Road>(

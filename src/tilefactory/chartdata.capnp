@@ -16,6 +16,8 @@ struct ChartData {
     landRegions @12 :List(LandRegion);
     topLeft @13: Position;
     bottomRight @14: Position;
+    coastLines @15: List(CoastLine);
+    pontoons @16: List(Pontoon);
 
     struct CoverageArea {
         polygons @0 :List(Polygon);
@@ -31,6 +33,10 @@ struct ChartData {
         name @0: Text;
         polygons @1 :List(Polygon);
         centroid @2: Position;
+    }
+
+    struct CoastLine {
+        lines @0 :List(Line);
     }
 
     struct BuiltUpPoint {
@@ -51,6 +57,12 @@ struct ChartData {
     struct Polygon {
         main @0 :List(Position);
         holes @1 :List(List(Position));
+    }
+
+    struct Pontoon {
+        name @0: Text;
+        polygons @1 :List(Polygon);
+        lines @2 :List(Line);
     }
 
     struct Position {
