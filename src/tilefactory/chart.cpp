@@ -416,14 +416,14 @@ void Chart::loadLandAreas(ChartData::Builder &root, S57Vector &src)
     auto landAreas = root.initLandAreas(static_cast<unsigned int>(src.size()));
 
     unsigned int i = 0;
-    for (const auto &obj : src) {
+    for (const oesenc::S57 *s57 : src) {
         auto dstElement = landAreas[i++];
-        auto name = obj->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
+        auto name = s57->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
         if (name.has_value()) {
             dstElement.setName(name.value());
         }
 
-        loadPolygonsFromS57<ChartData::LandArea>(dstElement, obj);
+        loadPolygonsFromS57<ChartData::LandArea>(dstElement, s57);
         computeCentroidFromPolygons<ChartData::LandArea>(dstElement);
     }
 }
@@ -510,18 +510,18 @@ void Chart::loadCoverage(ChartData::Builder &root, S57Vector &src)
 {
     std::vector<const oesenc::S57 *> coverageRecords;
 
-    for (const auto &obj : src) {
-        auto categoryOfCoverage = obj->attribute<uint32_t>(oesenc::S57::Attribute::CategoryOfCoverage);
+    for (const oesenc::S57 *s57 : src) {
+        auto categoryOfCoverage = s57->attribute<uint32_t>(oesenc::S57::Attribute::CategoryOfCoverage);
         if (categoryOfCoverage.has_value() && categoryOfCoverage.value() == 1) {
-            coverageRecords.push_back(obj);
+            coverageRecords.push_back(s57);
         }
     }
 
-    auto areas = root.initCoverage(static_cast<unsigned int>(coverageRecords.size()));
+    auto coverages = root.initCoverage(static_cast<unsigned int>(coverageRecords.size()));
 
-    unsigned int i = 0;
+    int i = 0;
     for (const auto &obj : coverageRecords) {
-        ChartData::CoverageArea::Builder coverage = areas[i++];
+        ChartData::CoverageArea::Builder coverage = coverages[i++];
         loadPolygonsFromS57<ChartData::CoverageArea>(coverage, obj);
     }
 }
@@ -531,15 +531,15 @@ void Chart::loadDepthAreas(ChartData::Builder &root, S57Vector &src)
     auto dst = root.initDepthAreas(static_cast<unsigned int>(src.size()));
 
     unsigned int i = 0;
-    for (const auto &obj : src) {
+    for (const oesenc::S57 *s57 : src) {
         auto dstArea = dst[i++];
         // Should read both limits here
-        auto depth = obj->attribute<float>(oesenc::S57::Attribute::DepthValue1);
+        auto depth = s57->attribute<float>(oesenc::S57::Attribute::DepthValue1);
         if (depth.has_value()) {
             dstArea.setDepth(depth.value());
         }
 
-        loadPolygonsFromS57<ChartData::DepthArea>(dstArea, obj);
+        loadPolygonsFromS57<ChartData::DepthArea>(dstArea, s57);
     }
 }
 
@@ -907,21 +907,21 @@ void Chart::computeCentroidFromPolygons(typename T::Builder builder)
         return;
     }
 
-    double sumLat = 0;
-    double sumLon = 0;
+    double avgLat = 0;
+    double avgLon = 0;
     int nPositions = 0;
 
     for (ChartData::Polygon::Builder polygon : builder.getPolygons()) {
         for (ChartData::Position::Builder pos : polygon.getMain()) {
-            sumLat += pos.getLatitude();
-            sumLon += pos.getLongitude();
+            avgLat += pos.getLatitude();
+            avgLon += pos.getLongitude();
             nPositions++;
         }
     }
 
     ChartData::Position::Builder centroid = builder.getCentroid();
-    centroid.setLatitude(sumLat / nPositions);
-    centroid.setLongitude(sumLon / nPositions);
+    centroid.setLatitude(avgLat / nPositions);
+    centroid.setLongitude(avgLon / nPositions);
 }
 
 void Chart::toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src)
