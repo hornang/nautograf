@@ -82,7 +82,7 @@ private:
         CollisionRule collisionRule;
     };
 
-    static QPointF posToMeractor(const ChartData::Position::Reader &pos);
+    static QPointF posToMercator(const ChartData::Position::Reader &pos);
     static QRectF computeSymbolBox(const QTransform &transform,
                                    const QPointF &pos,
                                    SymbolImage::TextureSymbol &textureSymbol);
