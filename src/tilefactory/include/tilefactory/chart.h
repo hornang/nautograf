@@ -45,6 +45,7 @@ public:
     int nativeScale() const { return root().getNativeScale(); }
     std::string name() const { return root().getName(); }
     GeoRect boundingBox() const;
+    capnp::List<ChartData::CoastLine>::Reader coastLines() const { return root().getCoastLines(); }
     capnp::List<ChartData::CoverageArea>::Reader coverage() const { return root().getCoverage(); }
     capnp::List<ChartData::LandArea>::Reader landAreas() const { return root().getLandAreas(); }
     capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return root().getDepthAreas(); }
@@ -55,6 +56,7 @@ public:
     capnp::List<ChartData::Beacon>::Reader beacons() const { return root().getBeacons(); }
     capnp::List<ChartData::UnderwaterRock>::Reader underwaterRocks() const { return root().getUnderwaterRocks(); }
     capnp::List<ChartData::BuoyLateral>::Reader lateralBuoys() const { return root().getLateralBuoys(); }
+    capnp::List<ChartData::Pontoon>::Reader pontoons() const { return root().getPontoons(); }
     capnp::List<ChartData::Road>::Reader roads() const { return root().getRoads(); }
 
 private:
