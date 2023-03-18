@@ -129,9 +129,6 @@ private:
     static void copyPolygonsToBuilder(typename T::Builder builder,
                                       const std::vector<ChartClipper::Polygon> &polygons);
 
-    static inline void fromOesencPolygon(ChartData::Polygon::Builder dst,
-                                         const oesenc::S57::MultiGeometry &srcPolygon);
-
     template <typename T>
     static void loadPolygonsFromS57(typename T::Builder dst, const oesenc::S57 *s57);
 
