@@ -106,7 +106,7 @@ QRectF Tessellator::computeSymbolBox(const QTransform &transform,
                   textureSymbol.roi.size());
 }
 
-QPointF Tessellator::posToMeractor(const ChartData::Position::Reader &pos)
+QPointF Tessellator::posToMercator(const ChartData::Position::Reader &pos)
 {
     return { Mercator::mercatorWidth(0, pos.getLongitude(), s_pixelsPerLon),
              Mercator::mercatorHeight(0, pos.getLatitude(), s_pixelsPerLon) };
@@ -163,7 +163,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
 
     for (const auto &chart : charts) {
         for (const auto &sounding : chart->soundings()) {
-            const auto pos = posToMeractor(sounding.getPosition());
+            const auto pos = posToMercator(sounding.getPosition());
 
             int precision = 0;
             if (sounding.getDepth() < 30) {
@@ -202,7 +202,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                 precision = 1;
             }
 
-            const auto pos = posToMeractor(rock.getPosition());
+            const auto pos = posToMercator(rock.getPosition());
             const auto depthLabel = locale.toString(rock.getDepth(), 'f', precision);
             const auto boundingBox = fontImage->boundingBox(depthLabel,
                                                          rockPointSize,
@@ -229,7 +229,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                 continue;
             }
 
-            const auto pos = posToMeractor(buoy.getPosition());
+            const auto pos = posToMercator(buoy.getPosition());
 
             // At some point this should be the color letter of the buoy
             const auto label("?");
@@ -252,7 +252,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
         }
 
         for (const auto &item : chart->landRegions()) {
-            const auto pos = posToMeractor(item.getPosition());
+            const auto pos = posToMercator(item.getPosition());
             const auto name = QString::fromStdString(item.getName());
             const auto labelBox = fontImage->boundingBox(name,
                                                          landRegionPointSize,
@@ -377,7 +377,7 @@ TileData Tessellator::fetchData(TileFactoryWrapper *tileFactory,
                 continue;
             }
 
-            const auto pos = posToMeractor(beacon.getPosition());
+            const auto pos = posToMercator(beacon.getPosition());
             const QPoint symbolSize(symbol->size.width(), symbol->size.height());
             const auto name = QString::fromStdString(beacon.getName());
             const auto metrics = fontImage->boundingBox(name,
@@ -834,7 +834,7 @@ QList<PolygonNode::Vertex> Tessellator::drawPolygons(const typename capnp::List<
 
             capnp::List<ChartData::Position>::Reader main = polygon.getMain();
             for (ChartData::Position::Reader pos : main) {
-                QPointF p = posToMeractor(pos);
+                QPointF p = posToMercator(pos);
                 polyline.push_back({ p.x(), p.y() });
             }
             polylines.push_back(polyline);
@@ -843,7 +843,7 @@ QList<PolygonNode::Vertex> Tessellator::drawPolygons(const typename capnp::List<
                 std::vector<Triangulator::Point> polyline;
 
                 for (const auto &pos : hole) {
-                    QPointF p = posToMeractor(pos);
+                    QPointF p = posToMercator(pos);
                     polyline.push_back({ p.x(), p.y() });
                 }
                 polylines.push_back(polyline);
