@@ -1,10 +1,247 @@
 #include <chrono>
 #include <thread>
 
+#include "cutlines/cutlines.h"
 #include "tilefactory/chart.h"
 #include "tilefactory/georect.h"
 #include "tilefactory/mercator.h"
 #include "tilefactory/triangulator.h"
+
+namespace {
+
+using Line = cutlines::Line;
+using Point = cutlines::Point;
+
+std::vector<Line> downsample(const std::vector<Line> &input, float epsilon)
+{
+    std::vector<Line> output;
+
+    for (const Line &line : input) {
+        Line outputLine;
+
+        Point prevPoint;
+        for (const Point &point : line) {
+            if (std::fabs(point[0] - prevPoint[0]) + std::fabs(point[1] - prevPoint[1]) > epsilon) {
+                outputLine.push_back(point);
+                prevPoint = point;
+            }
+        }
+
+        output.push_back(outputLine);
+    }
+
+    return output;
+}
+
+template <typename T>
+void copyLinesToBuilder(typename T::Builder dst, const std::vector<cutlines::Line> &lines)
+{
+    capnp::List<ChartData::Line>::Builder dstLines = dst.initLines(static_cast<unsigned int>(lines.size()));
+
+    int i = 0;
+    for (const cutlines::Line &line : lines) {
+        ChartData::Line::Builder lineBuilder = dstLines[i++];
+        capnp::List<ChartData::Position>::Builder positions = lineBuilder.initPositions(static_cast<unsigned int>(line.size()));
+        int i = 0;
+        for (const cutlines::Point &pos : line) {
+            ChartData::Position::Builder dstPos = positions[i++];
+            dstPos.setLatitude(pos[1]);
+            dstPos.setLongitude(pos[0]);
+        }
+    }
+}
+
+template <typename T>
+struct ClippedItem
+{
+    std::vector<ChartClipper::Polygon> polygons;
+    std::vector<cutlines::Line> lines;
+    typename T::Reader sourceItem;
+};
+
+using Polygon = std::vector<Pos>;
+
+void toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src)
+{
+    int positionIndex = 0;
+    for (const Pos &pos : src) {
+        auto dstPos = dst[positionIndex++];
+        dstPos.setLatitude(pos.lat());
+        dstPos.setLongitude(pos.lon());
+    }
+}
+
+void toCapnPolygons(::capnp::List<capnp::List<ChartData::Position>>::Builder dst,
+                    const std::vector<Polygon> &src)
+{
+    int polygonIndex = 0;
+
+    for (const Polygon &srcPolygon : src) {
+        dst.init(polygonIndex, (unsigned int)srcPolygon.size());
+        auto dstPositions = dst[polygonIndex];
+
+        int positionIndex = 0;
+        for (const Pos &pos : srcPolygon) {
+            auto dstPos = dstPositions[positionIndex];
+            dstPos.setLatitude(pos.lat());
+            dstPos.setLongitude(pos.lon());
+            positionIndex++;
+        }
+
+        polygonIndex++;
+    }
+}
+
+template <typename T>
+void copyPolygonsToBuilder(typename T::Builder dst, const std::vector<ChartClipper::Polygon> &src)
+{
+    capnp::List<ChartData::Polygon>::Builder dstPolygons = dst.initPolygons((unsigned int)src.size());
+
+    int polygonIndex = 0;
+    for (const ChartClipper::Polygon &polygon : src) {
+        ChartData::Polygon::Builder dstPolygon = dstPolygons[polygonIndex++];
+        auto main = dstPolygon.initMain(static_cast<unsigned int>(polygon.main.size()));
+        toCapnPolygon(main, polygon.main);
+        auto holes = dstPolygon.initHoles(static_cast<unsigned int>(polygon.holes.size()));
+        toCapnPolygons(holes, polygon.holes);
+    }
+}
+
+std::vector<ChartClipper::Polygon> clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
+                                                const ChartClipper::Config &config)
+{
+    std::vector<ChartClipper::Polygon> clipped;
+
+    for (const ChartData::Polygon::Reader &polygon : polygons) {
+        std::vector<ChartClipper::Polygon> polygons = ChartClipper::clipPolygon(polygon, config);
+        clipped.insert(clipped.end(), polygons.begin(), polygons.end());
+    }
+
+    return clipped;
+}
+
+template <typename T>
+void clipPolygonItems(const typename capnp::List<T>::Reader &src,
+                      ChartClipper::Config config,
+                      std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
+                      std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
+{
+    std::vector<ClippedItem<T>> clippedItems;
+
+    for (const typename T::Reader &element : src) {
+        std::vector<ChartClipper::Polygon> polygons = clipPolygons(element.getPolygons(), config);
+
+        if (!polygons.empty()) {
+            clippedItems.push_back({ polygons, {}, element });
+        }
+    }
+
+    typename capnp::List<T>::Builder list = init(static_cast<unsigned int>(clippedItems.size()));
+
+    int i = 0;
+
+    for (const ClippedItem<T> &item : clippedItems) {
+        typename T::Builder builder = list[i++];
+        if (copyFunction) {
+            copyFunction(builder, item.sourceItem);
+        }
+        copyPolygonsToBuilder<T>(builder, item.polygons);
+    }
+}
+
+std::vector<cutlines::Line> clipLines(const capnp::List<ChartData::Line>::Reader &lines,
+                                      const cutlines::Rect &clipRect,
+                                      float epsilon)
+{
+    std::vector<cutlines::Line> clipped;
+
+    for (const ChartData::Line::Reader &line : lines) {
+        cutlines::Line dstLine;
+
+        for (const ChartData::Position::Reader &pos : line.getPositions()) {
+            dstLine.push_back({ pos.getLongitude(), pos.getLatitude() });
+        }
+
+        std::vector<cutlines::Line> newLines = cutlines::clip(dstLine, clipRect);
+        newLines = downsample(newLines, epsilon);
+        clipped.insert(clipped.end(), newLines.begin(), newLines.end());
+    }
+
+    return clipped;
+}
+
+cutlines::Rect toCutlinesRect(const GeoRect &rect, ChartClipper::Config &config)
+{
+    return cutlines::Rect { rect.left() - config.longitudeMargin,
+                            rect.right() + config.longitudeMargin,
+                            rect.bottom() - config.latitudeMargin,
+                            rect.top() + config.latitudeMargin };
+}
+
+template <typename T>
+void clipLineItems(const typename capnp::List<T>::Reader &src,
+                   ChartClipper::Config config,
+                   std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
+                   std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
+{
+    std::vector<ClippedItem<T>> clippedItems;
+
+    for (const typename T::Reader &element : src) {
+        std::vector<cutlines::Line> lines = clipLines(element.getLines(),
+                                                      toCutlinesRect(config.box, config),
+                                                      config.lineEpsilon);
+
+        if (!lines.empty()) {
+            clippedItems.push_back({ {}, lines, element });
+        }
+    }
+
+    typename capnp::List<T>::Builder list = init(static_cast<unsigned int>(clippedItems.size()));
+
+    int i = 0;
+
+    for (const ClippedItem<T> &item : clippedItems) {
+        typename T::Builder builder = list[i++];
+        if (copyFunction) {
+            copyFunction(builder, item.sourceItem);
+        }
+        copyLinesToBuilder<T>(builder, item.lines);
+    }
+}
+
+template <typename T>
+void clipPolygonOrLineItems(const typename capnp::List<T>::Reader &src,
+                            ChartClipper::Config config,
+                            std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
+                            std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
+{
+    std::vector<ClippedItem<T>> clippedItems;
+
+    for (const typename T::Reader &element : src) {
+        std::vector<ChartClipper::Polygon> polygons = clipPolygons(element.getPolygons(), config);
+        std::vector<cutlines::Line> lines = clipLines(element.getLines(),
+                                                      toCutlinesRect(config.box, config),
+                                                      config.lineEpsilon);
+
+        if (!polygons.empty() || !lines.empty()) {
+            clippedItems.push_back({ polygons, lines, element });
+        }
+    }
+
+    typename capnp::List<T>::Builder list = init(static_cast<unsigned int>(clippedItems.size()));
+
+    int i = 0;
+
+    for (const ClippedItem<T> &item : clippedItems) {
+        typename T::Builder builder = list[i++];
+        if (copyFunction) {
+            copyFunction(builder, item.sourceItem);
+        }
+        copyPolygonsToBuilder<T>(builder, item.polygons);
+        copyLinesToBuilder<T>(builder, item.lines);
+    }
+}
+}
 
 std::unique_ptr<capnp::MallocMessageBuilder>
 Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
@@ -283,131 +520,6 @@ void Chart::clipPointItems(const typename capnp::List<T>::Reader &src,
         element.getPosition().setLatitude(item.pos.lat());
         element.getPosition().setLongitude(item.pos.lon());
         copyFunction(element, item.item);
-    }
-}
-
-template <typename T>
-void Chart::clipPolygonItems(const typename capnp::List<T>::Reader &src,
-                             ChartClipper::Config config,
-                             std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
-                             std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
-{
-    std::vector<ClippedPolygonItem<T>> clipped;
-
-    for (const typename T::Reader &element : src) {
-        std::vector<ChartClipper::Polygon> polygons = clipPolygons(element.getPolygons(), config);
-
-        if (!polygons.empty()) {
-            clipped.push_back({ polygons, element });
-        }
-    }
-
-    typename capnp::List<T>::Builder list = init(static_cast<unsigned int>(clipped.size()));
-
-    int i = 0;
-
-    for (const Chart::ClippedPolygonItem<T> &item : clipped) {
-        typename T::Builder builder = list[i++];
-        if (copyFunction) {
-            copyFunction(builder, item.item);
-        }
-        copyPolygonsToBuilder<T>(builder, item.polygons);
-    }
-}
-
-std::vector<ChartClipper::Polygon> Chart::clipPolygons(const capnp::List<ChartData::Polygon>::Reader &polygons,
-                                                       const ChartClipper::Config &config)
-{
-    std::vector<ChartClipper::Polygon> clipped;
-
-    for (const ChartData::Polygon::Reader &polygon : polygons) {
-        std::vector<ChartClipper::Polygon> polygons = ChartClipper::clipPolygon(polygon, config);
-        clipped.insert(clipped.end(), polygons.begin(), polygons.end());
-    }
-
-    return clipped;
-}
-
-template <typename T>
-void Chart::clipLineItems(const typename capnp::List<T>::Reader &src,
-                          ChartClipper::Config config,
-                          std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
-                          std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction)
-{
-    std::vector<ClippedLineItem<T>> clipped;
-    const GeoRect &box = config.box;
-
-    // Add a bit more clipping margin for lines since we're not clipping with
-    // polyclipping library.
-    GeoRect clipRect(box.top() + config.latitudeMargin * 5,
-                     box.bottom() - config.latitudeMargin * 5,
-                     box.left() - config.longitudeMargin * 5,
-                     box.right() + config.longitudeMargin * 5);
-
-    for (const auto &element : src) {
-
-        std::vector<std::vector<Pos>> lines;
-        auto srcLines = element.getLines();
-
-        for (const auto &srcLine : srcLines) {
-            Pos previous(0, 0);
-            std::vector<Pos> line;
-
-            for (const auto &srcPos : srcLine.getPositions()) {
-                const Pos pos(srcPos.getLatitude(), srcPos.getLongitude());
-                bool distanceThrehold = fabs(pos.lat() - previous.lat()) > config.latitudeResolution
-                    || fabs(pos.lon() - previous.lon()) > config.longitudeResolution;
-
-                if (clipRect.contains(srcPos.getLatitude(), srcPos.getLongitude()) && distanceThrehold) {
-                    line.push_back(pos);
-                    previous = pos;
-                }
-            }
-
-            if (!line.empty()) {
-                lines.push_back(line);
-            }
-        }
-        if (!lines.empty()) {
-            clipped.push_back(ClippedLineItem<T> { lines, element });
-        }
-    }
-
-    auto dst = init(static_cast<unsigned int>(clipped.size()));
-
-    int i = 0;
-    for (const auto &item : clipped) {
-        auto element = dst[i++];
-        // element.getPosition().setLatitude(item.pos.latitude());
-        // element.getPosition().setLongitude(item.pos.longitude());
-        auto dstLines = element.initLines(static_cast<unsigned int>(item.lines.size()));
-        int i = 0;
-        for (const auto &line : item.lines) {
-            auto dstLine = dstLines[i++];
-            auto positions = dstLine.initPositions(static_cast<unsigned int>(line.size()));
-            int i = 0;
-            for (const auto &pos : line) {
-                auto dstPos = positions[i++];
-                dstPos.setLatitude(pos.lat());
-                dstPos.setLongitude(pos.lon());
-            }
-        }
-        copyFunction(element, item.item);
-    }
-}
-
-template <typename T>
-void Chart::copyPolygonsToBuilder(typename T::Builder dst, const std::vector<ChartClipper::Polygon> &src)
-{
-    capnp::List<ChartData::Polygon>::Builder dstPolygons = dst.initPolygons((unsigned int)src.size());
-
-    int polygonIndex = 0;
-    for (const ChartClipper::Polygon &polygon : src) {
-        ChartData::Polygon::Builder dstPolygon = dstPolygons[polygonIndex++];
-        auto main = dstPolygon.initMain(static_cast<unsigned int>(polygon.main.size()));
-        toCapnPolygon(main, polygon.main);
-        auto holes = dstPolygon.initHoles(static_cast<unsigned int>(polygon.holes.size()));
-        toCapnPolygons(holes, polygon.holes);
     }
 }
 
@@ -922,35 +1034,4 @@ void Chart::computeCentroidFromPolygons(typename T::Builder builder)
     ChartData::Position::Builder centroid = builder.getCentroid();
     centroid.setLatitude(avgLat / nPositions);
     centroid.setLongitude(avgLon / nPositions);
-}
-
-void Chart::toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src)
-{
-    int positionIndex = 0;
-    for (const Pos &pos : src) {
-        auto dstPos = dst[positionIndex++];
-        dstPos.setLatitude(pos.lat());
-        dstPos.setLongitude(pos.lon());
-    }
-}
-
-void Chart::toCapnPolygons(::capnp::List<capnp::List<ChartData::Position>>::Builder dst,
-                           const std::vector<Polygon> &src)
-{
-    int polygonIndex = 0;
-
-    for (const Polygon &srcPolygon : src) {
-        dst.init(polygonIndex, (unsigned int)srcPolygon.size());
-        auto dstPositions = dst[polygonIndex];
-
-        int positionIndex = 0;
-        for (const Pos &pos : srcPolygon) {
-            auto dstPos = dstPositions[positionIndex];
-            dstPos.setLatitude(pos.lat());
-            dstPos.setLongitude(pos.lon());
-            positionIndex++;
-        }
-
-        polygonIndex++;
-    }
 }

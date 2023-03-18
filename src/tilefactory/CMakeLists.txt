@@ -46,4 +46,5 @@ target_link_libraries(tilefactory
     CapnProto::capnp
     Clipper2
     oesenc
+    cutlines
 )

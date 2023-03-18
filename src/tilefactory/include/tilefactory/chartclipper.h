@@ -30,6 +30,7 @@ public:
         float longitudeMargin = 0;
         float latitudeResolution = 0;
         float longitudeResolution = 0;
+        float lineEpsilon = 0;
         bool moveOutEdges = false;
     };
 
