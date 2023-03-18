@@ -32,6 +32,12 @@ QPointF posToMercator(const ChartData::Position::Reader &pos)
              Mercator::mercatorHeight(0, pos.getLatitude(), s_pixelsPerLon) };
 }
 
+QPointF posToMercator(double lat, double lon)
+{
+    return { Mercator::mercatorWidth(0, lon, s_pixelsPerLon),
+             Mercator::mercatorHeight(0, lat, s_pixelsPerLon) };
+}
+
 QPointF posToMercator(const Pos &pos)
 {
     return { Mercator::mercatorWidth(0, pos.lon(), s_pixelsPerLon),
@@ -126,6 +132,122 @@ struct Symbol
     int priority = 0;
     CollisionRule collisionRule;
 };
+
+QList<LineNode::Vertex> calcLine(const QList<QPointF> &points,
+                                 const QColor &color)
+{
+    Q_ASSERT(points.size() > 1);
+    QList<LineNode::Vertex> output;
+    const float z = 0.5;
+
+    output.resize((points.size() - 1) * 6);
+
+    for (int i = 1; i < points.size(); i++) {
+        const QPointF &prevPoint = points.at(i - 1);
+        const QPointF &point = points.at(i);
+        QVector2D forward(point - prevPoint);
+        QVector2D rightNormal(forward.y(), -forward.x());
+        rightNormal.normalize();
+
+        int vertexNo = (i - 1) * 6;
+        LineNode::Vertex *data = output.data() + vertexNo;
+
+        data[0] = { static_cast<float>(prevPoint.x()),
+                    static_cast<float>(prevPoint.y()),
+                    z,
+                    static_cast<float>(-rightNormal.x()),
+                    static_cast<float>(-rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+
+        data[1] = { static_cast<float>(point.x()),
+                    static_cast<float>(point.y()),
+                    z,
+                    static_cast<float>(rightNormal.x()),
+                    static_cast<float>(rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+
+        data[2] = { static_cast<float>(prevPoint.x()),
+                    static_cast<float>(prevPoint.y()),
+                    z,
+                    static_cast<float>(rightNormal.x()),
+                    static_cast<float>(rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+
+        data[3] = { static_cast<float>(prevPoint.x()),
+                    static_cast<float>(prevPoint.y()),
+                    z,
+                    static_cast<float>(-rightNormal.x()),
+                    static_cast<float>(-rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+
+        data[4] = { static_cast<float>(point.x()),
+                    static_cast<float>(point.y()),
+                    z,
+                    static_cast<float>(rightNormal.x()),
+                    static_cast<float>(rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+
+        data[5] = { static_cast<float>(point.x()),
+                    static_cast<float>(point.y()),
+                    z,
+                    static_cast<float>(-rightNormal.x()),
+                    static_cast<float>(-rightNormal.y()),
+                    static_cast<uchar>(color.red()),
+                    static_cast<uchar>(color.green()),
+                    static_cast<uchar>(color.blue()),
+                    255 };
+    }
+
+    return output;
+}
+
+template <typename T>
+QList<LineNode::Vertex> drawLines(const typename capnp::List<T>::Reader &areas,
+                                  std::function<QColor(const typename T::Reader &)> colorFunc)
+{
+    QList<LineNode::Vertex> vertices;
+    int vertexCount = 0;
+
+    for (const auto &area : areas) {
+        QColor color = colorFunc(area);
+
+        if (!color.isValid()) {
+            continue;
+        }
+
+        for (const ChartData::Line::Reader &line : area.getLines()) {
+            if (line.getPositions().size() < 2) {
+                continue;
+            }
+
+            QList<QPointF> points;
+            points.reserve(line.getPositions().size());
+
+            for (const ChartData::Position::Reader &position : line.getPositions()) {
+                points.append(posToMercator(position.getLatitude(), position.getLongitude()));
+            }
+
+            vertices.append(calcLine(points, color));
+        }
+    }
+
+    return vertices;
+}
 
 QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
 {
@@ -781,6 +903,22 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     tileData.symbolVertices = addSymbols(symbols);
     tileData.textVertices = addLabels(labels, fontImage.get());
+
+    int clippingMarginInPixels = 4;
+
+    double longitudeMargin = Mercator::mercatorWidthInverse(recipe.rect.left(),
+                                                            clippingMarginInPixels,
+                                                            recipe.pixelsPerLongitude)
+        - recipe.rect.left();
+    double latitudeMargin = recipe.rect.top()
+        - Mercator::mercatorHeightInverse(recipe.rect.top(),
+                                          clippingMarginInPixels,
+                                          recipe.pixelsPerLongitude);
+
+    GeoRect lineClippingRect(recipe.rect.top() + latitudeMargin,
+                             recipe.rect.bottom() - latitudeMargin,
+                             recipe.rect.left() - longitudeMargin,
+                             recipe.rect.right() + longitudeMargin);
 
     for (const std::shared_ptr<Chart> &chart : charts) {
 

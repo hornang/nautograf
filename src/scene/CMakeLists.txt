@@ -17,6 +17,13 @@ add_library(scene
     annotation/annotationshader.cpp
     annotation/annotationshader.h
 
+    line/linematerial.cpp
+    line/linematerial.h
+    line/linenode.cpp
+    line/linenode.h
+    line/lineshader.cpp
+    line/lineshader.h
+
     polygon/polygonmaterial.cpp
     polygon/polygonmaterial.h
     polygon/polygonnode.cpp
@@ -53,6 +60,8 @@ qt6_add_shaders(scene "shaders"
         "annotation/annotation.frag"
         "polygon/polygon.frag"
         "polygon/polygon.vert"
+        "line/line.frag"
+        "line/line.vert"
 )
 
 include(GenerateExportHeader)
