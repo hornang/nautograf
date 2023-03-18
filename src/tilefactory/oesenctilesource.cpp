@@ -200,6 +200,7 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
     clipConfig.longitudeResolution = longitudeResolution;
     clipConfig.latitudeResolution = latitudeResolution;
     clipConfig.maxPixelsPerLongitude = pixelsPerLongitude;
+    clipConfig.lineEpsilon = 2 * std::min(longitudeResolution, latitudeResolution);
 
     std::unique_ptr<capnp::MallocMessageBuilder> clippedChart = entireChart->buildClipped(clipConfig);
 

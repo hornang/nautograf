@@ -95,39 +95,10 @@ private:
     };
 
     template <typename T>
-    struct ClippedLineItem
-    {
-        std::vector<std::vector<Pos>> lines;
-        typename T::Reader item;
-    };
-
-    template <typename T>
-    struct ClippedPolygonItem
-    {
-        std::vector<ChartClipper::Polygon> polygons;
-        typename T::Reader item;
-    };
-
-    template <typename T>
-    static void clipPolygonItems(const typename capnp::List<T>::Reader &src,
-                                 ChartClipper::Config config,
-                                 std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
-                                 std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
-    template <typename T>
     static void clipPointItems(const typename capnp::List<T>::Reader &src,
                                ChartClipper::Config config,
                                std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
                                std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
-
-    template <typename T>
-    static void clipLineItems(const typename capnp::List<T>::Reader &src,
-                              ChartClipper::Config config,
-                              std::function<typename capnp::List<T>::Builder(unsigned int length)> init,
-                              std::function<void(typename T::Builder &, const typename T::Reader &)> copyFunction);
-
-    template <typename T>
-    static void copyPolygonsToBuilder(typename T::Builder builder,
-                                      const std::vector<ChartClipper::Polygon> &polygons);
 
     template <typename T>
     static void loadPolygonsFromS57(typename T::Builder dst, const oesenc::S57 *s57);
@@ -143,11 +114,6 @@ private:
 
     static inline void fromOesencPosToCapnp(capnp::List<ChartData::Position>::Builder &dst,
                                             const std::vector<oesenc::Position> &src);
-
-    using Polygon = std::vector<Pos>;
-    static inline void toCapnPolygons(capnp::List<capnp::List<ChartData::Position>>::Builder dst,
-                                      const std::vector<Polygon> &src);
-    static inline void toCapnPolygon(capnp::List<ChartData::Position>::Builder dst, const Polygon &src);
 
     std::unique_ptr<::capnp::PackedFdMessageReader> m_capnpReader;
     FILE *m_file = nullptr;
