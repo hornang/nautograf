@@ -1,11 +1,13 @@
 #pragma once
 
 #include "annotation/annotationnode.h"
+#include "line/linenode.h"
 #include "polygon/polygonnode.h"
 
 struct GeometryLayer
 {
     QList<PolygonNode::Vertex> polygonVertices;
+    QList<LineNode::Vertex> lineVertices;
 };
 
 struct TileData

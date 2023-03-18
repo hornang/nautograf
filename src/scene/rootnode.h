@@ -4,6 +4,7 @@
 
 class QSGTexture;
 class QQuickWindow;
+class LineMaterial;
 class PolygonMaterial;
 class AnnotationMaterial;
 
@@ -17,6 +18,7 @@ public:
     QSGTexture *symbolTexture() const { return m_symbolTexture; }
     QSGTexture *fontTexture() const { return m_fontTexture; }
     PolygonMaterial *polygonMaterial() const { return m_polygonMaterial; }
+    LineMaterial *lineMaterial() const { return m_lineMaterial; }
     PolygonMaterial *blendColorMaterial() const { return m_blendColorMaterial; }
     AnnotationMaterial *symbolMaterial() const { return m_symbolMaterial; }
     AnnotationMaterial *textMaterial() const { return m_textMaterial; }
@@ -28,4 +30,5 @@ private:
     PolygonMaterial *m_blendColorMaterial = nullptr;
     AnnotationMaterial *m_symbolMaterial = nullptr;
     AnnotationMaterial *m_textMaterial = nullptr;
+    LineMaterial *m_lineMaterial = nullptr;
 };

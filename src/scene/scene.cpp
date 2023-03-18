@@ -4,6 +4,7 @@
 #include "annotation/annotationnode.h"
 #include "fontimage.h"
 #include "geometrynode.h"
+#include "line/linematerial.h"
 #include "polygon/polygonmaterial.h"
 #include "polygon/polygonnode.h"
 #include "rootnode.h"
@@ -87,6 +88,7 @@ namespace {
 struct Materials
 {
     PolygonMaterial *polygon = nullptr;
+    LineMaterial *line = nullptr;
     AnnotationMaterial *symbol = nullptr;
     AnnotationMaterial *text = nullptr;
 };
@@ -142,6 +144,10 @@ void updateGeometryLayers(const QString &tileId,
         layerNode->appendChildNode(new PolygonNode(tileId,
                                                    materials.polygon,
                                                    layer.polygonVertices));
+
+        layerNode->appendChildNode(new LineNode(tileId,
+                                                materials.line,
+                                                layer.lineVertices));
     }
 }
 
@@ -198,6 +204,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 
     Materials materials;
     materials.polygon = rootNode->polygonMaterial();
+    materials.line = rootNode->lineMaterial();
     materials.symbol = rootNode->symbolMaterial();
     materials.text = rootNode->textMaterial();
 
