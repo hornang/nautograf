@@ -128,6 +128,27 @@ target_link_libraries(nautograf
     scene
 )
 
+install(
+    TARGETS nautograf scene tilefactory oesenc
+    RUNTIME_DEPENDENCY_SET dependency_set
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
+)
+
+install(
+    IMPORTED_RUNTIME_ARTIFACTS nautograf
+    RUNTIME_DEPENDENCY_SET dependency_set
+)
+
+install(
+    RUNTIME_DEPENDENCY_SET dependency_set
+    PRE_INCLUDE_REGEXES "tinyxml2" "freetype" "bz2" "brotli" "libpng" "zlib"
+    PRE_EXCLUDE_REGEXES ".*"
+
+    # tinyxml exists as runtime dependency for more than one target. Exclude
+    # one of them to avoid conflict during install.
+    POST_EXCLUDE_REGEXES ".*/scene/.*tinyxml2.*"
+)
+
 if(WIN32)
     find_program(WINDEPLOYQT windeployqt HINTS "${_qt_bin_dir}")
     get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
@@ -145,28 +166,7 @@ if(WIN32)
     set(CPACK_PRE_BUILD_SCRIPTS
         ${CMAKE_CURRENT_BINARY_DIR}/deploy-qt-windows.cmake
     )
-
-    install(
-        TARGETS nautograf scene tilefactory oesenc
-        RUNTIME_DEPENDENCY_SET dependency_set
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
-    )
-
-    install(
-        IMPORTED_RUNTIME_ARTIFACTS nautograf
-        RUNTIME_DEPENDENCY_SET dependency_set
-    )
-
-    install(
-        RUNTIME_DEPENDENCY_SET dependency_set
-        PRE_INCLUDE_REGEXES "tinyxml2" "freetype" "bz2" "brotli" "libpng" "zlib"
-        PRE_EXCLUDE_REGEXES ".*"
-
-        # tinyxml exists as runtime dependency for more than one target. Exclude
-        # one of them to avoid conflict during install.
-        POST_EXCLUDE_REGEXES ".*/scene/.*tinyxml2.*"
-    )
-
-    set(CPACK_GENERATOR "ZIP")
-    include(CPACK)
 endif()
+
+set(CPACK_GENERATOR "ZIP")
+include(CPack)
