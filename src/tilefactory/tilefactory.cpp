@@ -295,7 +295,7 @@ void TileFactory::setSources(const std::vector<TileFactory::Source> &sources)
     }
 
     m_previousTileLocations.clear();
-    m_sources = sources;
+    m_sources = qualifiedSources;
 
     std::sort(m_sources.begin(),
               m_sources.end(),
