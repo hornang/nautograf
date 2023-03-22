@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(nautograf LANGUAGES CXX)
+include(cmake/GetVersionFromGit.cmake)
+get_version_from_git(
+    SEMANTIC NAUTOGRAF_SEMVER
+    DESCRIBE NAUTOGRAF_VERSION_DESCRIBE
+)
+
+project(nautograf LANGUAGES CXX VERSION ${NAUTOGRAF_SEMVER})
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.txt.in
+               ${CMAKE_CURRENT_BINARY_DIR}/version.txt @ONLY)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
