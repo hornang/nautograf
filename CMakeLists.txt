@@ -161,7 +161,6 @@ install(
 
 if(WIN32)
     find_program(WINDEPLOYQT windeployqt HINTS "${_qt_bin_dir}")
-    get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
 
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/AppxManifest.xml.in"
