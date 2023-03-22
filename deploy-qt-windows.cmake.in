@@ -2,16 +2,7 @@ set(WINDEPLOYQT "@WINDEPLOYQT@")
 set(CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@")
 set(CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@")
 set(EXECUTABLE_DIR "${CPACK_TEMPORARY_INSTALL_DIRECTORY}/bin")
-set(COMPILER_DIR "@COMPILER_DIR@")
 
-if (COMPILER_DIR STREQUAL "")
-    message(FATAL_ERROR "COMPILER_DIR is empty. For gcc builds this may be an issue because windeployqt won't find gcc DLLs")
-endif()
-
-cmake_path(CONVERT ${COMPILER_DIR} TO_NATIVE_PATH_LIST COMPILER_DIR_NATIVE)
-
-# Must use native path separator for it to work on Windows Path variable
-set(ENV{PATH} "${COMPILER_DIR_NATIVE};$ENV{PATH}")
 
 file(COPY_FILE "${CMAKE_BINARY_DIR}/AppxManifest.xml" ${CPACK_TEMPORARY_INSTALL_DIRECTORY}/AppxManifest.xml)
 file(COPY_FILE "${CMAKE_BINARY_DIR}/logo_44.png" ${CPACK_TEMPORARY_INSTALL_DIRECTORY}/logo_44.png)
