@@ -3,11 +3,6 @@ set(CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@")
 set(CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@")
 set(EXECUTABLE_DIR "${CPACK_TEMPORARY_INSTALL_DIRECTORY}/bin")
 
-
-file(COPY_FILE "${CMAKE_BINARY_DIR}/AppxManifest.xml" ${CPACK_TEMPORARY_INSTALL_DIRECTORY}/AppxManifest.xml)
-file(COPY_FILE "${CMAKE_BINARY_DIR}/logo_44.png" ${CPACK_TEMPORARY_INSTALL_DIRECTORY}/logo_44.png)
-file(COPY_FILE "${CMAKE_BINARY_DIR}/logo_150.png" ${CPACK_TEMPORARY_INSTALL_DIRECTORY}/logo_150.png)
-
 execute_process(
     COMMAND ${WINDEPLOYQT} --no-compiler-runtime --qmldir ${CMAKE_SOURCE_DIR}/qml ${EXECUTABLE_DIR}
     COMMAND_ERROR_IS_FATAL ANY # This does not abort the packaging, only displays error.

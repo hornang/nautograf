@@ -174,6 +174,22 @@ if(WIN32)
     set(CPACK_PRE_BUILD_SCRIPTS
         ${CMAKE_CURRENT_BINARY_DIR}/deploy-qt-windows.cmake
     )
+
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/AppxManifest.xml
+        DESTINATION .
+    )
+
+    # Replace this if statement with a more explicit relation between the variable
+    # beeing checked and the existence of the PNG files.
+    if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
+        install(
+            FILES
+                ${CMAKE_CURRENT_BINARY_DIR}/logo_44.png
+                ${CMAKE_CURRENT_BINARY_DIR}/logo_150.png
+            DESTINATION .
+        )
+    endif()
 endif()
 
 set(CPACK_GENERATOR "ZIP")
