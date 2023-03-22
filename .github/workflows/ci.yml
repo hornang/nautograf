@@ -13,11 +13,7 @@ jobs:
   Windows:
     runs-on: windows-latest
     env:
-      buildDir: '${{ github.workspace }}/build'
-
-    defaults:
-      run:
-        shell: pwsh
+      SYSTEM_NAME: win64
 
     steps:
       - name: Check out repository
@@ -50,23 +46,34 @@ jobs:
           configurePreset: 'ninja-multi-vcpkg'
           buildPreset: 'win-release'
 
-      - name: Run cpack
-        run: cd builds/ninja-multi-vcpkg; cpack -C Release
+      - name: Install to directory
+        shell: bash
+        run: >
+          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg";
+          PACKAGE_NAME=nautograf-$(cat version.txt)-$SYSTEM_NAME;
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV;
+          cmake --install . --config Release --prefix "$(pwd)/install/$PACKAGE_NAME"
+
+      - name: Deploy Qt libraries to install dir
+        shell: bash
+        run: >
+          cmake -DEXECUTABLE_DIR="${{ github.workspace }}/builds/ninja-multi-vcpkg/install/${{ env.PACKAGE_NAME }}/bin"
+          -P "${{ github.workspace }}/builds/ninja-multi-vcpkg/deploy-qt-windows.cmake"
 
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
-          name: package
-          path: |
-            builds/ninja-multi-vcpkg/_CPack_Packages/win64/ZIP
-            !builds/ninja-multi-vcpkg/_CPack_Packages/win64/ZIP/*.zip
+          name: ${{ env.PACKAGE_NAME }}
+          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg/install
 
   ubuntu-20-04:
     name: 'Ubuntu 20.04'
     runs-on: ubuntu-20.04
+    env:
+      SYSTEM_NAME: ubuntu-20.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: 0
@@ -87,23 +94,22 @@ jobs:
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v10
 
-      - name: Get package name
-        shell: bash
-        run: |
-          echo "PACKAGE_NAME=nautograf-$(git describe --tags --dirty)-ubuntu-20.04" >> $GITHUB_ENV
-
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
         with:
           configurePreset: 'ninja-multi-vcpkg-linux'
           buildPreset: 'linux-release'
-          configurePresetAdditionalArgs: "['-DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install/${{ env.PACKAGE_NAME }}']"
 
       - name: Install to directory
-        run: cd builds/ninja-multi-vcpkg-linux; cmake --build . --config Release --target install
+        shell: bash
+        run: >
+          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg-linux";
+          PACKAGE_NAME=nautograf-$(cat version.txt)-$SYSTEM_NAME;
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV;
+          cmake --install . --config Release --prefix "$(pwd)/install/$PACKAGE_NAME"
 
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.PACKAGE_NAME }}
-          path: ${{ github.workspace }}/install
+          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg-linux/install

@@ -1,9 +1,7 @@
 set(WINDEPLOYQT "@WINDEPLOYQT@")
 set(CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@")
-set(CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@")
-set(EXECUTABLE_DIR "${CPACK_TEMPORARY_INSTALL_DIRECTORY}/bin")
 
 execute_process(
     COMMAND ${WINDEPLOYQT} --no-compiler-runtime --qmldir ${CMAKE_SOURCE_DIR}/qml ${EXECUTABLE_DIR}
-    COMMAND_ERROR_IS_FATAL ANY # This does not abort the packaging, only displays error.
+    COMMAND_ERROR_IS_FATAL ANY
 )
