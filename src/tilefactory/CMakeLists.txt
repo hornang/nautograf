@@ -1,5 +1,8 @@
 find_package(CapnProto CONFIG REQUIRED)
+install_license(FILE ${CapnProto_DIR}/copyright)
+
 find_package(Boost REQUIRED)
+install_license(FILE ${Boost_LIBRARY_DIRS}/../share/boost-geometry/copyright)
 
 find_path(EARCUT_HPP_INCLUDE_DIRS "mapbox/earcut.hpp")
 

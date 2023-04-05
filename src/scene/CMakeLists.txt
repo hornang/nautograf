@@ -4,6 +4,7 @@ find_package(Qt6
 )
 
 find_package(freetype-gl CONFIG REQUIRED)
+install_license(FILE ${freetype-gl_DIR}/copyright)
 
 if(NOT DEFINED SYMBOLS_DIR)
     message(FATAL_ERROR "SYMBOLS_DIR not defined")
