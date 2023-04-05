@@ -8,6 +8,9 @@ get_version_from_git(
 
 project(nautograf LANGUAGES CXX VERSION ${NAUTOGRAF_SEMVER})
 
+include(cmake/InstallLicense.cmake)
+install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.txt.in
                ${CMAKE_CURRENT_BINARY_DIR}/version.txt @ONLY)
 
@@ -26,6 +29,7 @@ function(AddMdfgen)
     set(BUILD_SHARED_LIBS OFF)
     set(MSDFGEN_BUILD_STANDALONE false)
     add_subdirectory(msdfgen)
+    install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdfgen/LICENSE.txt)
 endfunction()
 
 AddMdfgen()
@@ -51,6 +55,7 @@ function(AddClipper2)
     set(CLIPPER2_TESTS OFF)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     add_subdirectory(Clipper2/CPP)
+    install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/Clipper2/LICENSE)
 endfunction()
 
 AddClipper2()
@@ -91,6 +96,8 @@ add_executable(nautograf WIN32
     src/main.cpp
     src/cryptreader.cpp
     src/cryptreader.h
+    src/licenses.h
+    src/licenses.cpp
     src/maptile.h
     src/maptile.cpp
     src/maptilemodel.h
