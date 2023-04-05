@@ -30,8 +30,6 @@ endfunction()
 
 AddMdfgen()
 
-find_package(freetype-gl CONFIG REQUIRED)
-
 find_program(IMAGEMAGICK
     NAMES magick convert
 )
