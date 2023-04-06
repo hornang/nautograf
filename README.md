@@ -1,4 +1,4 @@
-![Nautograf](title.svg)
+![Nautograf](qml/graphics/title.svg)
 
 ## Introduction
 
