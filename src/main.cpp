@@ -4,6 +4,7 @@
 #include <QQuickWindow>
 
 #include "chartmodel.h"
+#include "licenses.h"
 #include "maptile.h"
 #include "maptilemodel.h"
 #include "oesenc/chartfile.h"
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
     qmlRegisterType<MapTile>("org.seatronomy.nautograf", 1, 0, "MapTile");
     qmlRegisterType<Scene>("org.seatronomy.nautograf", 1, 0, "Scene");
     qmlRegisterType<TileInfoBackend>("org.seatronomy.nautograf", 1, 0, "TileInfoBackend");
+    qmlRegisterType<Licenses>("org.seatronomy.nautograf", 1, 0, "Licenses");
 
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "MapTileModel", &mapTileModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "TileFactory", &tileFactoryWrapper);
