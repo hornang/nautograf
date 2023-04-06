@@ -31,7 +31,7 @@ public:
         float latitudeResolution = 0;
         float longitudeResolution = 0;
         float lineEpsilon = 0;
-        bool moveOutEdges = false;
+        bool inflateAtChartEdges = false;
     };
 
     static std::vector<Polygon> clipPolygon(const ChartData::Polygon::Reader &polygon,
