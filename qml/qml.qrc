@@ -9,5 +9,6 @@
         <file>StatusBar.qml</file>
         <file>TileInfo.qml</file>
         <file>about.md</file>
+        <file>graphics/title.svg</file>
     </qresource>
 </RCC>
