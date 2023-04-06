@@ -87,4 +87,5 @@ target_link_libraries(scene PRIVATE
     msdfgen-ext
     freetype-gl
     tilefactory
+    cutlines
 )

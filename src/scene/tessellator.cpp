@@ -5,6 +5,7 @@
 #include <freetype-gl/freetype-gl.h>
 #include <freetype-gl/texture-font.h>
 
+#include "cutlines/cutlines.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
 #include "tilefactory/triangulator.h"
@@ -243,6 +244,90 @@ QList<LineNode::Vertex> drawLines(const typename capnp::List<T>::Reader &areas,
             }
 
             vertices.append(calcLine(points, color));
+        }
+    }
+
+    return vertices;
+}
+
+/*!
+    A demonstrative "stroke polygons" implementation.
+
+    This function strokes polygon border, but has the flaws described below.
+
+    The current scene graph approach has no graphical tile clipping. Clipped
+    polygons may extend out of the tile (the clipping margin). The problem is
+    that the polygon should not be stroked outside of the tile.
+
+    To solve this the polygon border is interpreted as a line and clipped using
+    the cutlines library (Cohen-Sutherland algorithm). For this to work the line
+    clipping window must be smaller than the polygon clipping window. Polygon
+    clipping happens in the tile source whereas line clipping is done here.
+
+    The difference between the polygon and line clipping window presents a new
+    problem: The graphical stacking will place one tiles' graphical items on top
+    of graphical items in another tile. This means that a polygon from one tile
+    may occlude strokes (of the same polygon) in another tile because the
+    line is partly inside the polygon. The result is that polygons crossing tiles
+    will have a small section without stroked edges.
+
+    The best way to solve this without introducing graphical tile clipping would be
+    to stack graphical items in terms on the chart stacking and not into tiles that
+    are then stacked.
+*/
+template <typename T>
+QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &areas,
+                                       std::function<QColor(const typename T::Reader &)> colorFunc,
+                                       const GeoRect &tileRect)
+{
+    QList<LineNode::Vertex> vertices;
+    int vertexCount = 0;
+
+    for (const auto &area : areas) {
+        QColor color = colorFunc(area);
+
+        if (!color.isValid()) {
+            continue;
+        }
+
+        for (const ChartData::Polygon::Reader &polygonHole : area.getPolygons()) {
+            std::vector<capnp::List<ChartData::Position>::Reader> pathsToStroke;
+            pathsToStroke.push_back(polygonHole.getMain());
+            for (capnp::List<ChartData::Position>::Reader holes : polygonHole.getHoles()) {
+                pathsToStroke.push_back(holes);
+            }
+
+            cutlines::Rect rect { tileRect.left(),
+                                  tileRect.right(),
+                                  tileRect.bottom(),
+                                  tileRect.top() };
+
+            std::vector<cutlines::Line> clippedLines;
+
+            for (capnp::List<ChartData::Position>::Reader &srcLine : pathsToStroke) {
+                Q_ASSERT(srcLine.size() > 0);
+
+                cutlines::Line line;
+
+                for (int i = 0; i < srcLine.size(); i++) {
+                    line.push_back({ srcLine[i].getLongitude(), srcLine[i].getLatitude() });
+                }
+                line.push_back({ srcLine[0].getLongitude(),
+                                 srcLine[0].getLatitude() });
+
+                std::vector<cutlines::Line> lines = cutlines::clip(line, rect);
+                clippedLines.insert(clippedLines.begin(), lines.begin(), lines.end());
+            }
+
+            for (const cutlines::Line &line : clippedLines) {
+                QList<QPointF> points;
+                points.reserve(line.size());
+
+                for (const cutlines::Point &point : line) {
+                    points.append(posToMercator(point[1], point[0]));
+                }
+                vertices.append(calcLine(points, color));
+            }
         }
     }
 
