@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/qml">
         <file>main.qml</file>
+        <file>About.qml</file>
         <file>Viewer.qml</file>
         <file>ViewerMenu.qml</file>
         <file>ViewerMenuItem.qml</file>
