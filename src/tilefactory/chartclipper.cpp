@@ -89,7 +89,7 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
         Polygon area;
         auto polygon = toLine(mainAreas, geoRect, xRes, yRes);
 
-        if (clipConfig.moveOutEdges) {
+        if (clipConfig.inflateAtChartEdges) {
             polygon = inflateAtChartEdges(polygon, clipConfig);
         }
 

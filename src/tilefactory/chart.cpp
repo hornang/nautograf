@@ -924,7 +924,7 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
     ChartData::Builder root = message->initRoot<ChartData>();
 
     root.setName(name());
-    config.moveOutEdges = false;
+    config.inflateAtChartEdges = false;
     root.setNativeScale(nativeScale());
 
     clipPolygonItems<ChartData::CoverageArea>(
@@ -935,7 +935,7 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
         },
         {});
 
-    config.moveOutEdges = true;
+    config.inflateAtChartEdges = true;
 
     clipPolygonItems<ChartData::LandArea>(
         landAreas(),
