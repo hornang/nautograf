@@ -1,14 +1,13 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-<qresource prefix="/qml">
-    <file>main.qml</file>
-    <file>Viewer.qml</file>
-    <file>ViewerMenu.qml</file>
-    <file>ViewerMenuItem.qml</file>
-    <file>ChartSelector.qml</file>
-    <file>OverlayText.qml</file>
-    <file>StatusBar.qml</file>
-    <file>TileInfo.qml</file>
-    <file>about.md</file>
-</qresource>
+<RCC>
+    <qresource prefix="/qml">
+        <file>main.qml</file>
+        <file>Viewer.qml</file>
+        <file>ViewerMenu.qml</file>
+        <file>ViewerMenuItem.qml</file>
+        <file>ChartSelector.qml</file>
+        <file>OverlayText.qml</file>
+        <file>StatusBar.qml</file>
+        <file>TileInfo.qml</file>
+        <file>about.md</file>
+    </qresource>
 </RCC>
