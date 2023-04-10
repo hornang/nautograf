@@ -333,7 +333,7 @@ void loadLinesFromS57(typename T::Builder dst, const oesenc::S57 *s57)
 
 using S57Vector = const std::vector<const oesenc::S57 *>;
 
-void loadLandAreas(ChartData::Builder &root, S57Vector &src)
+void loadLandAreas(ChartData::Builder &root, const S57Vector &src)
 {
     auto landAreas = root.initLandAreas(static_cast<unsigned int>(src.size()));
 
@@ -382,7 +382,7 @@ int countPointObjects(S57Vector &s57s)
     return n;
 }
 
-void loadBuiltUpAreas(ChartData::Builder &root, S57Vector &src)
+void loadBuiltUpAreas(ChartData::Builder &root, const S57Vector &src)
 {
 
     // Built-Up areas actaully have either polygons OR points. Those two variants
@@ -428,7 +428,7 @@ void loadBuiltUpAreas(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-void loadCoverage(ChartData::Builder &root, S57Vector &src)
+void loadCoverage(ChartData::Builder &root, const S57Vector &src)
 {
     std::vector<const oesenc::S57 *> coverageRecords;
 
@@ -448,7 +448,7 @@ void loadCoverage(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-void loadDepthAreas(ChartData::Builder &root, S57Vector &src)
+void loadDepthAreas(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initDepthAreas(static_cast<unsigned int>(src.size()));
 
@@ -490,7 +490,7 @@ struct Sounding
     bool hasValue = false;
 };
 
-void loadSoundings(ChartData::Builder &root, S57Vector &objs)
+void loadSoundings(ChartData::Builder &root, const S57Vector &objs)
 {
     // Soundings are "multi point geometries" which means that there can be
     // multiple soundings (depth + position) per S57 object. The S57 object may
@@ -521,7 +521,7 @@ void loadSoundings(ChartData::Builder &root, S57Vector &objs)
     }
 }
 
-void loadBeacons(ChartData::Builder &root, S57Vector &src)
+void loadBeacons(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initBeacons(static_cast<unsigned int>(src.size()));
 
@@ -564,7 +564,7 @@ void loadBeacons(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-void loadUnderwaterRocks(ChartData::Builder &root, S57Vector &src)
+void loadUnderwaterRocks(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initUnderwaterRocks(static_cast<unsigned int>(src.size()));
 
@@ -608,7 +608,7 @@ void loadUnderwaterRocks(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-void loadBuoyLateral(ChartData::Builder &root, S57Vector &src)
+void loadBuoyLateral(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initLateralBuoys(static_cast<unsigned int>(src.size()));
 
@@ -707,7 +707,7 @@ void loadBuoyLateral(ChartData::Builder &root, S57Vector &src)
     }
 }
 
-void loadRoads(ChartData::Builder &root, S57Vector &src)
+void loadRoads(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initRoads(static_cast<unsigned int>(src.size()));
 
