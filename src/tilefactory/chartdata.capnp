@@ -166,5 +166,6 @@ struct ChartData {
         name @0: Text;
         category @1: CategoryOfRoad;
         lines @2 :List(Line);
+        polygons @3 :List(Polygon);
     }
 }
