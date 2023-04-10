@@ -15,6 +15,7 @@ static const QColor symbolLabelColor = Qt::black;
 static const QColor criticalWaterColor(165, 202, 159);
 static const QColor landAreaColor(255, 240, 190);
 static const QColor builtUpAreaColor(240, 220, 160);
+static const QColor depthContourColor(110, 190, 230);
 static const QColor coastLineColor = landAreaColor.darker(200);
 static const QColor builtUpAreaColorBorder = builtUpAreaColor.darker(150);
 static const QColor pontoonColor = builtUpAreaColor.darker(120);
@@ -1068,6 +1069,12 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                 return roadColorBorder;
             },
             lineClippingRect);
+
+        geometryLayer.lineVertices += drawLines<ChartData::DepthContour>(
+            chart->depthContours(),
+            [](const ChartData::DepthContour::Reader &depthContour) -> QColor {
+                return depthContourColor;
+            });
 
         geometryLayer.lineVertices += drawLines<ChartData::Road>(
             chart->roads(),
