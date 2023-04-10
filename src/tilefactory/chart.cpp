@@ -715,6 +715,7 @@ void loadRoads(ChartData::Builder &root, S57Vector &src)
     for (const oesenc::S57 *s57 : src) {
         ChartData::Road::Builder dstItem = dst[i++];
 
+        loadPolygonsFromS57<ChartData::Road>(dstItem, s57);
         loadLinesFromS57<ChartData::Road>(dstItem, s57);
 
         std::optional<std::string> name = s57->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
@@ -1012,7 +1013,7 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
             dst.setColor(src.getColor());
         });
 
-    clipLineItems<ChartData::Road>(
+    clipPolygonOrLineItems<ChartData::Road>(
         roads(),
         config,
         [&](unsigned int length) {
