@@ -49,6 +49,7 @@ public:
     capnp::List<ChartData::CoverageArea>::Reader coverage() const { return root().getCoverage(); }
     capnp::List<ChartData::LandArea>::Reader landAreas() const { return root().getLandAreas(); }
     capnp::List<ChartData::DepthArea>::Reader depthAreas() const { return root().getDepthAreas(); }
+    capnp::List<ChartData::DepthContour>::Reader depthContours() const { return root().getDepthContours(); }
     capnp::List<ChartData::BuiltUpArea>::Reader builtUpAreas() const { return root().getBuiltUpAreas(); }
     capnp::List<ChartData::BuiltUpPoint>::Reader builtUpPoints() const { return root().getBuiltUpPoints(); }
     capnp::List<ChartData::LandRegion>::Reader landRegions() const { return root().getLandRegions(); }

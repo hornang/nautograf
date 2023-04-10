@@ -438,6 +438,16 @@ void loadCoastLines(ChartData::Builder &root, const S57Vector &src)
     }
 }
 
+void loadDepthContours(ChartData::Builder &root, const S57Vector &src)
+{
+    auto depthContours = root.initDepthContours(static_cast<unsigned int>(src.size()));
+
+    int i = 0;
+    for (const oesenc::S57 *s57 : src) {
+        loadLinesFromS57<ChartData::DepthContour>(depthContours[i++], s57);
+    }
+}
+
 void loadCoverage(ChartData::Builder &root, const S57Vector &src)
 {
     std::vector<const oesenc::S57 *> coverageRecords;
@@ -833,6 +843,7 @@ Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
     loadLandAreas(root, sortedObjects[oesenc::S57::Type::LandArea]);
     loadLandRegions(root, sortedObjects[oesenc::S57::Type::LandRegion]);
     loadDepthAreas(root, sortedObjects[oesenc::S57::Type::DepthArea]);
+    loadDepthContours(root, sortedObjects[oesenc::S57::Type::DepthContour]);
     loadBuiltUpAreas(root, sortedObjects[oesenc::S57::Type::BuiltUpArea]);
     loadSoundings(root, sortedObjects[oesenc::S57::Type::Sounding]);
     loadRoads(root, sortedObjects[oesenc::S57::Type::Road]);
@@ -994,6 +1005,14 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
         [](ChartData::DepthArea::Builder &dst, const ChartData::DepthArea::Reader &src) {
             dst.setDepth(src.getDepth());
         });
+
+    clipLineItems<ChartData::DepthContour>(
+        depthContours(),
+        config,
+        [&](unsigned int length) {
+            return root.initDepthContours(length);
+        },
+        {});
 
     clipPointItems<ChartData::Sounding>(
         soundings(),
