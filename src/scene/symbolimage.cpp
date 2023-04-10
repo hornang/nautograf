@@ -227,8 +227,8 @@ QRect SymbolImage::render(QImage &image,
     const int distanceRange = 1;
     auto bounds = shape.getBounds(distanceRange);
 
-    float width = bounds.r - bounds.l;
-    float height = bounds.t - bounds.b;
+    float width = bounds.r - bounds.l + 1;
+    float height = bounds.t - bounds.b + 1;
 
     if (bounds.r > 1024 || bounds.l > 1024) {
         qWarning() << "Failed to render" << filename;
@@ -237,7 +237,7 @@ QRect SymbolImage::render(QImage &image,
 
     QSize size(width, height);
     QRect targetRect(lastRect.topRight(), size);
-    targetRect.moveLeft(targetRect.left() + 10);
+    targetRect.moveLeft(targetRect.left() + 1);
 
     if (targetRect.right() > image.width()) {
         targetRect.moveLeft(0);
