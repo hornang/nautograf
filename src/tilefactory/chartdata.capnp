@@ -18,6 +18,7 @@ struct ChartData {
     bottomRight @14: Position;
     coastLines @15: List(CoastLine);
     pontoons @16: List(Pontoon);
+    depthContours @17: List(DepthContour);
 
     struct CoverageArea {
         polygons @0 :List(Polygon);
@@ -36,6 +37,10 @@ struct ChartData {
     }
 
     struct CoastLine {
+        lines @0 :List(Line);
+    }
+
+    struct DepthContour {
         lines @0 :List(Line);
     }
 
