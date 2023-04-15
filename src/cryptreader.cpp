@@ -12,7 +12,9 @@ using namespace std::chrono_literals;
 namespace {
 const QString pipeName = QStringLiteral("ocpn_pipe");
 const QString windowsSocketFormat = QStringLiteral(R"(\\.\pipe\%1)");
-const std::chrono::duration waitConnectTime = 200ms;
+const std::chrono::duration connectDelay = 200ms;
+const std::chrono::duration retryDelay = 500ms;
+const int maxConnectionAttempts = 5;
 }
 
 CryptReader::CryptReader()
@@ -22,6 +24,19 @@ CryptReader::CryptReader()
     connect(&m_localSocket, &QLocalSocket::errorOccurred, this, [&]() {
         m_state = State::ServiceNotResponding;
         updateStatusString();
+
+        if (!m_pendingConnectAttempt) {
+            m_pendingConnectAttempt = true;
+            if (m_connectionAttemptNo < maxConnectionAttempts) {
+                QTimer::singleShot(retryDelay, this, [&]() {
+                    m_pendingConnectAttempt = false;
+                    connectToPipe();
+                });
+                m_connectionAttemptNo++;
+            } else {
+                qWarning() << "Failed to connect after " << maxConnectionAttempts;
+            }
+        }
     });
     connect(&m_oeserverd, &QProcess::started, this, &CryptReader::oeserverdStarted);
     connect(&m_oeserverd, &QProcess::errorOccurred, this, [&](QProcess::ProcessError errorCode) {
@@ -90,7 +105,7 @@ void CryptReader::startOeserverd()
 
 void CryptReader::oeserverdStarted()
 {
-    QTimer::singleShot(waitConnectTime, this, [&]() { connectToPipe(); });
+    QTimer::singleShot(connectDelay, this, [&]() { connectToPipe(); });
 }
 
 void CryptReader::add256String(QByteArray &data, const QString &string)
