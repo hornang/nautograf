@@ -31,11 +31,6 @@ AnnotationNode::AnnotationNode(const QString &id,
     setFlag(OwnedByParent, true);
 }
 
-AnnotationNode::~AnnotationNode()
-{
-    qDebug() << "~AnnotationNode";
-}
-
 void AnnotationNode::updateVertices(const QList<AnnotationNode::Vertex> &vertices)
 {
     geometry()->allocate(vertices.length());
