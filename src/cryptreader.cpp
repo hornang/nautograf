@@ -38,6 +38,7 @@ void CryptReader::start()
 
 CryptReader::~CryptReader()
 {
+    m_oeserverd.disconnect();
     connectToPipe();
     m_localSocket.waitForConnected();
 
