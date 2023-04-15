@@ -255,7 +255,5 @@ void CryptReader::connectToPipe()
         return;
     }
 
-    qDebug() << "Trying to connect...";
-
     m_localSocket.connectToServer(windowsSocketFormat.arg(pipeName));
 }
