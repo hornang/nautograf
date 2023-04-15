@@ -9,9 +9,11 @@
 
 using namespace std::chrono_literals;
 
-static const QString pipeName = QStringLiteral("ocpn_pipe");
-static const QString windowsSocketFormat = QStringLiteral(R"(\\.\pipe\%1)");
-static const std::chrono::duration waitConnectTime = 200ms;
+namespace {
+const QString pipeName = QStringLiteral("ocpn_pipe");
+const QString windowsSocketFormat = QStringLiteral(R"(\\.\pipe\%1)");
+const std::chrono::duration waitConnectTime = 200ms;
+}
 
 CryptReader::CryptReader()
     : m_oeserverd()
