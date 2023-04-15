@@ -71,4 +71,6 @@ private:
     QProcess::ProcessError m_processError = QProcess::UnknownError;
     ChartType m_type = ChartType::Unknown;
     QLocalSocket m_localSocket;
+    int m_connectionAttemptNo = 0;
+    bool m_pendingConnectAttempt = false;
 };
