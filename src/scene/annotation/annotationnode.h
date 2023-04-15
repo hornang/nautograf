@@ -28,7 +28,6 @@ public:
     AnnotationNode(const QString &tileId,
                    QSGMaterial *material,
                    const QList<AnnotationNode::Vertex> &vertices);
-    ~AnnotationNode();
     const QString &id() const { return m_id; }
 
 public:
