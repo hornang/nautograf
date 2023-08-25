@@ -12,6 +12,7 @@ Item {
     property real pixelsPerLon: UserSettings.pixelsPerLon
 
     signal showContextMenu(var x, var y)
+    signal newMousePos(var lat, var lon)
 
     property string highlightedTile
     property bool highlightedTileVisible
@@ -115,9 +116,11 @@ Item {
                     startPos = Qt.point(root.lon, root.lat);
                     mouseStartPos = Qt.point(mouse.x, mouse.y);
                     mouse.accept = false;
-                    statusBar.position = mapTile.offsetPosition(startPos,
+                    const position = mapTile.offsetPosition(startPos,
                                                                 root.pixelsPerLon,
                                                                 Qt.point(mouse.x, mouse.y));
+                    root.newMousePos(position.x, position.y);
+
                 }
 
                 MapTile {
@@ -138,7 +141,7 @@ Item {
                         const position = mapTile.offsetPosition(topLeft,
                                                                 root.pixelsPerLon,
                                                                 Qt.point(mouse.x, mouse.y));
-                        statusBar.position = position;
+                        root.newMousePos(position.x, position.y);
                     }
                 }
 
@@ -291,16 +294,6 @@ Item {
                 pixelsPerLon: root.pixelsPerLon
                 tileModel: MapTileModel
             }
-        }
-    }
-
-    StatusBar {
-        id: statusBar
-        cryptReaderStatus: ChartModel.cryptReaderStatus
-        pixelsPerLongitude: root.pixelsPerLon
-        anchors {
-            bottom: parent.bottom
-            right: parent.right
         }
     }
 
