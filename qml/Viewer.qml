@@ -299,8 +299,11 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: root.showContextMenu(mouse.x, mouse.y)
         acceptedButtons: Qt.RightButton
+
+        onClicked: function(mouse) {
+            root.showContextMenu(mouse.x, mouse.y);
+        }
     }
 
     function adjustZoom(newPixelsPerLongitude, zoomOrigin, offset) {
