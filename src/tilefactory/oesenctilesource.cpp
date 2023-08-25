@@ -220,6 +220,8 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
         return {};
     }
 
+    assert(entireChart->nativeScale() != 0);
+
     std::string id = FileHelper::tileId(boundingBox, pixelsPerLongitude);
     std::string tileFile = FileHelper::tileFileName(m_tileDir, m_name, id);
 
@@ -232,6 +234,8 @@ std::shared_ptr<Chart> OesencTileSource::generateTile(const GeoRect &boundingBox
     clipConfig.maxPixelsPerLongitude = pixelsPerLongitude;
 
     std::unique_ptr<capnp::MallocMessageBuilder> clippedChart = entireChart->buildClipped(clipConfig);
+
+    assert(clippedChart);
 
     if (!Chart::write(clippedChart.get(), tileFile)) {
         std::cerr << "Failed to write " << tileFile << std::endl;
