@@ -67,13 +67,13 @@ ApplicationWindow {
         }
 
         Keys.onEscapePressed: function(event) {
-            if (root.visibility == Window.FullScreen) {
-                toggleFullscreen();
-                event.accepted = true;
-            } else if (chartList.enabled || tileInfoLoader.enabled) {
+            if (chartList.enabled || tileInfoLoader.enabled) {
                 chartList.enabled = false;
                 tileInfoLoader.enabled = false;
                 viewer.focus = true;
+            } else if (root.visibility == Window.FullScreen) {
+                toggleFullscreen();
+                event.accepted = true;
             }
         }
 
