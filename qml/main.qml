@@ -16,6 +16,14 @@ ApplicationWindow {
     height: UserSettings.geometry.height
     visibility: UserSettings.windowState
     Universal.theme: Universal.System
+    footer: StatusBar {
+        id: statusBar
+
+        cryptReaderStatus: ChartModel.cryptReaderStatus
+        pixelsPerLongitude: viewer.pixelsPerLon
+
+        onOpenCatalogueSelector: folderDialog.visible = true
+    }
 
     onVisibilityChanged: function(visibility) {
         UserSettings.windowState = visibility;
@@ -86,6 +94,11 @@ ApplicationWindow {
 
             onShowContextMenu: function(x, y) {
                 menu.open(x, y);
+            }
+
+            onNewMousePos: function(lat, lon) {
+                statusBar.mouseLat = lat;
+                statusBar.mouseLon = lon;
             }
         }
 

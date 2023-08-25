@@ -6,7 +6,6 @@
         <file>ViewerMenu.qml</file>
         <file>ViewerMenuItem.qml</file>
         <file>ChartSelector.qml</file>
-        <file>OverlayText.qml</file>
         <file>StatusBar.qml</file>
         <file>TileInfo.qml</file>
         <file>about.md</file>
