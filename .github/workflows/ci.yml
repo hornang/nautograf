@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+  schedule:
+    - cron: '30 10 * * 0'
+
 jobs:
   Windows:
     runs-on: windows-latest
