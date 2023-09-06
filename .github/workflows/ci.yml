@@ -34,7 +34,7 @@ jobs:
         uses: lukka/get-cmake@latest
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
-        uses: lukka/run-vcpkg@v10
+        uses: lukka/run-vcpkg@v11
 
       - name: Install choco dependencies
         uses: crazy-max/ghaction-chocolatey@v1
@@ -93,7 +93,7 @@ jobs:
         uses: lukka/get-cmake@latest
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
-        uses: lukka/run-vcpkg@v10
+        uses: lukka/run-vcpkg@v11
 
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
