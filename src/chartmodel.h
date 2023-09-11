@@ -25,18 +25,11 @@ class ChartModel : public QAbstractListModel
     Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
 
 public:
-    struct SourceWrapper
-    {
-        TileFactory::Source source;
-        bool encrypted = false;
-    };
-
     enum class Role : int {
         Name,
         Scale,
         Enabled,
         Ok,
-        Encrypted,
     };
 
     ChartModel(std::shared_ptr<TileFactory> tileFactory);
@@ -81,7 +74,7 @@ private:
     CryptReader m_cryptReader;
     std::shared_ptr<TileFactory> m_tileFactory;
     QHash<int, QByteArray> m_roleNames;
-    std::vector<SourceWrapper> m_sourceCache;
+    std::vector<TileFactory::Source> m_sourceCache;
     QString m_tileDir;
     QString m_dirBeeingLoaded;
     QString m_currentChartBeeingLoaded;

@@ -21,8 +21,6 @@ ApplicationWindow {
 
         cryptReaderStatus: ChartModel.cryptReaderStatus
         pixelsPerLongitude: viewer.pixelsPerLon
-
-        onOpenCatalogueSelector: folderDialog.visible = true
     }
 
     onVisibilityChanged: function(visibility) {

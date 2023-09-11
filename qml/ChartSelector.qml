@@ -37,8 +37,6 @@ ColumnLayout {
                     property string symbol: {
                         if (!model.ok) {
                             return "❌";
-                        } else if (model.encrypted) {
-                            return "🔒"
                         } else {
                             return ""
                         }
