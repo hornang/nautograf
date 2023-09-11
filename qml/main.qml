@@ -219,7 +219,6 @@ ApplicationWindow {
                     onSelectedTileChanged: viewer.highlightedTile = selectedTile
                     onClose: tileInfoLoader.enabled = false
                     anchors.fill: parent
-                    chartModel: ChartModel
                 }
             }
         }

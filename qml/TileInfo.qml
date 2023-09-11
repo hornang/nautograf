@@ -9,7 +9,6 @@ Pane {
     id: root
 
     property alias chartNames: repeater.model
-    property variant chartModel
     property alias selectedTile: tileInfoBackend.tileId
     property variant tileRef
 
