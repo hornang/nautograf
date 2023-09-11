@@ -13,8 +13,6 @@ ToolBar {
 
     position: ToolBar.Footer
 
-    signal openCatalogueSelector
-
     RowLayout {
         id: row
 
