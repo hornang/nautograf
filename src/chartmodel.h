@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include <QAbstractListModel>
 #include <QHash>
 #include <QQueue>
 #include <QUrl>
@@ -11,7 +12,6 @@
 #include "cryptreader.h"
 #include "scene/tilefactorywrapper.h"
 #include "tilefactory/tilefactory.h"
-#include <QAbstractListModel>
 
 class OesencTileSource;
 
