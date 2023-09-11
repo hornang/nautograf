@@ -11,7 +11,7 @@ function(get_version_from_git)
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(NOT GIT_DESCRIBE_ERROR_CODE)
-        string(REGEX MATCH "^v(([0-9].[0-9].[0-9]).*$)" MATCH_OUTPUT ${GIT_DESCRIBE_VERSION})
+        string(REGEX MATCH "^v(([0-9]+\.[0-9]+\.[0-9]+).*$)" MATCH_OUTPUT ${GIT_DESCRIBE_VERSION})
         if (NOT ${MATCH_OUTPUT} STREQUAL "")
             set(DESCRIBE ${CMAKE_MATCH_1})
             set(SEMANTIC ${CMAKE_MATCH_2})
