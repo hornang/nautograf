@@ -16,7 +16,6 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
           { (int)Role::Scale, "scale" },
           { (int)Role::Enabled, "enabled" },
           { (int)Role::Ok, "ok" },
-          { (int)Role::Encrypted, "encrypted" },
       })
 {
     auto cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
@@ -77,8 +76,8 @@ void ChartModel::writeVisibleCharts()
     settings.beginGroup("VisibleCharts");
     QHash<QString, QVariant> hash;
 
-    for (const auto &chart : m_sourceCache) {
-        hash[QString::fromStdString(chart.source.name)] = chart.source.enabled;
+    for (const auto &source : m_sourceCache) {
+        hash[QString::fromStdString(source.name)] = source.enabled;
     }
     settings.setValue(m_dir, hash);
 }
@@ -148,15 +147,11 @@ void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, 
     source.enabled = enabled;
     source.tileSource = tileSource;
 
-    SourceWrapper sourceWrapper;
-    sourceWrapper.encrypted = encrypted;
-    sourceWrapper.source = source;
-
     for (auto it = m_sourceCache.begin(); it < m_sourceCache.end(); it++) {
-        if (it->source.name > source.name) {
+        if (it->name > source.name) {
             int i = std::distance(m_sourceCache.begin(), it);
             beginInsertRows(QModelIndex(), i, i);
-            m_sourceCache.insert(it, sourceWrapper);
+            m_sourceCache.insert(it, source);
             endInsertRows();
             return;
         }
@@ -164,7 +159,7 @@ void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, 
 
     int index = static_cast<int>(m_sourceCache.size());
     beginInsertRows(QModelIndex(), index, index);
-    m_sourceCache.push_back(sourceWrapper);
+    m_sourceCache.push_back(source);
     endInsertRows();
 }
 
@@ -174,11 +169,7 @@ bool ChartModel::loadNextFromQueue()
         m_loadingCharts = false;
         m_loadingProgress = 1;
         emit loadingProgressChanged();
-        std::vector<TileFactory::Source> sources;
-        for (const SourceWrapper &sourceWrapper : m_sourceCache) {
-            sources.push_back(sourceWrapper.source);
-        }
-        m_tileFactory->setSources(sources);
+        m_tileFactory->setSources(m_sourceCache);
         return true;
     }
 
@@ -297,7 +288,7 @@ void ChartModel::setAllChartsEnabled(bool enabled)
     // m_sourceCache is not equal to m_tileFactory->sources();
     int i = 0;
     for (auto &source : m_sourceCache) {
-        source.source.enabled = enabled;
+        source.enabled = enabled;
         emit dataChanged(createIndex(i, 0),
                          createIndex(i, 0),
                          QList<int> { static_cast<int>(Role::Enabled) });
@@ -314,12 +305,12 @@ bool ChartModel::allEnabled() const
 
 void ChartModel::setChartEnabled(int index, bool enabled)
 {
-    if (m_sourceCache[index].source.enabled == enabled) {
+    if (m_sourceCache[index].enabled == enabled) {
         return;
     }
 
-    m_tileFactory->setChartEnabled(m_sourceCache[index].source.name, enabled);
-    m_sourceCache[index].source.enabled = enabled;
+    m_tileFactory->setChartEnabled(m_sourceCache[index].name, enabled);
+    m_sourceCache[index].enabled = enabled;
     emit dataChanged(createIndex(index, 0),
                      createIndex(index, 0),
                      QList<int> { static_cast<int>(Role::Enabled) });
@@ -331,7 +322,7 @@ void ChartModel::updateAllEnabled()
 {
     bool allEnabled = true;
     for (const auto &source : m_sourceCache) {
-        if (!source.source.enabled) {
+        if (!source.enabled) {
             allEnabled = false;
             break;
         }
@@ -374,23 +365,21 @@ QVariant ChartModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
-    bool ok = m_sourceCache[index.row()].source.tileSource != nullptr;
+    bool ok = m_sourceCache[index.row()].tileSource != nullptr;
 
     switch (static_cast<Role>(role)) {
     case Role::Name:
-        return QString::fromStdString(m_sourceCache[index.row()].source.name);
+        return QString::fromStdString(m_sourceCache[index.row()].name);
         break;
     case Role::Scale:
         if (ok) {
-            return m_sourceCache[index.row()].source.tileSource->scale();
+            return m_sourceCache[index.row()].tileSource->scale();
         }
         return 0;
     case Role::Enabled:
-        return m_sourceCache[index.row()].source.enabled;
+        return m_sourceCache[index.row()].enabled;
     case Role::Ok:
         return ok;
-    case Role::Encrypted:
-        return m_sourceCache[index.row()].encrypted;
     }
 
     return QVariant();
