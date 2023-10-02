@@ -4,6 +4,10 @@ install_license(FILE ${CapnProto_DIR}/copyright)
 find_package(Boost REQUIRED)
 install_license(FILE ${Boost_LIBRARY_DIRS}/../share/boost-geometry/copyright)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Clipper2 REQUIRED IMPORTED_TARGET Clipper2)
+install_license(FILE ${Clipper2_INCLUDE_DIRS}/../share/clipper2/copyright)
+
 find_path(EARCUT_HPP_INCLUDE_DIRS "mapbox/earcut.hpp")
 
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS chartdata.capnp)
@@ -49,7 +53,7 @@ target_include_directories(tilefactory
 
 target_link_libraries(tilefactory
     CapnProto::capnp
-    Clipper2
+    PkgConfig::Clipper2
     oesenc
     cutlines
     Boost::boost
