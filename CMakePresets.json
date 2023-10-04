@@ -22,32 +22,32 @@
       }
     },
     {
-      "name": "ninja-multi-vcpkg-linux",
+      "name": "ninja-multi-vcpkg-static",
       "inherits": "ninja-multi-vcpkg",
       "cacheVariables": {
-	  "BUILD_SHARED_LIBS": false
+         "BUILD_SHARED_LIBS": false
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "win-debug",
+      "name": "debug",
       "configurePreset": "ninja-multi-vcpkg",
       "configuration": "Debug"
     },
     {
-      "name": "win-release",
+      "name": "release",
       "configurePreset": "ninja-multi-vcpkg",
       "configuration": "Release"
     },
     {
-      "name": "linux-debug",
-      "configurePreset": "ninja-multi-vcpkg-linux",
+      "name": "static-debug",
+      "configurePreset": "ninja-multi-vcpkg-static",
       "configuration": "Debug"
     },
     {
-      "name": "linux-release",
-      "configurePreset": "ninja-multi-vcpkg-linux",
+      "name": "static-release",
+      "configurePreset": "ninja-multi-vcpkg-static",
       "configuration": "Release"
     }
   ]
