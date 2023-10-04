@@ -48,7 +48,7 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           configurePreset: 'ninja-multi-vcpkg'
-          buildPreset: 'win-release'
+          buildPreset: 'release'
 
       - name: Install to directory
         shell: bash
@@ -101,13 +101,13 @@ jobs:
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: 'ninja-multi-vcpkg-linux'
-          buildPreset: 'linux-release'
+          configurePreset: 'ninja-multi-vcpkg-static'
+          buildPreset: 'static-release'
 
       - name: Install to directory
         shell: bash
         run: >
-          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg-linux";
+          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg-static";
           PACKAGE_NAME=nautograf-$(cat version.txt)-$SYSTEM_NAME;
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV;
           cmake --install . --config Release --prefix "$(pwd)/install/$PACKAGE_NAME"
@@ -116,4 +116,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.PACKAGE_NAME }}
-          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg-linux/install
+          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg-static/install
