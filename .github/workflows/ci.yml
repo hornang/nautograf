@@ -47,28 +47,28 @@ jobs:
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: 'ninja-multi-vcpkg'
+          configurePreset: 'ninja-release-vcpkg'
           buildPreset: 'release'
 
       - name: Install to directory
         shell: bash
         run: >
-          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg";
+          cd "${{ github.workspace }}/builds/ninja-release-vcpkg";
           PACKAGE_NAME=nautograf-$(cat version.txt)-$SYSTEM_NAME;
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV;
-          cmake --install . --config Release --prefix "$(pwd)/install/$PACKAGE_NAME"
+          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME"
 
       - name: Deploy Qt libraries to install dir
         shell: bash
         run: >
-          cmake -DEXECUTABLE_DIR="${{ github.workspace }}/builds/ninja-multi-vcpkg/install/${{ env.PACKAGE_NAME }}/bin"
-          -P "${{ github.workspace }}/builds/ninja-multi-vcpkg/deploy-qt-windows.cmake"
+          cmake -DEXECUTABLE_DIR="${{ github.workspace }}/builds/ninja-release-vcpkg/install/${{ env.PACKAGE_NAME }}/bin"
+          -P "${{ github.workspace }}/builds/ninja-release-vcpkg/deploy-qt-windows.cmake"
 
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.PACKAGE_NAME }}
-          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg/install
+          path: ${{ github.workspace }}/builds/ninja-release-vcpkg/install
 
   ubuntu-20-04:
     name: 'Ubuntu 20.04'
@@ -101,19 +101,19 @@ jobs:
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: 'ninja-multi-vcpkg-static'
+          configurePreset: 'ninja-release-vcpkg-static'
           buildPreset: 'static-release'
 
       - name: Install to directory
         shell: bash
         run: >
-          cd "${{ github.workspace }}/builds/ninja-multi-vcpkg-static";
+          cd "${{ github.workspace }}/builds/ninja-release-vcpkg-static";
           PACKAGE_NAME=nautograf-$(cat version.txt)-$SYSTEM_NAME;
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV;
-          cmake --install . --config Release --prefix "$(pwd)/install/$PACKAGE_NAME"
+          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME"
 
       - name: Upload package
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.PACKAGE_NAME }}
-          path: ${{ github.workspace }}/builds/ninja-multi-vcpkg-static/install
+          path: ${{ github.workspace }}/builds/ninja-release-vcpkg-static/install

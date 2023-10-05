@@ -27,28 +27,73 @@
       "cacheVariables": {
          "BUILD_SHARED_LIBS": false
       }
+    },
+    {
+      "name": "ninja-vcpkg",
+      "binaryDir": "${sourceDir}/builds/${presetName}",
+      "generator": "Ninja",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "type": "FILEPATH",
+          "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        },
+        "BUILD_TESTING": false,
+        "BUILD_SHARED_LIBS": true
+      }
+    },
+    {
+      "name": "ninja-vcpkg-static",
+      "inherits": "ninja-vcpkg",
+      "cacheVariables": {
+         "BUILD_SHARED_LIBS": false
+      }
+    },
+    {
+      "name": "ninja-debug-vcpkg",
+      "inherits": "ninja-vcpkg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ninja-debug-vcpkg-static",
+      "inherits": "ninja-vcpkg-static",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ninja-release-vcpkg",
+      "inherits": "ninja-vcpkg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ninja-release-vcpkg-static",
+      "inherits": "ninja-vcpkg-static",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "debug",
-      "configurePreset": "ninja-multi-vcpkg",
-      "configuration": "Debug"
+      "configurePreset": "ninja-debug-vcpkg"
     },
     {
       "name": "release",
-      "configurePreset": "ninja-multi-vcpkg",
-      "configuration": "Release"
+      "configurePreset": "ninja-release-vcpkg"
     },
     {
       "name": "static-debug",
-      "configurePreset": "ninja-multi-vcpkg-static",
-      "configuration": "Debug"
+      "configurePreset": "ninja-debug-vcpkg-static"
     },
     {
       "name": "static-release",
-      "configurePreset": "ninja-multi-vcpkg-static",
-      "configuration": "Release"
+      "configurePreset": "ninja-release-vcpkg-static"
     }
   ]
 }
