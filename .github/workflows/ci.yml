@@ -117,3 +117,24 @@ jobs:
         with:
           name: ${{ env.PACKAGE_NAME }}
           path: ${{ github.workspace }}/builds/ninja-release-vcpkg-static/install
+
+  ubuntu-snap:
+    name: 'Snapcraft core22'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Build snap
+        id: snapcraft
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-args: '-v'
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.snapcraft.outputs.snap }}
+          path: ${{ github.workspace }}/${{ steps.snapcraft.outputs.snap }}
