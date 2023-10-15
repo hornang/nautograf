@@ -9,6 +9,10 @@
 #include "tilefactory/tilefactory.h"
 #include "usersettings.h"
 
+namespace {
+const QString chartDirKey = "ChartDir";
+}
+
 ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     : m_tileFactory(tileFactory)
     , m_roleNames({
@@ -50,7 +54,7 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     });
 
     QSettings settings(orgName, appName);
-    setDir(settings.value("ChartDir").toString());
+    setDir(settings.value(chartDirKey).toString());
 
     m_cryptReader.start();
 }
@@ -277,7 +281,7 @@ void ChartModel::setDir(const QString &dir)
     populateModel(dir);
 
     QSettings settings(orgName, appName);
-    settings.setValue("ChartDir", m_dir);
+    settings.setValue(chartDirKey, m_dir);
 }
 
 void ChartModel::setAllChartsEnabled(bool enabled)
