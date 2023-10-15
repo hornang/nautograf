@@ -5,20 +5,30 @@ summary: Tile-based nautical chart viewer
 description: >
   Nautograf is a viewer for marine vector charts. It is inspired by
   OpenCPN which is the only nautical chart software that is open
-  source and runs with offline chart data. The motivation with
-  Nautograf is to provide an application similar to OpenCPN, but
-  provide a smoother zooming and panning experience, better
-  rendering quality and in general a more modern code base.
+  source and runs with offline chart data. Nautograf only supports
+  chart data from https://www.o-charts.org. Please visit the GitHub
+  repository for more information: https://github.com/hornang/nautograf
 grade: devel
-confinement: devmode
+confinement: strict
 apps:
   nautograf:
     command-chain:
     - bin/graphics-core22-wrapper
     command: usr/bin/nautograf
+    extensions: [gnome]
     environment:
       QT_PLUGIN_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/plugins
       QML2_IMPORT_PATH: $SNAP/usr/lib/x86_64-linux-gnu/qt6/qml
+
+      # Disable wayland to get proper Gnome window borders.
+      # DISABLE_WAYLAND is picked up by the desktop-launch script in
+      # gnome content snap
+      DISABLE_WAYLAND: 1
+    plugs:
+      - home
+
+# Statements related to mesa-core22 is from this forum post:
+# https://discourse.ubuntu.com/t/the-graphics-core22-snap-interface/34663
 
 plugs:
   graphics-core22:
@@ -31,14 +41,12 @@ layout:
     bind: $SNAP/graphics/libdrm
   /usr/share/drirc.d:
     symlink: $SNAP/graphics/drirc.d
-  /usr/share/fonts:
-    bind: $SNAP/usr/share/fonts
 
 parts:
   nautograf:
     override-pull: |
-      snapcraftctl pull
-      craftctl set version="$(git describe --tags)"
+      craftctl default
+      craftctl set version=$(git describe --tags)
     source: .
     plugin: cmake
     cmake-parameters:
@@ -46,6 +54,15 @@ parts:
       - -DBUILD_TESTING=off
       - -DCMAKE_INSTALL_PREFIX=/usr
     build-packages:
+      # curl, zip, unzip and tar is needed by vcpkg:
+      # https://github.com/microsoft/vcpkg/blob/master/scripts/bootstrap.sh#L88-L91
+      - curl
+      - zip
+      - unzip
+      - tar
+
+      - build-essential
+      - ninja-build
       - libglu1-mesa-dev
       - libxmu-dev
       - libxi-dev
@@ -57,7 +74,6 @@ parts:
       - libqt6shadertools6-dev
       - libqt6svg6-dev
       - libqt6opengl6-dev
-      - zip
       - pkg-config
 
     stage-packages:
@@ -67,14 +83,15 @@ parts:
       - libqt6qmlmodels6
       - libqt6quick6
       - libqt6widgets6
+      - libqt6svg6
       - qt6-qpa-plugins
+      - qt6-gtk-platformtheme
       - qml6-module-qtquick-controls
       - qml6-module-qtquick-layouts
       - qml6-module-qtquick-window
       - qml6-module-qt-labs-platform
       - qml6-module-qtqml-workerscript
       - qml6-module-qtquick-templates
-      - fonts-ubuntu
 
   graphics-core22:
     after: [nautograf]
