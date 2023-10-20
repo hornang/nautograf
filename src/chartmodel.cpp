@@ -2,15 +2,22 @@
 #include <QSettings>
 #include <QStandardPaths>
 
+#include <algorithm>
+#include <chrono>
+
+#include <oesenc/chartfile.h>
+#include <oesenc/serverreader.h>
+
 #include "chartmodel.h"
-#include "cryptreader.h"
-#include "oesenc/chartfile.h"
+#include "tilefactory/catalog.h"
 #include "tilefactory/oesenctilesource.h"
 #include "tilefactory/tilefactory.h"
 #include "usersettings.h"
 
 namespace {
 const QString chartDirKey = "ChartDir";
+std::chrono::duration serverPollTimeout = std::chrono::seconds(5);
+std::chrono::duration serverPollInterval = std::chrono::milliseconds(500);
 }
 
 ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
@@ -34,29 +41,24 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     }
     m_tileDir = tileDir;
 
-    connect(&m_cryptReader, &CryptReader::readyChanged, this, [&](bool ready) {
-        if (ready) {
-            populateModel(m_dir);
-        }
-    });
-
-    connect(&m_cryptReader, &CryptReader::fileDecrypted, this, &ChartModel::chartDecrypted);
-    connect(&m_cryptReader, &CryptReader::error, this, [&]() {
-        qWarning() << "Failed to start oeserverd";
-        m_cryptReaderError = true;
-        emit cryptReaderErrorChanged();
-        populateModel(m_dir);
-    });
-
-    connect(&m_cryptReader, &CryptReader::statusStringChanged, this, [&](const QString status) {
-        m_cryptReaderStatus = status;
-        emit cryptReaderStatusChanged();
-    });
-
     QSettings settings(orgName, appName);
     setDir(settings.value(chartDirKey).toString());
 
-    m_cryptReader.start();
+    connect(&m_serverPollTimer, &QTimer::timeout, this, [&]() {
+        if (m_oesencServerControl.isReady()) {
+            populateModel(m_dir);
+            m_serverPollTimer.stop();
+        }
+
+        m_serverPollDuration += serverPollInterval;
+
+        if (m_serverPollDuration > serverPollTimeout) {
+            m_serverError = true;
+            emit serverErrorChanged();
+            m_serverPollTimer.stop();
+        }
+    });
+    m_serverPollTimer.start(serverPollInterval);
 }
 
 QHash<QString, bool> ChartModel::readVisibleCharts()
@@ -91,60 +93,7 @@ void ChartModel::setUrl(const QUrl &url)
     setDir(url.toLocalFile());
 }
 
-void ChartModel::readUnencrypted(const QString &fileName)
-{
-    auto visibleCharts = readVisibleCharts();
-    bool enabled = visibleCharts.value(m_currentChartBeeingLoaded, true);
-
-    QString fullPath = QDir(m_dir).filePath(fileName);
-    auto oesencTileCreator = std::make_shared<OesencTileSource>(fullPath.toStdString(),
-                                                                m_currentChartBeeingLoaded.toStdString(),
-                                                                m_tileDir.toStdString());
-    if (oesencTileCreator->isValid()) {
-        addSource(oesencTileCreator, enabled, false);
-    } else {
-        addSource(nullptr, enabled, false);
-    }
-    updateAllEnabled();
-}
-
-void ChartModel::chartDecrypted(const QByteArray &data)
-{
-    if (data.isEmpty()) {
-        qWarning() << "Zero data from crypt file";
-        loadNextFromQueue();
-        return;
-    }
-
-    if (!m_loadingCharts) {
-        // When this happens it means a new directory was set while still
-        // loading the previous. Kind of a hack.
-        loadNextFromQueue();
-        return;
-    }
-
-    auto visibleCharts = readVisibleCharts();
-
-    const char *d = data.data();
-    std::vector<std::byte> dataVec;
-    dataVec.resize(dataVec.size() + data.size());
-    memcpy(&dataVec[dataVec.size() - data.size()], &d[0], data.size() * sizeof(std::byte));
-    auto tileSource = std::make_shared<OesencTileSource>(dataVec,
-                                                         m_currentChartBeeingLoaded.toStdString(),
-                                                         m_tileDir.toStdString());
-
-    bool enabled = visibleCharts.value(m_currentChartBeeingLoaded, true);
-
-    if (tileSource->isValid()) {
-        addSource(tileSource, enabled, true);
-        updateAllEnabled();
-    } else {
-        readUnencrypted(m_currentChartBeeingLoaded);
-    }
-    loadNextFromQueue();
-}
-
-void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled, bool encrypted)
+void ChartModel::addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled)
 {
     TileFactory::Source source;
     source.name = m_currentChartBeeingLoaded.toStdString();
@@ -185,33 +134,26 @@ bool ChartModel::loadNextFromQueue()
     m_loadingCharts = true;
     m_currentChartBeeingLoaded = m_chartsToLoad.dequeue();
 
-    QString key;
-    CryptReader::ChartType type = CryptReader::ChartType::Unknown;
-
     const QFileInfo fileInfo(m_currentChartBeeingLoaded);
-    if (fileInfo.suffix() == "oesu") {
-        key = QString::fromStdString(m_keyListReader.key(fileInfo.baseName().toStdString()));
-        type = CryptReader::ChartType::Oesu;
-    } else if (fileInfo.suffix() == "oesenc") {
-        key = readUserKey(QDir(m_dir).filePath("Chartinfo.txt"));
-        type = CryptReader::ChartType::Oesenc;
-    }
 
-    const QString chartFile = QDir(m_dir).filePath(m_currentChartBeeingLoaded);
+    std::unique_ptr<std::istream> stream;
+    std::string filePath = QDir(m_dir).filePath(m_currentChartBeeingLoaded).toStdString();
 
-    if (m_cryptReaderError) {
-        readUnencrypted(chartFile);
-        // Let the event loop update UI
-        QMetaObject::invokeMethod(this, &ChartModel::loadNextFromQueue, Qt::QueuedConnection);
-        return true;
-    }
+    static std::mutex sourceMutex;
 
-    return m_cryptReader.read(QDir(m_dir).filePath(m_currentChartBeeingLoaded), key, type);
+    auto oesencTileCreator = std::make_shared<OesencTileSource>(m_catalog.get(),
+                                                                m_currentChartBeeingLoaded.toStdString(),
+                                                                m_tileDir.toStdString());
+
+    addSource(oesencTileCreator, true);
+    updateAllEnabled();
+    QMetaObject::invokeMethod(this, &ChartModel::loadNextFromQueue, Qt::QueuedConnection);
+    return true;
 }
 
 void ChartModel::populateModel(const QString &dir)
 {
-    if (!m_cryptReader.ready() && !m_cryptReaderError) {
+    if (!m_oesencServerControl.isReady()) {
         return;
     }
 
@@ -226,9 +168,25 @@ void ChartModel::populateModel(const QString &dir)
     m_tileFactory->clear();
     m_chartsToLoad.clear();
 
-    m_chartsToLoad.append(QDir(dir).entryList({ "*.oesenc", "*.oesu" },
-                                              QDir::NoFilter,
-                                              QDir::Size | QDir::Reversed));
+    if (!QDir(dir).exists()) {
+        qWarning() << "No such directory" << dir;
+        return;
+    }
+
+    m_catalog = std::make_unique<Catalog>(&m_oesencServerControl, dir.toStdString());
+    emit catalogTypeChanged();
+    emit catalogLoadedChanged();
+
+    if (m_catalog->type() == Catalog::Type::Unknown) {
+        return;
+    }
+
+    std::vector<std::string> chartFileNames = m_catalog->chartFileNames();
+    m_chartsToLoad.resize(chartFileNames.size());
+
+    std::transform(chartFileNames.cbegin(), chartFileNames.cend(), m_chartsToLoad.begin(), [](const std::string &path) {
+        return QString::fromStdString(path);
+    });
 
     m_loadingProgress = 0;
     emit loadingProgressChanged();
@@ -239,28 +197,6 @@ void ChartModel::populateModel(const QString &dir)
     }
 }
 
-QByteArray ChartModel::readUserKey(const QString &fileName)
-{
-    QFile file(fileName);
-
-    if (!file.exists()) {
-        qInfo() << "No info file";
-        return {};
-    }
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        return {};
-    }
-
-    const QByteArray line = file.readLine();
-    if (!line.startsWith("UserKey:")) {
-        qWarning() << "Invalid format";
-        return {};
-    }
-
-    return line.right(line.length() - 8);
-}
-
 void ChartModel::setDir(const QString &dir)
 {
     if (m_dir == dir) {
@@ -269,14 +205,6 @@ void ChartModel::setDir(const QString &dir)
 
     m_dir = dir;
     emit dirChanged();
-
-    m_key = readUserKey(QDir(dir).filePath("Chartinfo.txt"));
-
-    for (const auto &xmlFile : QDir(dir).entryList({ "*.xml" }, QDir::Files)) {
-        if (m_keyListReader.load(QDir(dir).filePath(xmlFile).toStdString()) != oesenc::KeyListReader::Status::Failed) {
-            break;
-        }
-    }
 
     populateModel(dir);
 
@@ -394,12 +322,32 @@ float ChartModel::loadingProgress() const
     return m_loadingProgress;
 }
 
-bool ChartModel::cryptReaderError() const
+bool ChartModel::serverError() const
 {
-    return m_cryptReaderError;
+    return m_serverError;
 }
 
-QString ChartModel::cryptReaderStatus() const
+ChartModel::CatalogType ChartModel::catalogType() const
 {
-    return m_cryptReaderStatus;
+    if (!m_catalog) {
+        return ChartModel::CatalogType::Unknown;
+    }
+
+    Catalog::Type type = m_catalog->type();
+
+    switch (type) {
+    case Catalog::Type::Decrypted:
+        return CatalogType::Decrypted;
+    case Catalog::Type::Oesenc:
+        return CatalogType::Oesenc;
+    case Catalog::Type::Oesu:
+        return CatalogType::Oesu;
+    default:
+        return CatalogType::Unknown;
+    }
+}
+
+bool ChartModel::catalogLoaded() const
+{
+    return m_catalog != nullptr;
 }

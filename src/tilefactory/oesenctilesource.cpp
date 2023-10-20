@@ -1,5 +1,6 @@
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 #include <random>
 #include <sstream>
 #include <thread>
@@ -11,6 +12,8 @@
 #include <boost/geometry/geometries/register/point.hpp>
 
 #include "filehelper.h"
+#include "oesenc/serverreader.h"
+#include "tilefactory/catalog.h"
 #include "tilefactory/chartclipper.h"
 #include "tilefactory/mercator.h"
 #include "tilefactory/oesenctilesource.h"
@@ -18,36 +21,23 @@
 using namespace std;
 
 namespace {
-    constexpr int clippingMarginInPixels = 6;
+constexpr int clippingMarginInPixels = 6;
+mutex catalogueMutex;
 }
 
-OesencTileSource::OesencTileSource(const string &file,
-                                   const string &name,
-                                   const string &baseTileDir)
+OesencTileSource::OesencTileSource(Catalog *catalogue, string_view name,
+                                   string_view baseTileDir)
     : m_name(name)
-    , m_tileDir(FileHelper::getTileDir(baseTileDir, Chart::typeId()))
+    , m_tileDir(FileHelper::getTileDir(string(baseTileDir), Chart::typeId()))
+    , m_catalogue(catalogue)
 {
-    oesenc::ChartFile chart = oesenc::ChartFile(file);
+    lock_guard guard(catalogueMutex);
+    auto stream = m_catalogue->openChart(name);
+    oesenc::ChartFile chart = oesenc::ChartFile(*stream);
 
     if (chart.readHeaders()) {
         readOesencMetaData(&chart);
-        m_oesencFile = file;
-        m_oesencSourceType = OesencSourceType::File;
-    }
-}
-
-OesencTileSource::OesencTileSource(const vector<byte> &data,
-                                   const string &name,
-                                   const string &baseTileDir)
-    : m_name(name)
-    , m_tileDir(FileHelper::getTileDir(baseTileDir, Chart::typeId()))
-{
-    oesenc::ChartFile chart = oesenc::ChartFile(data);
-
-    if (chart.readHeaders()) {
-        readOesencMetaData(&chart);
-        m_oesencData = data;
-        m_oesencSourceType = OesencSourceType::Vector;
+        m_valid = true;
     }
 }
 
@@ -75,13 +65,9 @@ BOOST_GEOMETRY_REGISTER_LINESTRING(vector<oesenc::Position>)
 
 bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixelsPerLon)
 {
-    if (m_oesencSourceType == OesencSourceType::Invalid) {
-        return false;
-    }
-
-    string decimatedFileName = FileHelper::internalChartFileName(m_tileDir,
-                                                                 m_name,
-                                                                 pixelsPerLon);
+    std::string decimatedFileName = FileHelper::internalChartFileName(m_tileDir,
+                                                                      m_name,
+                                                                      pixelsPerLon);
 
     const lock_guard<mutex> lock(m_internalChartMutex);
 
@@ -89,8 +75,7 @@ bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixel
         return true;
     }
 
-    unique_ptr<capnp::MallocMessageBuilder> capnpMessage;
-    unique_ptr<oesenc::ChartFile> oesencChart;
+    std::unique_ptr<capnp::MallocMessageBuilder> capnpMessage;
 
     using Line = vector<oesenc::Position>;
 
@@ -101,14 +86,9 @@ bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixel
         return simplifiedLine;
     };
 
-    switch (m_oesencSourceType) {
-    case OesencSourceType::File:
-        oesencChart = make_unique<oesenc::ChartFile>(m_oesencFile, oesencConfig);
-        break;
-    case OesencSourceType::Vector:
-        oesencChart = make_unique<oesenc::ChartFile>(m_oesencData, oesencConfig);
-        break;
-    }
+    lock_guard guard(catalogueMutex);
+    shared_ptr<istream> stream = m_catalogue->openChart(m_name);
+    unique_ptr<oesenc::ChartFile> oesencChart = make_unique<oesenc::ChartFile>(*stream, oesencConfig);
 
     if (!oesencChart->read()) {
         return false;
@@ -135,7 +115,7 @@ bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixel
 
 bool OesencTileSource::isValid() const
 {
-    return m_oesencSourceType != OesencSourceType::Invalid;
+    return m_valid;
 }
 
 OesencTileSource::~OesencTileSource()

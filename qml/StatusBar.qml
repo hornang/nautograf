@@ -3,27 +3,61 @@ import QtQuick.Layouts 1.3
 import QtQuick.Controls.Universal
 import QtQuick.Controls
 
+import org.seatronomy.nautograf
+
 ToolBar {
     id: root
 
-    property string cryptReaderStatus
+    property string catalogPath
+    property bool catalogLoaded: false
+    property bool catalogLoadedOk: false
+    property variant catalogType
+    property bool serverError: false
     property real mouseLat
     property real mouseLon
     property real pixelsPerLongitude: 1
 
     position: ToolBar.Footer
 
+    signal openCatalogSelector
+
     RowLayout {
         id: row
 
         anchors.fill: parent
 
+        ToolButton {
+            text: "📁"
+
+            onClicked: root.openCatalogSelector()
+        }
+
         Label  {
-            id: errorText
+            id: catalogPath
 
             Layout.fillWidth: true
-            Layout.leftMargin: 10
-            text: "oexserverd: " + root.cryptReaderStatus
+            text: root.catalogPath
+        }
+
+        Label {
+            font.capitalization: Font.AllUppercase
+            text: {
+                switch(root.catalogType) {
+                case ChartModel.Oesu:
+                    return "oesu"
+                case ChartModel.Oesenc:
+                    return "oesenc"
+                case ChartModel.Decrypted:
+                    return "uncrypted"
+                default:
+                    return "unknown"
+                }
+            }
+        }
+
+        Label {
+            visible: root.serverError
+            text: root.serverError ? qsTr("oexserverd unavailable") : ""
         }
 
         ToolSeparator {
