@@ -82,8 +82,6 @@ endif()
 
 add_executable(nautograf WIN32
     src/main.cpp
-    src/cryptreader.cpp
-    src/cryptreader.h
     src/licenses.h
     src/licenses.cpp
     src/maptile.h

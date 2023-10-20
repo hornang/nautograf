@@ -1,16 +1,19 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 
 #include <QAbstractListModel>
 #include <QHash>
 #include <QQueue>
+#include <QTimer>
 #include <QUrl>
 
 #include <oesenc/keylistreader.h>
+#include <oesenc/servercontrol.h>
 
-#include "cryptreader.h"
 #include "scene/tilefactorywrapper.h"
+#include "tilefactory/catalog.h"
 #include "tilefactory/tilefactory.h"
 
 class OesencTileSource;
@@ -20,11 +23,21 @@ class ChartModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(bool allEnabled READ allEnabled NOTIFY allEnabledChanged)
     Q_PROPERTY(float loadingProgress READ loadingProgress NOTIFY loadingProgressChanged)
-    Q_PROPERTY(bool cryptReaderError READ cryptReaderError NOTIFY cryptReaderErrorChanged)
-    Q_PROPERTY(QString cryptReaderStatus READ cryptReaderStatus NOTIFY cryptReaderStatusChanged)
+    Q_PROPERTY(bool serverError READ serverError NOTIFY serverErrorChanged)
     Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
+    Q_PROPERTY(bool catalogLoaded READ catalogLoaded NOTIFY catalogLoadedChanged)
+    Q_PROPERTY(CatalogType catalogType READ catalogType NOTIFY catalogTypeChanged)
 
 public:
+    Q_ENUMS(CatalogType)
+
+    enum class CatalogType {
+        Unknown,
+        Oesu,
+        Oesenc,
+        Decrypted,
+    };
+
     enum class Role : int {
         Name,
         Scale,
@@ -42,14 +55,16 @@ public:
 
     float loadingProgress() const;
 
-    bool cryptReaderError() const;
+    bool serverError() const;
     QString cryptReaderStatus() const;
+    CatalogType catalogType() const;
+
+    bool catalogLoaded() const;
 
 public slots:
     void populateModel(const QString &dir);
     void setChartEnabled(int index, bool enabled);
     void setAllChartsEnabled(bool enabled);
-    void chartDecrypted(const QByteArray &data);
     void setUrl(const QUrl &url);
     void writeVisibleCharts();
     void clear();
@@ -60,18 +75,17 @@ signals:
     void allEnabledChanged();
     void dirChanged();
     void loadingProgressChanged();
-    void cryptReaderErrorChanged();
-    void cryptReaderStatusChanged();
+    void serverErrorChanged();
+    void catalogTypeChanged();
+    void catalogLoadedChanged();
 
 private:
-    void readUnencrypted(const QString &fileName);
-    static QByteArray readUserKey(const QString &infoFile);
     QHash<QString, bool> readVisibleCharts();
-    void addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled, bool encrypted);
+    void addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled);
     void updateAllEnabled();
     bool loadNextFromQueue();
     QQueue<QString> m_chartsToLoad;
-    CryptReader m_cryptReader;
+    oesenc::ServerControl m_oesencServerControl;
     std::shared_ptr<TileFactory> m_tileFactory;
     QHash<int, QByteArray> m_roleNames;
     std::vector<TileFactory::Source> m_sourceCache;
@@ -80,11 +94,13 @@ private:
     QString m_currentChartBeeingLoaded;
     QString m_dir;
     QByteArray m_key;
-    QString m_cryptReaderStatus;
-    oesenc::KeyListReader m_keyListReader;
+    QTimer m_serverPollTimer;
+    std::unique_ptr<Catalog> m_catalog;
+    std::chrono::milliseconds m_serverPollDuration { 0 };
     int m_initalQueueSize = 0;
     float m_loadingProgress = 1;
     bool m_loadingCharts = false;
     bool m_allEnabled = false;
-    bool m_cryptReaderError = false;
+    bool m_serverError = false;
+    bool m_catalogLoaded;
 };

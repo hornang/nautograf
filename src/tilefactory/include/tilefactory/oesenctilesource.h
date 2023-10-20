@@ -11,15 +11,15 @@
 
 #include "tilefactory_export.h"
 
+class Catalog;
+
 class TILEFACTORY_EXPORT OesencTileSource : public ITileSource
 {
 public:
-    OesencTileSource(const std::string &chartFile,
-                     const std::string &name,
-                     const std::string &tileDir);
-    OesencTileSource(const std::vector<std::byte> &data,
-                     const std::string &originalFile,
-                     const std::string &tileDir);
+    OesencTileSource(Catalog *catalogue,
+                     std::string_view name,
+                     std::string_view baseTileDir);
+
     bool isValid() const;
     ~OesencTileSource();
     GeoRect extent() const override;
@@ -41,15 +41,9 @@ private:
     std::mutex m_tileMutexesMutex;
     std::string m_tileDir;
     std::string m_name;
+    bool m_valid = false;
     GeoRect m_extent;
     std::mutex m_internalChartMutex;
+    Catalog *m_catalogue = nullptr;
     int m_scale = 0;
-    enum class OesencSourceType {
-        Invalid,
-        File,
-        Vector
-    };
-    OesencSourceType m_oesencSourceType = OesencSourceType::Invalid;
-    std::string m_oesencFile;
-    std::vector<std::byte> m_oesencData;
 };
