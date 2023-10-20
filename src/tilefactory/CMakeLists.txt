@@ -13,6 +13,7 @@ find_path(EARCUT_HPP_INCLUDE_DIRS "mapbox/earcut.hpp")
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS chartdata.capnp)
 
 add_library(tilefactory
+    include/tilefactory/catalog.h
     include/tilefactory/itilesource.h
     include/tilefactory/mercator.h
     include/tilefactory/georect.h
@@ -23,6 +24,7 @@ add_library(tilefactory
     include/tilefactory/pos.h
     include/tilefactory/triangulator.h
 
+    catalog.cpp
     chart.cpp
     coverageratio.h
     coverageratio.cpp
