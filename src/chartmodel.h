@@ -85,7 +85,7 @@ private:
     void updateAllEnabled();
     bool loadNextFromQueue();
     QQueue<QString> m_chartsToLoad;
-    oesenc::ServerControl m_oesencServerControl;
+    std::unique_ptr<oesenc::ServerControl> m_oesencServerControl;
     std::shared_ptr<TileFactory> m_tileFactory;
     QHash<int, QByteArray> m_roleNames;
     std::vector<TileFactory::Source> m_sourceCache;

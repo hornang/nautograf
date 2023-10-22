@@ -122,7 +122,7 @@ std::shared_ptr<std::istream> Catalog::openChart(std::string_view fileName)
 
     switch (m_type) {
     case Type::Oesu:
-
+        assert(m_serverControl);
         if (m_oesuKeys.find(fileNameWithoutExtension) == m_oesuKeys.end()) {
             return nullptr;
         }
@@ -131,6 +131,7 @@ std::shared_ptr<std::istream> Catalog::openChart(std::string_view fileName)
                                                          m_oesuKeys[fileNameWithoutExtension]);
         return m_currentStream;
     case Type::Oesenc:
+        assert(m_serverControl);
         m_currentStream = oesenc::ServerReader::openOesenc(m_serverControl->pipeName(), filePath.string(), m_oesencKey);
         return m_currentStream;
     case Type::Unencrypted:
