@@ -22,6 +22,7 @@ std::chrono::duration serverPollInterval = std::chrono::milliseconds(500);
 
 ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     : m_tileFactory(tileFactory)
+    , m_oesencServerControl(std::make_unique<oesenc::ServerControl>())
     , m_roleNames({
           { (int)Role::Name, "name" },
           { (int)Role::Scale, "scale" },
@@ -44,7 +45,7 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     setDir(settings.value(chartDirKey).toString());
 
     connect(&m_serverPollTimer, &QTimer::timeout, this, [&]() {
-        if (m_oesencServerControl.isReady()) {
+        if (m_oesencServerControl->isReady()) {
             populateModel(m_dir);
             m_serverPollTimer.stop();
         }
@@ -152,7 +153,7 @@ bool ChartModel::loadNextFromQueue()
 
 void ChartModel::populateModel(const QString &dir)
 {
-    if (!m_oesencServerControl.isReady()) {
+    if (!m_oesencServerControl->isReady()) {
         return;
     }
 
@@ -172,7 +173,7 @@ void ChartModel::populateModel(const QString &dir)
         return;
     }
 
-    m_catalog = std::make_unique<Catalog>(&m_oesencServerControl, dir.toStdString());
+    m_catalog = std::make_unique<Catalog>(m_oesencServerControl.get(), dir.toStdString());
     emit catalogTypeChanged();
     emit catalogLoadedChanged();
 
