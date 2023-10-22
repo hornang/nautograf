@@ -31,15 +31,14 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
 {
     auto cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 
-    const QString tileDir = cacheDir + "/tiles";
-    if (!QDir(tileDir).exists()) {
+    m_tileDir = cacheDir + "/tiles";
+    if (!QDir(m_tileDir).exists()) {
         QDir dir(cacheDir);
 
         if (!dir.mkpath("tiles")) {
-            qWarning() << "Unable to create tile dir" << tileDir;
+            qWarning() << "Unable to create tile dir" << m_tileDir;
         }
     }
-    m_tileDir = tileDir;
 
     QSettings settings(orgName, appName);
     setDir(settings.value(chartDirKey).toString());
