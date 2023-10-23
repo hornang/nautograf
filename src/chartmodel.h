@@ -29,14 +29,13 @@ class ChartModel : public QAbstractListModel
     Q_PROPERTY(CatalogType catalogType READ catalogType NOTIFY catalogTypeChanged)
 
 public:
-    Q_ENUMS(CatalogType)
-
     enum class CatalogType {
         Unknown,
         Oesu,
         Oesenc,
         Decrypted,
     };
+    Q_ENUM(CatalogType)
 
     enum class Role : int {
         Name,
