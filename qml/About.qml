@@ -18,6 +18,11 @@ Dialog {
             Layout.topMargin: 10
         }
 
+        Label {
+            text: "v" + AppVersion
+            Layout.alignment: Qt.AlignCenter
+        }
+
         TabBar {
             id: bar
 

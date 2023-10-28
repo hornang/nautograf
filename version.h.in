@@ -1,0 +1,3 @@
+#pragma once
+
+#define NAUTOGRAF_VERSION "@NAUTOGRAF_VERSION_DESCRIBE@"

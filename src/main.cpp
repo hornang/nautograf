@@ -13,6 +13,7 @@
 #include "tilefactory/tilefactory.h"
 #include "tileinfobackend.h"
 #include "usersettings.h"
+#include "version.h"
 
 #ifndef QML_DIR
 #define QML_DIR "qrc:/qml"
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
         engine.rootContext()->setContextProperty("AboutText", aboutText);
         file.close();
     }
-
+    engine.rootContext()->setContextProperty("AppVersion", QStringLiteral(NAUTOGRAF_VERSION));
     engine.load(QStringLiteral(QML_DIR) + "/main.qml");
 
     int result = application.exec();
