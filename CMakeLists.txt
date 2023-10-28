@@ -14,6 +14,9 @@ install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.txt.in
                ${CMAKE_CURRENT_BINARY_DIR}/version.txt @ONLY)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/version.h @ONLY)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
