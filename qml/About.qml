@@ -11,6 +11,16 @@ Dialog {
     visible: true
     modal: true
     standardButtons: Dialog.Close
+    background: Rectangle {
+        property int offset: 3
+        x: -offset
+        y: -offset
+        width: parent.width + offset * 2
+        height: parent.height + offset * 2
+        radius: offset * 3
+        color: dialog.footer.background.color // How to avoid this hack?
+    }
+
     header: ColumnLayout {
         Image {
             source: "graphics/title.svg"
