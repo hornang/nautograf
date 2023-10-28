@@ -11,13 +11,11 @@ Dialog {
     visible: true
     modal: true
     standardButtons: Dialog.Close
-
-    ColumnLayout {
-        spacing: 20
-
+    header: ColumnLayout {
         Image {
             source: "graphics/title.svg"
             Layout.alignment: Qt.AlignCenter
+            Layout.topMargin: 10
         }
 
         TabBar {
@@ -33,59 +31,59 @@ Dialog {
                 text: qsTr("Licenses")
             }
         }
+    }
 
-        StackLayout {
-            currentIndex: bar.currentIndex
+    StackLayout {
+        currentIndex: bar.currentIndex
 
-            TextEdit {
-                Layout.maximumWidth: 500
-                Layout.minimumHeight: implicitHeight
-                wrapMode: Text.WordWrap
-                color: Universal.foreground
-                textFormat: Text.MarkdownText
-                selectByMouse: true
-                onLinkActivated: function(url) {
-                    Qt.openUrlExternally(url);
-                }
-                text: AboutText
+        TextEdit {
+            Layout.maximumWidth: 500
+            Layout.minimumHeight: implicitHeight
+            wrapMode: Text.WordWrap
+            color: Universal.foreground
+            textFormat: Text.MarkdownText
+            selectByMouse: true
+            onLinkActivated: function(url) {
+                Qt.openUrlExternally(url);
+            }
+            text: AboutText
+        }
+
+        ColumnLayout  {
+            id: licensesLayout
+
+            Licenses {
+                id: licenseModel
+
+                index: comboBox.currentIndex
             }
 
-            ColumnLayout  {
-                id: licensesLayout
+            ComboBox {
+                id: comboBox
 
-                Licenses {
-                    id: licenseModel
+                Layout.alignment: Qt.AlignLeft
+                Layout.fillWidth: true
+                Layout.bottomMargin: 20
+                model: licenseModel.names
+            }
 
-                    index: comboBox.currentIndex
-                }
+            Flickable {
+                id: flickable
 
-                ComboBox {
-                    id: comboBox
+                visible: parent.visible
+                clip: true
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumHeight: 400
+                Layout.preferredWidth: licenseText.width
+                contentHeight: licenseText.height
+                ScrollBar.vertical: ScrollBar {}
 
-                    Layout.alignment: Qt.AlignLeft
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: 20
-                    model: licenseModel.names
-                }
+                Label {
+                    id: licenseText
 
-                Flickable {
-                    id: flickable
-
-                    visible: parent.visible
-                    clip: true
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: 400
-                    Layout.preferredWidth: licenseText.width
-                    contentHeight: licenseText.height
-                    ScrollBar.vertical: ScrollBar {}
-
-                    Label {
-                        id: licenseText
-
-                        font.family: "fixed"
-                        text: licenseModel.currentLicense
-                    }
+                    font.family: "fixed"
+                    text: licenseModel.currentLicense
                 }
             }
         }
