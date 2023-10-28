@@ -85,7 +85,7 @@ Catalog::Catalog(oesenc::ServerControl *serverControl, string_view dir)
 {
     m_type = detectCatalogType(m_serverControl, dir);
 
-    if (serverControl != nullptr) {
+    if (serverControl != nullptr && serverControl->isReady()) {
         m_oesuKeys = oesenc::KeyListReader::readOesuKeys(dir);
         m_oesencKey = oesenc::KeyListReader::readOesencKey(dir);
     }

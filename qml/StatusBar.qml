@@ -62,7 +62,10 @@ ToolBar {
         }
 
         Label {
-            visible: root.catalogStatus !== ChartModel.NotLoaded
+            id: catalogStatus
+
+            visible: root.catalogStatus !== ChartModel.NotLoaded &&
+                     !(ChartModel.waitingForServer && root.catalogStatus === ChartModel.Invalid)
             text: {
                 switch(root.catalogStatus) {
                 case ChartModel.Oesu:
@@ -80,7 +83,7 @@ ToolBar {
         }
 
         ToolSeparator {
-            visible: root.catalogStatus !== ChartModel.NotLoaded
+            visible: catalogStatus.visible
         }
 
         Label {
