@@ -23,7 +23,8 @@ class ChartModel : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(bool allEnabled READ allEnabled NOTIFY allEnabledChanged)
     Q_PROPERTY(float loadingProgress READ loadingProgress NOTIFY loadingProgressChanged)
-    Q_PROPERTY(bool serverError READ serverError NOTIFY serverErrorChanged)
+    Q_PROPERTY(bool waitingForServer MEMBER m_waitingForServer NOTIFY waitingForServerChanged)
+    Q_PROPERTY(bool serverError MEMBER m_serverError NOTIFY serverErrorChanged)
     Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
     Q_PROPERTY(bool catalogLoaded READ catalogLoaded NOTIFY catalogLoadedChanged)
     Q_PROPERTY(CatalogType catalogType READ catalogType NOTIFY catalogTypeChanged)
@@ -75,12 +76,14 @@ signals:
     void allEnabledChanged();
     void dirChanged();
     void loadingProgressChanged();
+    void waitingForServerChanged();
     void serverErrorChanged();
     void catalogTypeChanged();
     void catalogLoadedChanged();
 
 private:
     void enableOesencServerControl();
+    void setWaitingForServerFalse();
     QHash<QString, bool> readVisibleCharts();
     void addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled);
     void updateAllEnabled();
@@ -102,5 +105,6 @@ private:
     float m_loadingProgress = 1;
     bool m_loadingCharts = false;
     bool m_allEnabled = false;
+    bool m_waitingForServer = true;
     bool m_serverError = false;
 };

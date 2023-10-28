@@ -38,6 +38,29 @@ ToolBar {
             text: root.catalogPath
         }
 
+        RowLayout {
+            visible: ChartModel.waitingForServer
+
+            BusyIndicator {}
+
+            Label {
+                text: qsTr("Connecting to oexserverd")
+            }
+        }
+
+        ToolSeparator {
+            visible: ChartModel.waitingForServer
+        }
+
+        Label {
+            visible: root.serverError
+            text: qsTr("No oexserverd")
+        }
+
+        ToolSeparator {
+            visible: root.serverError
+        }
+
         Label {
             visible: root.catalogStatus !== ChartModel.NotLoaded
             text: {
@@ -56,12 +79,8 @@ ToolBar {
             }
         }
 
-        Label {
-            visible: root.serverError
-            text: root.serverError ? qsTr("oexserverd unavailable") : ""
-        }
-
         ToolSeparator {
+            visible: root.catalogStatus !== ChartModel.NotLoaded
         }
 
         Label {

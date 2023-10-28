@@ -48,6 +48,12 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     setDir(settings.value(chartDirKey).toString());
 }
 
+void ChartModel::setWaitingForServerFalse()
+{
+    m_waitingForServer = false;
+    emit waitingForServerChanged();
+}
+
 void ChartModel::enableOesencServerControl()
 {
     m_oesencServerControl = std::make_unique<oesenc::ServerControl>();
@@ -56,6 +62,7 @@ void ChartModel::enableOesencServerControl()
         if (m_oesencServerControl->isReady()) {
             populateModel(m_dir);
             m_serverPollTimer.stop();
+            setWaitingForServerFalse();
         }
 
         m_serverPollDuration += serverPollInterval;
@@ -64,6 +71,7 @@ void ChartModel::enableOesencServerControl()
             m_serverError = true;
             emit serverErrorChanged();
             m_serverPollTimer.stop();
+            setWaitingForServerFalse();
         }
     });
     m_serverPollTimer.start(serverPollInterval);
@@ -323,11 +331,6 @@ QVariant ChartModel::data(const QModelIndex &index, int role) const
 float ChartModel::loadingProgress() const
 {
     return m_loadingProgress;
-}
-
-bool ChartModel::serverError() const
-{
-    return m_serverError;
 }
 
 ChartModel::CatalogType ChartModel::catalogType() const
