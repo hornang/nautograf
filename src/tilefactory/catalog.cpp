@@ -26,6 +26,10 @@ vector<filesystem::path> listFilesWithExtension(string_view dir, string_view ext
 
 Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_view &dir)
 {
+    if (!std::filesystem::is_directory(dir)) {
+        return Catalog::Type::Invalid;
+    }
+
     vector<filesystem::path> oesencFiles = listFilesWithExtension(dir, ".oesenc");
     vector<filesystem::path> oesuFiles = listFilesWithExtension(dir, ".oesu");
     vector<filesystem::path> bothFiles = oesencFiles;
