@@ -169,11 +169,7 @@ bool ChartModel::loadNextFromQueue()
 
 void ChartModel::populateModel(const QString &dir)
 {
-    if (m_oesencServerControl != nullptr && !m_oesencServerControl->isReady()) {
-        return;
-    }
-
-    if (m_dirBeeingLoaded == dir) {
+    if (m_dirBeeingLoaded == dir && catalogType() != CatalogType::NotLoaded) {
         return;
     }
 
