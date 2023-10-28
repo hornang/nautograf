@@ -82,6 +82,13 @@ int main(int argc, char *argv[])
         file.close();
     }
     engine.rootContext()->setContextProperty("AppVersion", QStringLiteral(NAUTOGRAF_VERSION));
+
+#ifdef USE_OEXSERVERD
+    constexpr bool canReadEncryptedCatalog = true;
+#else
+    constexpr bool canReadEncryptedCatalog = false;
+#endif
+    engine.rootContext()->setContextProperty("CanReadEncryptedCatalog", canReadEncryptedCatalog);
     engine.load(QStringLiteral(QML_DIR) + "/main.qml");
 
     int result = application.exec();

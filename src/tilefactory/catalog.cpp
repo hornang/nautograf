@@ -26,13 +26,24 @@ vector<filesystem::path> listFilesWithExtension(string_view dir, string_view ext
 
 Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_view &dir)
 {
-    assert(serverControl);
+    vector<filesystem::path> oesencFiles = listFilesWithExtension(dir, ".oesenc");
+    vector<filesystem::path> oesuFiles = listFilesWithExtension(dir, ".oesu");
+    vector<filesystem::path> bothFiles = oesencFiles;
+    bothFiles.insert(bothFiles.begin(), oesuFiles.begin(), oesuFiles.end());
 
-    if (!serverControl->isReady()) {
+    if (bothFiles.empty()) {
         return Catalog::Type::Invalid;
     }
 
-    vector<filesystem::path> oesencFiles = listFilesWithExtension(dir, ".oesenc");
+    auto stream = std::ifstream(bothFiles.front(), std::ios::binary);
+    oesenc::ChartFile chartFile(stream);
+    if (chartFile.readHeaders()) {
+        return Catalog::Type::Unencrypted;
+    }
+
+    if (serverControl == nullptr || !serverControl->isReady()) {
+        return Catalog::Type::Invalid;
+    }
 
     if (!oesencFiles.empty()) {
         auto key = oesenc::KeyListReader::readOesencKey(dir);
@@ -44,8 +55,6 @@ Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_vie
             return Catalog::Type::Oesenc;
         }
     }
-
-    vector<filesystem::path> oesuFiles = listFilesWithExtension(dir, ".oesu");
 
     if (!oesuFiles.empty()) {
         auto keys = oesenc::KeyListReader::readOesuKeys(dir);
@@ -62,17 +71,6 @@ Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_vie
         }
     }
 
-    vector<filesystem::path> bothFiles = oesencFiles;
-    bothFiles.insert(bothFiles.begin(), oesuFiles.begin(), oesuFiles.end());
-
-    if (!bothFiles.empty()) {
-        auto stream = std::ifstream(bothFiles.front(), std::ios::binary);
-        oesenc::ChartFile chartFile(stream);
-
-        if (chartFile.readHeaders()) {
-            return Catalog::Type::Unencrypted;
-        }
-    }
     return Catalog::Type::Invalid;
 }
 }
@@ -81,10 +79,12 @@ Catalog::Catalog(oesenc::ServerControl *serverControl, string_view dir)
     : m_dir(dir)
     , m_serverControl(serverControl)
 {
-    assert(serverControl != nullptr);
-    m_oesuKeys = oesenc::KeyListReader::readOesuKeys(dir);
-    m_oesencKey = oesenc::KeyListReader::readOesencKey(dir);
     m_type = detectCatalogType(m_serverControl, dir);
+
+    if (serverControl != nullptr) {
+        m_oesuKeys = oesenc::KeyListReader::readOesuKeys(dir);
+        m_oesencKey = oesenc::KeyListReader::readOesencKey(dir);
+    }
 }
 
 Catalog::Type Catalog::type() const

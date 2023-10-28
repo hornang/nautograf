@@ -22,7 +22,6 @@ std::chrono::duration serverPollInterval = std::chrono::milliseconds(500);
 
 ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
     : m_tileFactory(tileFactory)
-    , m_oesencServerControl(std::make_unique<oesenc::ServerControl>())
     , m_roleNames({
           { (int)Role::Name, "name" },
           { (int)Role::Scale, "scale" },
@@ -41,8 +40,17 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
         }
     }
 
+#ifdef USE_OEXSERVERD
+    enableOesencServerControl();
+#endif
+
     QSettings settings(orgName, appName);
     setDir(settings.value(chartDirKey).toString());
+}
+
+void ChartModel::enableOesencServerControl()
+{
+    m_oesencServerControl = std::make_unique<oesenc::ServerControl>();
 
     connect(&m_serverPollTimer, &QTimer::timeout, this, [&]() {
         if (m_oesencServerControl->isReady()) {
@@ -153,7 +161,7 @@ bool ChartModel::loadNextFromQueue()
 
 void ChartModel::populateModel(const QString &dir)
 {
-    if (!m_oesencServerControl->isReady()) {
+    if (m_oesencServerControl != nullptr && !m_oesencServerControl->isReady()) {
         return;
     }
 
