@@ -177,7 +177,7 @@ void ChartModel::populateModel(const QString &dir)
     emit catalogTypeChanged();
     emit catalogLoadedChanged();
 
-    if (m_catalog->type() == Catalog::Type::Unknown) {
+    if (m_catalog->type() == Catalog::Type::Invalid) {
         return;
     }
 
@@ -330,20 +330,20 @@ bool ChartModel::serverError() const
 ChartModel::CatalogType ChartModel::catalogType() const
 {
     if (!m_catalog) {
-        return ChartModel::CatalogType::Unknown;
+        return ChartModel::CatalogType::NotLoaded;
     }
 
     Catalog::Type type = m_catalog->type();
 
     switch (type) {
-    case Catalog::Type::Decrypted:
-        return CatalogType::Decrypted;
+    case Catalog::Type::Unencrypted:
+        return CatalogType::Unencrypted;
     case Catalog::Type::Oesenc:
         return CatalogType::Oesenc;
     case Catalog::Type::Oesu:
         return CatalogType::Oesu;
     default:
-        return CatalogType::Unknown;
+        return CatalogType::Invalid;
     }
 }
 

@@ -9,9 +9,7 @@ ToolBar {
     id: root
 
     property string catalogPath
-    property bool catalogLoaded: false
-    property bool catalogLoadedOk: false
-    property variant catalogType
+    property variant catalogStatus
     property bool serverError: false
     property real mouseLat
     property real mouseLon
@@ -42,15 +40,17 @@ ToolBar {
         Label {
             font.capitalization: Font.AllUppercase
             text: {
-                switch(root.catalogType) {
+                switch(root.catalogStatus) {
+                case ChartModel.NotLoaded:
+                    return qsTr("no catalog loaded")
                 case ChartModel.Oesu:
                     return "oesu"
                 case ChartModel.Oesenc:
                     return "oesenc"
-                case ChartModel.Decrypted:
+                case ChartModel.Unencrypted:
                     return "uncrypted"
-                default:
-                    return "unknown"
+                case ChartModel.Invalid:
+                    return "invalid"
                 }
             }
         }

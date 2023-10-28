@@ -21,9 +21,7 @@ ApplicationWindow {
 
         serverError: ChartModel.serverError
         catalogPath: ChartModel.dir
-        catalogLoaded: ChartModel.catalogLoaded
-        catalogLoadedOk: ChartModel.catalogType !== ChartModel.CatalogType.Unknown
-        catalogType: ChartModel.catalogType
+        catalogStatus: ChartModel.catalogType
         pixelsPerLongitude: viewer.pixelsPerLon
 
         onOpenCatalogSelector: folderDialog.visible = true

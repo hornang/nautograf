@@ -13,10 +13,10 @@ class TILEFACTORY_EXPORT Catalog
 {
 public:
     enum class Type {
-        Unknown,
+        Invalid,
         Oesu,
         Oesenc,
-        Decrypted,
+        Unencrypted,
     };
 
     Catalog(oesenc::ServerControl *serverControl, std::string_view dir);
@@ -28,7 +28,7 @@ private:
     std::unordered_map<std::string, std::string> m_oesuKeys;
     std::string m_oesencKey;
     std::filesystem::path m_dir;
-    Type m_type = Type::Unknown;
+    Type m_type = Type::Invalid;
     oesenc::ServerControl *m_serverControl;
     std::shared_ptr<std::istream> m_currentStream;
 };
