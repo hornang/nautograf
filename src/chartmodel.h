@@ -30,10 +30,11 @@ class ChartModel : public QAbstractListModel
 
 public:
     enum class CatalogType {
-        Unknown,
+        NotLoaded,
         Oesu,
         Oesenc,
-        Decrypted,
+        Unencrypted,
+        Invalid,
     };
     Q_ENUM(CatalogType)
 

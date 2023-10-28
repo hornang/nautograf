@@ -29,7 +29,7 @@ Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_vie
     assert(serverControl);
 
     if (!serverControl->isReady()) {
-        return Catalog::Type::Unknown;
+        return Catalog::Type::Invalid;
     }
 
     vector<filesystem::path> oesencFiles = listFilesWithExtension(dir, ".oesenc");
@@ -51,7 +51,7 @@ Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_vie
         auto keys = oesenc::KeyListReader::readOesuKeys(dir);
         std::string baseName = oesuFiles.front().stem().string();
         if (keys.find(baseName) == keys.end()) {
-            return Catalog::Type::Unknown;
+            return Catalog::Type::Invalid;
         }
         auto stream = oesenc::ServerReader::openOesu(serverControl->pipeName(),
                                                      (dir / oesuFiles.front()).string(),
@@ -70,10 +70,10 @@ Catalog::Type detectCatalogType(oesenc::ServerControl *serverControl, string_vie
         oesenc::ChartFile chartFile(stream);
 
         if (chartFile.readHeaders()) {
-            return Catalog::Type::Decrypted;
+            return Catalog::Type::Unencrypted;
         }
     }
-    return Catalog::Type::Unknown;
+    return Catalog::Type::Invalid;
 }
 }
 
@@ -133,7 +133,7 @@ std::shared_ptr<std::istream> Catalog::openChart(std::string_view fileName)
     case Type::Oesenc:
         m_currentStream = oesenc::ServerReader::openOesenc(m_serverControl->pipeName(), filePath.string(), m_oesencKey);
         return m_currentStream;
-    case Type::Decrypted:
+    case Type::Unencrypted:
         return make_shared<ifstream>(filePath, std::ios::binary);
     default:
         return nullptr;
