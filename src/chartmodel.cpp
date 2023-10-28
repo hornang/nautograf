@@ -176,11 +176,6 @@ void ChartModel::populateModel(const QString &dir)
     m_tileFactory->clear();
     m_chartsToLoad.clear();
 
-    if (!QDir(dir).exists()) {
-        qWarning() << "No such directory" << dir;
-        return;
-    }
-
     m_catalog = std::make_unique<Catalog>(m_oesencServerControl.get(), dir.toStdString());
     emit catalogTypeChanged();
     emit catalogLoadedChanged();
