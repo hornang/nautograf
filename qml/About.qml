@@ -51,17 +51,27 @@ Dialog {
     StackLayout {
         currentIndex: bar.currentIndex
 
-        TextEdit {
-            Layout.maximumWidth: 500
-            Layout.minimumHeight: implicitHeight
-            wrapMode: Text.WordWrap
-            color: Universal.foreground
-            textFormat: Text.MarkdownText
-            selectByMouse: true
-            onLinkActivated: function(url) {
-                Qt.openUrlExternally(url);
+        ColumnLayout {
+            spacing: 20
+
+            TextEdit {
+                Layout.maximumWidth: 500
+                Layout.minimumHeight: implicitHeight
+                wrapMode: Text.WordWrap
+                color: Universal.foreground
+                textFormat: Text.MarkdownText
+                selectByMouse: true
+                onLinkActivated: function(url) {
+                    Qt.openUrlExternally(url);
+                }
+                text: AboutText
             }
-            text: AboutText
+
+            Label {
+                visible: !CanReadEncryptedCatalog
+                font.bold: true
+                text: "This version is compiled without support for chart descryption via oexserverd"
+            }
         }
 
         ColumnLayout  {

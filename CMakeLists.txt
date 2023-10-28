@@ -110,6 +110,11 @@ if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
     )
 endif()
 
+option(USE_OEXSERVERD "Use oexserverd to decrypt chart catalogs" ON)
+
+if(${USE_OEXSERVERD})
+    target_compile_definitions(nautograf PRIVATE USE_OEXSERVERD)
+endif()
 
 target_include_directories(nautograf PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_include_directories(nautograf PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

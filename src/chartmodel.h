@@ -80,6 +80,7 @@ signals:
     void catalogLoadedChanged();
 
 private:
+    void enableOesencServerControl();
     QHash<QString, bool> readVisibleCharts();
     void addSource(const std::shared_ptr<OesencTileSource> &tileSource, bool enabled);
     void updateAllEnabled();
