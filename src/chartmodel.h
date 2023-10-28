@@ -103,5 +103,4 @@ private:
     bool m_loadingCharts = false;
     bool m_allEnabled = false;
     bool m_serverError = false;
-    bool m_catalogLoaded;
 };
