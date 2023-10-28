@@ -33,24 +33,25 @@ ToolBar {
         Label  {
             id: catalogPath
 
+            elide: Text.ElideRight
             Layout.fillWidth: true
             text: root.catalogPath
         }
 
         Label {
-            font.capitalization: Font.AllUppercase
+            visible: root.catalogStatus !== ChartModel.NotLoaded
             text: {
                 switch(root.catalogStatus) {
-                case ChartModel.NotLoaded:
-                    return qsTr("no catalog loaded")
                 case ChartModel.Oesu:
-                    return "oesu"
+                    return qsTr("🔐 OESU");
                 case ChartModel.Oesenc:
-                    return "oesenc"
+                    return qsTr("🔐 OESENC");
                 case ChartModel.Unencrypted:
-                    return "uncrypted"
+                    return qsTr("🔓 Unencrypted");
                 case ChartModel.Invalid:
-                    return "invalid"
+                    return qsTr("⛔ Invalid catalog");
+                default:
+                    return "";
                 }
             }
         }
