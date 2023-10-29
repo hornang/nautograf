@@ -182,7 +182,6 @@ void ChartModel::populateModel(const QString &dir)
 
     m_catalog = std::make_unique<Catalog>(m_oesencServerControl.get(), dir.toStdString());
     emit catalogTypeChanged();
-    emit catalogLoadedChanged();
 
     if (m_catalog->type() == Catalog::Type::Invalid) {
         return;
@@ -347,9 +346,4 @@ ChartModel::CatalogType ChartModel::catalogType() const
     default:
         return CatalogType::Invalid;
     }
-}
-
-bool ChartModel::catalogLoaded() const
-{
-    return m_catalog != nullptr;
 }
