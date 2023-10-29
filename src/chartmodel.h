@@ -75,6 +75,7 @@ signals:
     void waitingForServerChanged();
     void serverErrorChanged();
     void catalogTypeChanged();
+    void catalogExtentCalculated(double top, double bottom, double left, double right);
 
 private:
     void setDir(const QString &dir);

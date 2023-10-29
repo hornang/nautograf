@@ -83,6 +83,7 @@ public:
     void setTileSettings(const std::string &tileId, TileSettings tileSettings);
     void setChartEnabled(const std::string &name, bool enabled);
     std::vector<int> setAllChartsEnabled(bool enabled);
+    std::optional<GeoRect> totalExtent();
 
 private:
     std::vector<Source> sourceCandidates(const GeoRect &rect, double pixelsPerLon);

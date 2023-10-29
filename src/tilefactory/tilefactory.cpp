@@ -329,3 +329,43 @@ void TileFactory::setTileSettings(const std::string &tileId, TileSettings tileSe
 
     m_tileDataChangedCallback({ tileId });
 }
+
+std::optional<GeoRect> TileFactory::totalExtent()
+{
+    if (m_sources.empty()) {
+        return {};
+    }
+
+    const std::lock_guard<std::mutex> lock(m_sourcesMutex);
+
+    std::vector<double> lefts(m_sources.size());
+    std::vector<double> rights(m_sources.size());
+    std::vector<double> tops(m_sources.size());
+    std::vector<double> bottoms(m_sources.size());
+
+    std::transform(m_sources.begin(), m_sources.end(), lefts.begin(), [](const Source &source) {
+        return source.tileSource->extent().left();
+    });
+
+    std::transform(m_sources.begin(), m_sources.end(), rights.begin(), [](const Source &source) {
+        return source.tileSource->extent().right();
+    });
+
+    std::transform(m_sources.begin(), m_sources.end(), tops.begin(), [](const Source &source) {
+        return source.tileSource->extent().top();
+    });
+
+    std::transform(m_sources.begin(), m_sources.end(), bottoms.begin(), [](const Source &source) {
+        return source.tileSource->extent().bottom();
+    });
+
+    GeoRect extent(*std::max_element(tops.begin(), tops.end()),
+                   *std::min_element(bottoms.begin(), bottoms.end()),
+                   *std::min_element(lefts.begin(), lefts.end()),
+                   *std::max_element(rights.begin(), rights.end()));
+    if (extent.isNull()) {
+        return {};
+    }
+
+    return extent;
+}
