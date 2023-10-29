@@ -6,6 +6,29 @@
 
 static const double latLimit = atan(sinh(M_PI)) * 180. / M_PI;
 
+double Mercator::mercatorNormalizedHeight(double topLat, double bottomLat)
+{
+    double phiTop = topLat * M_PI / 180.;
+    double phiBottom = bottomLat * M_PI / 180.;
+
+    double logArgTop = tan(M_PI / 4 + phiTop / 2);
+    double logArgBottom = tan(M_PI / 4 + phiBottom / 2);
+
+    assert(logArgTop > 0);
+    assert(logArgBottom > 0);
+
+    double yTop = log(logArgTop);
+    double yBottom = log(logArgBottom);
+
+    return yTop - yBottom;
+}
+
+double Mercator::mercatorHeight(double topLat, double bottomLat, double pixelsPerLon)
+{
+    double pixelsPerLonRadians = pixelsPerLon * 180. / M_PI;
+    return pixelsPerLonRadians * mercatorNormalizedHeight(topLat, bottomLat);
+}
+
 double Mercator::mercatorHeightInverse(const double topLatitude,
                                        const double height,
                                        const double pixelsPerLongitude)
@@ -34,17 +57,23 @@ double Mercator::toLatitude(double y)
     return phiBottom * 180 / M_PI;
 }
 
+double Mercator::mercatorNormalizedWidth(double leftLon, double rightLon)
+{
+    double phiLeft = leftLon * M_PI / 180.;
+    double phiRight = rightLon * M_PI / 180.;
+
+    return phiRight - phiLeft;
+}
+
 double Mercator::mercatorWidth(double leftLongitude,
                                double rightLongitude,
                                double pixelsPerLongitude)
 {
-
     double pixelsPerLongitudeRadians = pixelsPerLongitude * 180. / M_PI;
     double phiLeft = leftLongitude * M_PI / 180.;
     double phiRight = rightLongitude * M_PI / 180.;
 
-    double width = pixelsPerLongitudeRadians * (phiRight - phiLeft);
-    return width;
+    return pixelsPerLongitudeRadians * mercatorNormalizedWidth(leftLongitude, rightLongitude);
 }
 
 double Mercator::mercatorWidthInverse(double leftLongitude,
@@ -52,25 +81,4 @@ double Mercator::mercatorWidthInverse(double leftLongitude,
                                       double pixelsPerLongitude)
 {
     return leftLongitude + pixels / pixelsPerLongitude;
-}
-
-double Mercator::mercatorHeight(double topLatitude,
-                                double bottomLatitude,
-                                double pixelsPerLongitude)
-{
-    double pixelsPerLongitudeRadians = pixelsPerLongitude * 180. / M_PI;
-    double phiTop = topLatitude * M_PI / 180.;
-    double phiBottom = bottomLatitude * M_PI / 180.;
-
-    double logArgTop = tan(M_PI / 4 + phiTop / 2);
-    double logArgBottom = tan(M_PI / 4 + phiBottom / 2);
-
-    assert(logArgTop > 0);
-    assert(logArgBottom > 0);
-
-    double yTop = log(logArgTop);
-    double yBottom = log(logArgBottom);
-
-    double height = pixelsPerLongitudeRadians * (yTop - yBottom);
-    return height;
 }

@@ -9,9 +9,13 @@ public:
                                 double rightLongitude,
                                 double pixelsPerLongitude);
 
+    static double mercatorNormalizedHeight(double topLat, double bottomLat);
+
     static double mercatorHeightInverse(double topLatitude,
                                         double height,
                                         double pixelsPerLongitude);
+
+    static double mercatorNormalizedWidth(double leftLon, double rightLon);
 
     static double mercatorWidthInverse(double leftLongitude,
                                        double pixels,
