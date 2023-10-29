@@ -26,7 +26,6 @@ class ChartModel : public QAbstractListModel
     Q_PROPERTY(bool waitingForServer MEMBER m_waitingForServer NOTIFY waitingForServerChanged)
     Q_PROPERTY(bool serverError MEMBER m_serverError NOTIFY serverErrorChanged)
     Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
-    Q_PROPERTY(bool catalogLoaded READ catalogLoaded NOTIFY catalogLoadedChanged)
     Q_PROPERTY(CatalogType catalogType READ catalogType NOTIFY catalogTypeChanged)
 
 public:
@@ -60,8 +59,6 @@ public:
     QString cryptReaderStatus() const;
     CatalogType catalogType() const;
 
-    bool catalogLoaded() const;
-
 public slots:
     void populateModel(const QString &dir);
     void setChartEnabled(int index, bool enabled);
@@ -79,7 +76,6 @@ signals:
     void waitingForServerChanged();
     void serverErrorChanged();
     void catalogTypeChanged();
-    void catalogLoadedChanged();
 
 private:
     void enableOesencServerControl();
