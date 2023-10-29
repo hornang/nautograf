@@ -30,7 +30,9 @@ ApplicationWindow {
     onVisibilityChanged: function(visibility) {
         UserSettings.windowState = visibility;
     }
+
     property int nonFullScrenMode: Window.Windowed
+    property bool newCatalogChosen: false
 
     onXChanged: saveGeometry();
     onYChanged: saveGeometry();
@@ -45,6 +47,7 @@ ApplicationWindow {
         id: folderDialog
         title: "Please choose a chart directory"
         onAccepted: function () {
+            viewer.centerOnCatalogExtentWhenLoaded = true;
             ChartModel.setUrl(folder);
         }
     }

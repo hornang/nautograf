@@ -10,6 +10,7 @@
 
 #include "chartmodel.h"
 #include "tilefactory/catalog.h"
+#include "tilefactory/mercator.h"
 #include "tilefactory/oesenctilesource.h"
 #include "tilefactory/tilefactory.h"
 #include "usersettings.h"
@@ -139,6 +140,14 @@ bool ChartModel::loadNextFromQueue()
         m_loadingProgress = 1;
         emit loadingProgressChanged();
         m_tileFactory->setSources(m_sourceCache);
+
+        std::optional<GeoRect> totalExtent = m_tileFactory->totalExtent();
+
+        if (totalExtent.has_value()) {
+            auto extent = totalExtent.value();
+            emit catalogExtentCalculated(extent.top(), extent.bottom(),
+                                         extent.left(), extent.right());
+        }
         return true;
     }
 

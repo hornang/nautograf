@@ -10,6 +10,7 @@ Item {
     property real lat: UserSettings.lat
     property real lon: UserSettings.lon
     property real pixelsPerLon: UserSettings.pixelsPerLon
+    property bool centerOnCatalogExtentWhenLoaded: false
 
     signal showContextMenu(var x, var y)
     signal newMousePos(var lat, var lon)
@@ -49,10 +50,35 @@ Item {
         adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
     }
 
+    function centerViewOnExtent(top, bottom, left, right)  {
+        const pixelsPerLonToFitWidth = Mercator.pixelsPerLonInterval(left, right, mapRoot.width);
+        const pixelsPerLonToFitHeight = Mercator.pixelsPerLatInterval(top, bottom, mapRoot.height);
+
+        const pixelsPerLon = Math.min(pixelsPerLonToFitWidth, pixelsPerLonToFitHeight);
+        root.pixelsPerLon = Math.max(root.minPixelsPerLon, Math.min(root.maxPixelsPerLon, pixelsPerLon));
+
+        const pixelOffsetFromTop = (Mercator.mercatorHeight(top, bottom, root.pixelsPerLon) - mapRoot.height) / 2;
+        root.lat = Mercator.mercatorHeightInverse(top, pixelOffsetFromTop, root.pixelsPerLon);
+
+        const pixelOffsetFromLeft = (Mercator.mercatorWidth(left, right, root.pixelsPerLon) - mapRoot.width) / 2;
+        root.lon = Mercator.mercatorWidthInverse(left, pixelOffsetFromLeft, root.pixelsPerLon);
+    }
+
     Component.onCompleted: updateTileModel();
     onLatChanged: updateTileModel()
     onLonChanged: updateTileModel()
     onPixelsPerLonChanged: updateTileModel()
+
+    Connections {
+        target: ChartModel
+
+        function onCatalogExtentCalculated(top, bottom, left, right) {
+            if (root.centerOnCatalogExtentWhenLoaded) {
+                centerViewOnExtent(top, bottom, left, right);
+                centerOnCatalogExtentWhenLoaded = false;
+            }
+        }
+    }
 
     Rectangle {
         id: mapRoot
