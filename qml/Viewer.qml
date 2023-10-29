@@ -19,6 +19,8 @@ Item {
     property var selectedTileRef: ({})
     property bool showLegacyRenderer: false
     property bool showLegacyDebugView: false
+    readonly property real minPixelsPerLon: 50
+    readonly property real maxPixelsPerLon: 100000
 
     Keys.onPressed: function(event) {
         if (event.key === Qt.Key_Plus) {
@@ -312,7 +314,9 @@ Item {
                                                   root.pixelsPerLon,
                                                   zoomOrigin);
 
-        newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude, 50), 100000);
+        newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude,
+                                                  root.minPixelsPerLon),
+                                         root.maxPixelsPerLon);
 
         const newTopLeft = mapTile.offsetPosition(lockPosition,
                                                   newPixelsPerLongitude,
