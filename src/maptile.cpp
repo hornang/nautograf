@@ -53,20 +53,6 @@ MapTile::~MapTile()
     m_renderResult.cancel();
 }
 
-QPointF MapTile::offsetPosition(QPointF startPosition,
-                                qreal pixelsPerLongitude,
-                                QPointF mouseOffset)
-{
-    double latitude = Mercator::mercatorHeightInverse(startPosition.y(),
-                                                      mouseOffset.y(),
-                                                      pixelsPerLongitude);
-    double longitude = Mercator::mercatorWidthInverse(startPosition.x(),
-                                                      mouseOffset.x(),
-                                                      pixelsPerLongitude);
-    QPointF point(longitude, latitude);
-    return point;
-}
-
 void MapTile::setChartVisibility(const QString &name, bool visible)
 {
     if (visible && m_hiddenCharts.contains(name)) {

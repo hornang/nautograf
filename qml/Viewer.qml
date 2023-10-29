@@ -107,9 +107,9 @@ Item {
 
                 onDoubleClicked: function (mouse) {
                     const topLeft = Qt.point(root.lon, root.lat);
-                    const position = mapTile.offsetPosition(topLeft,
-                                                            root.pixelsPerLon,
-                                                            Qt.point(mouse.x, mouse.y));
+                    const position = Mercator.offsetPosition(topLeft,
+                                                             root.pixelsPerLon,
+                                                             Qt.point(mouse.x, mouse.y));
                     const tileRef = MapTileModel.tileRefAtPos(position.y, position.x);
                     root.selectedTileRef = tileRef;
                 }
@@ -118,31 +118,26 @@ Item {
                     startPos = Qt.point(root.lon, root.lat);
                     mouseStartPos = Qt.point(mouse.x, mouse.y);
                     mouse.accept = false;
-                    const position = mapTile.offsetPosition(startPos,
-                                                                root.pixelsPerLon,
-                                                                Qt.point(mouse.x, mouse.y));
+                    const position = Mercator.offsetPosition(startPos,
+                                                             root.pixelsPerLon,
+                                                             Qt.point(mouse.x, mouse.y));
                     root.newMousePos(position.x, position.y);
 
                 }
 
-                MapTile {
-                    // A dummy map tile used for some computations
-                    id: mapTile
-                }
-
                 onPositionChanged: function (mouse) {
                     if (pressed) {
-                        let offset = mapTile.offsetPosition(mouseArea.startPos,
-                                                            root.pixelsPerLon,
-                                                            Qt.point(mouseArea.mouseStartPos.x - mouse.x,
-                                                                     mouseArea.mouseStartPos.y - mouse.y));
+                        let offset = Mercator.offsetPosition(mouseArea.startPos,
+                                                             root.pixelsPerLon,
+                                                             Qt.point(mouseArea.mouseStartPos.x - mouse.x,
+                                                                      mouseArea.mouseStartPos.y - mouse.y));
                         root.lon = offset.x;
                         root.lat = offset.y;
                     } else {
                         const topLeft = Qt.point(root.lon, root.lat);
-                        const position = mapTile.offsetPosition(topLeft,
-                                                                root.pixelsPerLon,
-                                                                Qt.point(mouse.x, mouse.y));
+                        const position = Mercator.offsetPosition(topLeft,
+                                                                 root.pixelsPerLon,
+                                                                 Qt.point(mouse.x, mouse.y));
                         root.newMousePos(position.x, position.y);
                     }
                 }
@@ -310,18 +305,18 @@ Item {
 
     function adjustZoom(newPixelsPerLongitude, zoomOrigin, offset) {
         const topLeft = Qt.point(root.lon, root.lat);
-        let lockPosition = mapTile.offsetPosition(topLeft,
-                                                  root.pixelsPerLon,
-                                                  zoomOrigin);
+        let lockPosition = Mercator.offsetPosition(topLeft,
+                                                   root.pixelsPerLon,
+                                                   zoomOrigin);
 
         newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude,
                                                   root.minPixelsPerLon),
                                          root.maxPixelsPerLon);
 
-        const newTopLeft = mapTile.offsetPosition(lockPosition,
-                                                  newPixelsPerLongitude,
-                                                  Qt.point(-zoomOrigin.x - offset.x,
-                                                           -zoomOrigin.y - offset.y));
+        const newTopLeft = Mercator.offsetPosition(lockPosition,
+                                                   newPixelsPerLongitude,
+                                                   Qt.point(-zoomOrigin.x - offset.x,
+                                                            -zoomOrigin.y - offset.y));
         root.lon = newTopLeft.x;
         root.lat = newTopLeft.y;
         root.pixelsPerLon = newPixelsPerLongitude;

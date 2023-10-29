@@ -87,6 +87,7 @@ add_executable(nautograf WIN32
     src/main.cpp
     src/licenses.h
     src/licenses.cpp
+    src/mercatorwrapper.h
     src/maptile.h
     src/maptile.cpp
     src/maptilemodel.h

@@ -52,9 +52,6 @@ public:
 public slots:
     void setChartVisibility(const QString &name, bool visible);
     bool chartVisible(const QString &name) const;
-    static QPointF offsetPosition(QPointF startPosition,
-                                  qreal pixelsPerLongitude,
-                                  QPointF mouseOffset);
     void renderFinished();
 
 private:
