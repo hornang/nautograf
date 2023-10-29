@@ -107,7 +107,8 @@ std::vector<TileFactory::Source> TileFactory::sourceCandidates(const GeoRect &re
     const std::lock_guard<std::mutex> lock(m_sourcesMutex);
     std::vector<TileFactory::Source> validSources;
 
-    for (const auto &source : m_sources) {
+    for (auto it = m_sources.cbegin(); it < m_sources.cend(); it++) {
+        const TileFactory::Source &source = *it;
         assert(source.tileSource);
 
         if (!source.enabled) {
@@ -122,8 +123,9 @@ std::vector<TileFactory::Source> TileFactory::sourceCandidates(const GeoRect &re
             continue;
         }
 
-        // Avoid showing too detailed maps when zoomed out
-        if (scaleActual / 4 > tileSource->scale()) {
+        // Avoid showing too detailed maps when zoomed out, but always show last
+        // chart with the lowest detail
+        if (scaleActual / 4 > tileSource->scale() && std::next(it, 1) != m_sources.end()) {
             continue;
         }
 
