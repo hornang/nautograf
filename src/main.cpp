@@ -7,6 +7,7 @@
 #include "licenses.h"
 #include "maptile.h"
 #include "maptilemodel.h"
+#include "mercatorwrapper.h"
 #include "oesenc/chartfile.h"
 #include "scene/scene.h"
 #include "scene/tilefactorywrapper.h"
@@ -67,6 +68,9 @@ int main(int argc, char *argv[])
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "TileFactory", &tileFactoryWrapper);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "ChartModel", &chartModel);
     qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "UserSettings", &userSettings);
+
+    MercatorWrapper mercatorWrapper;
+    qmlRegisterSingletonInstance("org.seatronomy.nautograf", 1, 0, "Mercator", &mercatorWrapper);
 
     QQmlApplicationEngine engine;
 
