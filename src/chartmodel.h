@@ -25,7 +25,7 @@ class ChartModel : public QAbstractListModel
     Q_PROPERTY(float loadingProgress READ loadingProgress NOTIFY loadingProgressChanged)
     Q_PROPERTY(bool waitingForServer MEMBER m_waitingForServer NOTIFY waitingForServerChanged)
     Q_PROPERTY(bool serverError MEMBER m_serverError NOTIFY serverErrorChanged)
-    Q_PROPERTY(QString dir READ dir WRITE setDir NOTIFY dirChanged)
+    Q_PROPERTY(QString dir READ dir NOTIFY dirChanged)
     Q_PROPERTY(CatalogType catalogType READ catalogType NOTIFY catalogTypeChanged)
 
 public:
@@ -51,7 +51,6 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
     QString dir() const { return m_dir; }
-    void setDir(const QString &dir);
 
     float loadingProgress() const;
 
@@ -78,6 +77,7 @@ signals:
     void catalogTypeChanged();
 
 private:
+    void setDir(const QString &dir);
     void enableOesencServerControl();
     void setWaitingForServerFalse();
     QHash<QString, bool> readVisibleCharts();
