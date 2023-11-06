@@ -10,3 +10,6 @@
 [submodule "cutlines"]
 	path = cutlines
 	url = git@github.com:hornang/cutlines.git
+[submodule "MercatorTile"]
+	path = MercatorTile
+	url = https://github.com/hornang/MercatorTile

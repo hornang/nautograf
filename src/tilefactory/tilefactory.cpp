@@ -6,6 +6,8 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 
+#include <mercatortile/MercatorTile.h>
+
 #include "filehelper.h"
 #include "tilefactory/georect.h"
 #include "tilefactory/itilesource.h"
@@ -18,6 +20,16 @@
 namespace {
 constexpr int maxTileSize = 1024;
 float coverageAccpetanceThreshold = 0.98f;
+
+mercatortile::LngLatBbox covnertToMercatorTileBox(const GeoRect &rect)
+{
+    return { rect.left(), rect.bottom(), rect.right(), rect.top() };
+}
+
+GeoRect convertToGeoRect(const mercatortile::LngLatBbox &lngLatBox)
+{
+    return { lngLatBox.north, lngLatBox.south, lngLatBox.west, lngLatBox.east };
+}
 }
 
 void TileFactory::clear()
@@ -234,40 +246,15 @@ std::vector<GeoRect> TileFactory::tilesInViewport(const GeoRect &rect, int zoom)
 {
     assert(zoom >= 0);
 
-    double topLat = rect.top() * M_PI / 180.;
-    double bottomLat = rect.bottom() * M_PI / 180.;
+    const auto mercatorTiles = mercatortile::tiles(covnertToMercatorTileBox(rect), zoom);
+    std::vector<GeoRect> geoRects(mercatorTiles.size());
 
-    double yTop = (M_PI - log(tan(M_PI / 4 + topLat / 2))) / (2 * M_PI);
-    double yBottom = (M_PI - log(tan(M_PI / 4 + bottomLat / 2))) / (2 * M_PI);
+    std::transform(mercatorTiles.cbegin(), mercatorTiles.cend(), geoRects.begin(),
+                   [](const mercatortile::Tile &tile) {
+                       return convertToGeoRect(mercatortile::bounds(tile));
+                   });
 
-    double xLeft = (rect.left() + 180.) / 360.;
-    double xRight = (rect.right() + 180.) / 360.;
-
-    const int totalVerticalTiles = pow(2, zoom);
-    const int startVerticalTile = floor(totalVerticalTiles * yTop);
-    const int endVerticalTile = ceil(totalVerticalTiles * yBottom);
-
-    const int totalHorizontalTiles = pow(2, zoom);
-    const int startHorizontalTile = floor(totalHorizontalTiles * xLeft);
-    const int endHorizontalTile = ceil(totalHorizontalTiles * xRight);
-
-    std::vector<GeoRect> tiles;
-
-    for (int yTile = startVerticalTile; yTile < endVerticalTile; yTile++) {
-        const double normalizedTop = static_cast<double>(yTile) / totalVerticalTiles;
-        const double normalizedBottom = static_cast<double>(yTile + 1) / totalVerticalTiles;
-        const double topLat = Mercator::toLatitude(normalizedTop);
-        const double bottomLat = Mercator::toLatitude(normalizedBottom);
-
-        for (int xTile = startHorizontalTile; xTile < endHorizontalTile; xTile++) {
-            const double normalizedLeft = static_cast<double>(xTile) / totalHorizontalTiles;
-            const double normalizedRight = static_cast<double>(xTile + 1) / totalHorizontalTiles;
-            const double leftLon = Mercator::toLongitude(normalizedLeft);
-            const double rightLon = Mercator::toLongitude(normalizedRight);
-            tiles.push_back(GeoRect(topLat, bottomLat, leftLon, rightLon));
-        }
-    }
-    return tiles;
+    return geoRects;
 }
 
 bool TileFactory::hasSource(const std::string &name)
