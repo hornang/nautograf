@@ -49,6 +49,7 @@ find_package(UnixCommands)
 
 add_subdirectory(cutlines)
 add_subdirectory(oesenc)
+add_subdirectory(MercatorTile)
 add_subdirectory(src/tilefactory)
 
 option(RESOURCE_DEV "Load QML from file system not from Qt resource" "")

@@ -59,4 +59,5 @@ target_link_libraries(tilefactory
     oesenc
     cutlines
     Boost::boost
+    mercatortile
 )
