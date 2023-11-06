@@ -15,8 +15,10 @@
 
 #include "coverageratio.h"
 
-static constexpr int maxTileSize = 1024;
-static float coverageAccpetanceThreshold = 0.98f;
+namespace {
+constexpr int maxTileSize = 1024;
+float coverageAccpetanceThreshold = 0.98f;
+}
 
 void TileFactory::clear()
 {
