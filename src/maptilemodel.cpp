@@ -16,7 +16,7 @@ MapTileModel::MapTileModel(const std::shared_ptr<TileFactory> &tileManager)
     m_roleNames[Role::LeftLongitude] = "leftLongitude";
     m_roleNames[Role::BottomLatitude] = "bottomLatitude";
     m_roleNames[Role::RightLongitude] = "rightLongitude";
-    reset();
+    update();
 }
 
 void MapTileModel::setPanZoom(QPointF topLeftPoint, qreal pixelsPerLongitude)
@@ -66,19 +66,6 @@ void MapTileModel::chartsChanged(const std::vector<GeoRect> &rects)
     for (const auto &affectedTile : affectedTiles) {
         emit dataChanged(createIndex(affectedTile, 0), createIndex(affectedTile, 0));
     }
-}
-
-void MapTileModel::reset()
-{
-    beginResetModel();
-    std::vector<TileFactory::Tile> tiles = m_tileManager->tiles(m_topLeft,
-                                                                m_pixelsPerLongitude,
-                                                                m_viewPort.width(),
-                                                                m_viewPort.height());
-    for (const auto &tile : tiles) {
-        m_tiles.append(tile);
-    }
-    endResetModel();
 }
 
 void MapTileModel::scheduleUpdate()

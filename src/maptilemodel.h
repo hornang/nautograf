@@ -54,7 +54,6 @@ private:
     static QVariantMap createTileRef(const QString &tileId,
                                      const GeoRect &boundingBox,
                                      int maxPixelsPerLon);
-    void reset();
     std::shared_ptr<TileFactory> m_tileManager;
     Pos m_topLeft;
     int m_pixelsPerLongitude = 50000;
