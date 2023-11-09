@@ -75,10 +75,11 @@ void MapTileModel::scheduleUpdate()
 
 void MapTileModel::update()
 {
-    std::vector<TileFactory::Tile> tiles = m_tileFactory->tiles(m_topLeft,
-                                                                m_pixelsPerLongitude,
-                                                                m_viewPort.width(),
-                                                                m_viewPort.height());
+    std::vector<TileFactory::Tile> tiles;
+
+    if (m_viewPort.isValid()) {
+        tiles = m_tileFactory->tiles(m_topLeft, m_pixelsPerLongitude, m_viewPort.width(), m_viewPort.height());
+    }
 
     QHash<std::string, TileFactory::Tile> correct;
 
