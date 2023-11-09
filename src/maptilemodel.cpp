@@ -7,8 +7,8 @@
 #include "maptilemodel.h"
 #include "tilefactory/mercator.h"
 
-MapTileModel::MapTileModel(const std::shared_ptr<TileFactory> &tileManager)
-    : m_tileManager(tileManager)
+MapTileModel::MapTileModel(const std::shared_ptr<TileFactory> &tileFactory)
+    : m_tileFactory(tileFactory)
 {
     m_roleNames[Role::TileRefRole] = "tileRef";
     m_roleNames[Role::TileIdRole] = "tileId";
@@ -75,7 +75,7 @@ void MapTileModel::scheduleUpdate()
 
 void MapTileModel::update()
 {
-    std::vector<TileFactory::Tile> tiles = m_tileManager->tiles(m_topLeft,
+    std::vector<TileFactory::Tile> tiles = m_tileFactory->tiles(m_topLeft,
                                                                 m_pixelsPerLongitude,
                                                                 m_viewPort.width(),
                                                                 m_viewPort.height());
