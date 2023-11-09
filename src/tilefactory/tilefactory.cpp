@@ -194,6 +194,8 @@ std::vector<TileFactory::Tile> TileFactory::tiles(const Pos &topLeft,
                                                   int width,
                                                   int height)
 {
+    assert(width > 0 && height > 0);
+
     double right = Mercator::mercatorWidthInverse(topLeft.lon(), width, pixelsPerLongitude);
     double bottom = Mercator::mercatorHeightInverse(topLeft.lat(), height, pixelsPerLongitude);
     const GeoRect viewport(topLeft.lat(), bottom, topLeft.lon(), right);
