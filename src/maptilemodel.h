@@ -25,7 +25,7 @@ public:
         RightLongitude,
     };
 
-    MapTileModel(const std::shared_ptr<TileFactory> &tileManager);
+    MapTileModel(const std::shared_ptr<TileFactory> &tileFactory);
     QPointF topLeft() const;
     void setTopLeft(const QPointF &topLeft);
     qreal pixelsPerLongitude() const;
@@ -54,7 +54,7 @@ private:
     static QVariantMap createTileRef(const QString &tileId,
                                      const GeoRect &boundingBox,
                                      int maxPixelsPerLon);
-    std::shared_ptr<TileFactory> m_tileManager;
+    std::shared_ptr<TileFactory> m_tileFactory;
     Pos m_topLeft;
     int m_pixelsPerLongitude = 50000;
     QHash<int, QByteArray> m_roleNames;
