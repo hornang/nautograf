@@ -45,7 +45,7 @@ public slots:
     void update();
 
 signals:
-    void topLeftChanged(const QPointF & topLeft);
+    void topLeftChanged(const QPointF &topLeft);
     void pixelsPerLongitudeChanged(qreal pixelsPerLongitude);
     void viewPortChanged(QSizeF viewPort);
     void countChanged(int count);
