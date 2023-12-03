@@ -34,7 +34,7 @@ public:
 
 public slots:
     void setViewPort(const QSizeF &viewPort);
-    void setPanZoom(QPointF topLeft, qreal pixelsPerLongitude);
+    void setPanZoom(double lon, double lat, double pixelsPerLon);
     QVariantMap tileRefAtPos(float lat, float lon);
     void update();
 
@@ -48,7 +48,7 @@ private:
                                      int maxPixelsPerLon);
     std::shared_ptr<TileFactory> m_tileFactory;
     Pos m_topLeft;
-    int m_pixelsPerLongitude = 50000;
+    double m_pixelsPerLon = 50000;
     QHash<int, QByteArray> m_roleNames;
     QVector<TileFactory::Tile> m_tiles;
     QSizeF m_viewPort;
