@@ -21,7 +21,7 @@ namespace {
 constexpr int maxTileSize = 1024;
 float coverageAccpetanceThreshold = 0.98f;
 
-mercatortile::LngLatBbox covnertToMercatorTileBox(const GeoRect &rect)
+mercatortile::LngLatBbox convertToMercatorTileBox(const GeoRect &rect)
 {
     return { rect.left(), rect.bottom(), rect.right(), rect.top() };
 }
@@ -246,7 +246,7 @@ std::vector<GeoRect> TileFactory::tilesInViewport(const GeoRect &rect, int zoom)
 {
     assert(zoom >= 0);
 
-    const auto mercatorTiles = mercatortile::tiles(covnertToMercatorTileBox(rect), zoom);
+    const auto mercatorTiles = mercatortile::tiles(convertToMercatorTileBox(rect), zoom);
     std::vector<GeoRect> geoRects(mercatorTiles.size());
 
     std::transform(mercatorTiles.cbegin(), mercatorTiles.cend(), geoRects.begin(),
