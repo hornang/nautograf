@@ -10,6 +10,7 @@ public:
     Pos() = default;
     Pos(double lat, double lon);
     bool operator!=(const Pos &pos) const;
+    bool operator==(const Pos &pos) const;
     inline double lat() const { return m_lat; }
     inline double lon() const { return m_lon; }
     inline void setLat(double lat) { m_lat = lat; }

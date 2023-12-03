@@ -34,7 +34,7 @@ Item {
     }
 
     function updateTileModel() {
-        MapTileModel.setPanZoom(Qt.point(root.lon, root.lat), root.pixelsPerLon);
+        MapTileModel.setPanZoom(root.lon, root.lat, root.pixelsPerLon);
         UserSettings.lat = root.lat;
         UserSettings.lon = root.lon;
         UserSettings.pixelsPerLon = root.pixelsPerLon;

@@ -19,17 +19,16 @@ MapTileModel::MapTileModel(const std::shared_ptr<TileFactory> &tileFactory)
     update();
 }
 
-void MapTileModel::setPanZoom(QPointF topLeftPoint, qreal pixelsPerLongitude)
+void MapTileModel::setPanZoom(double lon, double lat, double pixelsPerLon)
 {
-    const auto topLeft = Pos(topLeftPoint.y(), topLeftPoint.x());
+    Pos topLeft(lat, lon);
 
-    if (m_topLeft != topLeft) {
-        m_topLeft = topLeft;
+    if (m_topLeft == topLeft && m_pixelsPerLon == pixelsPerLon) {
+        return;
     }
 
-    if (m_pixelsPerLongitude != pixelsPerLongitude) {
-        m_pixelsPerLongitude = pixelsPerLongitude;
-    }
+    m_topLeft = topLeft;
+    m_pixelsPerLon = pixelsPerLon;
 
     update();
 }
@@ -66,7 +65,7 @@ void MapTileModel::update()
     std::vector<TileFactory::Tile> tiles;
 
     if (m_viewPort.isValid()) {
-        tiles = m_tileFactory->tiles(m_topLeft, m_pixelsPerLongitude, m_viewPort.width(), m_viewPort.height());
+        tiles = m_tileFactory->tiles(m_topLeft, m_pixelsPerLon, m_viewPort.width(), m_viewPort.height());
     }
 
     QHash<std::string, TileFactory::Tile> correct;
