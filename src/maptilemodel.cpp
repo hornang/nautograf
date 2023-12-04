@@ -25,25 +25,13 @@ void MapTileModel::setPanZoom(QPointF topLeftPoint, qreal pixelsPerLongitude)
 
     if (m_topLeft != topLeft) {
         m_topLeft = topLeft;
-        emit topLeftChanged(topLeftPoint);
     }
 
     if (m_pixelsPerLongitude != pixelsPerLongitude) {
-        emit pixelsPerLongitudeChanged(pixelsPerLongitude);
         m_pixelsPerLongitude = pixelsPerLongitude;
     }
 
     update();
-}
-
-void MapTileModel::setTopLeft(const QPointF &topLeftPoint)
-{
-    const auto topLeft = Pos(topLeftPoint.y(), topLeftPoint.x());
-    if (m_topLeft != topLeft) {
-        m_topLeft = topLeft;
-        emit topLeftChanged(topLeftPoint);
-        update();
-    }
 }
 
 void MapTileModel::chartsChanged(const std::vector<GeoRect> &rects)
@@ -127,11 +115,6 @@ void MapTileModel::setViewPort(const QSizeF &viewPort)
     update();
 }
 
-QPointF MapTileModel::topLeft() const
-{
-    return QPointF(m_topLeft.lon(), m_topLeft.lat());
-}
-
 int MapTileModel::rowCount(const QModelIndex &parent) const
 {
     if (!parent.isValid()) {
@@ -195,23 +178,9 @@ QHash<int, QByteArray> MapTileModel::roleNames() const
     return m_roleNames;
 }
 
-void MapTileModel::setPixelsPerLongitude(qreal pixelsPerLongitude)
-{
-    if (m_pixelsPerLongitude != pixelsPerLongitude) {
-        emit pixelsPerLongitudeChanged(pixelsPerLongitude);
-        m_pixelsPerLongitude = pixelsPerLongitude;
-        update();
-    }
-}
-
 QSizeF MapTileModel::viewPort() const
 {
     return m_viewPort;
-}
-
-qreal MapTileModel::pixelsPerLongitude() const
-{
-    return m_pixelsPerLongitude;
 }
 
 QVariantMap MapTileModel::tileRefAtPos(float lat, float lon)
