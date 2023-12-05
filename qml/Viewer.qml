@@ -96,14 +96,12 @@ Item {
 
         PinchArea {
             id: pinchArea
-            property point startPos
+
             property int startPixelsPerLongitude
 
             anchors.fill: parent
             onPinchStarted: function (event){
-                startPos = Qt.point(root.lon, root.lat);
                 startPixelsPerLongitude = root.pixelsPerLon;
-
             }
 
             onPinchUpdated: function (event) {
