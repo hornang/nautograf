@@ -82,3 +82,8 @@ double Mercator::mercatorWidthInverse(double leftLongitude,
 {
     return leftLongitude + pixels / pixelsPerLongitude;
 }
+
+double Mercator::mercatorWidthInverse(double pixels, double pixelsPerLongitude)
+{
+    return pixels / pixelsPerLongitude;
+}

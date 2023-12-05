@@ -50,12 +50,12 @@ public:
         Returns the tiles within the given viewport that intersects with the
         loaded charts.
 
-        \param topLeft The geodetic position of the viewport's top left corner.
+        \param center The geodetic position of the viewport's center
         \param pixelsPerLon Pixels per longitude for the viewport.
         \param width Width of viewport in pixels.
         \param height Height of viewport in pixels.
     */
-    std::vector<Tile> tiles(const Pos &topLeft, float pixelsPerLon, int width, int height);
+    std::vector<Tile> tiles(const Pos &center, float pixelsPerLon, int width, int height);
 
     /*!
         Removes all chart sources.

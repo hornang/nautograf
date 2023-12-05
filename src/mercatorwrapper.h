@@ -41,14 +41,13 @@ public slots:
         return pixelsPerLongitudeRadians * M_PI / 180.0;
     }
 
-    QPointF offsetPosition(QPointF startPosition, qreal pixelsPerLongitude, QPointF mouseOffset)
+    double offsetLat(double lat, double offset, double pixelsPerLon)
     {
-        double lat = Mercator::mercatorHeightInverse(startPosition.y(),
-                                                     mouseOffset.y(),
-                                                     pixelsPerLongitude);
-        double lon = Mercator::mercatorWidthInverse(startPosition.x(),
-                                                    mouseOffset.x(),
-                                                    pixelsPerLongitude);
-        return QPointF(lon, lat);
+        return Mercator::mercatorHeightInverse(lat, offset, pixelsPerLon);
+    }
+
+    double offsetLon(double lon, double offset, double pixelsPerLon)
+    {
+        return Mercator::mercatorWidthInverse(lon, offset, pixelsPerLon);
     }
 };
