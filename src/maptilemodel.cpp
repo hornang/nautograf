@@ -23,11 +23,11 @@ void MapTileModel::setPanZoom(double lon, double lat, double pixelsPerLon)
 {
     Pos topLeft(lat, lon);
 
-    if (m_topLeft == topLeft && m_pixelsPerLon == pixelsPerLon) {
+    if (m_center == topLeft && m_pixelsPerLon == pixelsPerLon) {
         return;
     }
 
-    m_topLeft = topLeft;
+    m_center = topLeft;
     m_pixelsPerLon = pixelsPerLon;
 
     update();
@@ -65,7 +65,7 @@ void MapTileModel::update()
     std::vector<TileFactory::Tile> tiles;
 
     if (m_viewPort.isValid()) {
-        tiles = m_tileFactory->tiles(m_topLeft, m_pixelsPerLon, m_viewPort.width(), m_viewPort.height());
+        tiles = m_tileFactory->tiles(m_center, m_pixelsPerLon, m_viewPort.width(), m_viewPort.height());
     }
 
     QHash<std::string, TileFactory::Tile> correct;

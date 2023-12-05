@@ -34,27 +34,16 @@ void Scene::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 
 void Scene::updateBox()
 {
-    QPointF topLeft;
-    {
-        double x = Mercator::mercatorWidth(0, m_lon, Tessellator::pixelsPerLon());
-        double y = Mercator::mercatorHeight(0, m_lat, Tessellator::pixelsPerLon());
-        topLeft = QPointF(x, y);
-    }
+    QPointF mercatorCenter(Mercator::mercatorWidth(0, m_lon, Tessellator::pixelsPerLon()),
+                           Mercator::mercatorHeight(0, m_lat, Tessellator::pixelsPerLon()));
 
-    QRectF rect = boundingRect();
+    double zoomRatio = Tessellator::pixelsPerLon() / m_pixelsPerLon;
+    double width = boundingRect().width() * zoomRatio;
+    double height = boundingRect().height() * zoomRatio;
 
-    double lon = Mercator::mercatorWidthInverse(m_lon, rect.width(), m_pixelsPerLon);
-    double lat = Mercator::mercatorHeightInverse(m_lat, rect.height(), m_pixelsPerLon);
-    QPointF gpsBottom(lon, lat);
-
-    QPointF bottomRight;
-    {
-        double x = Mercator::mercatorWidth(0, gpsBottom.x(), Tessellator::pixelsPerLon());
-        double y = Mercator::mercatorHeight(0, gpsBottom.y(), Tessellator::pixelsPerLon());
-        bottomRight = QPointF(x, y);
-    }
-
-    m_box = QRectF(topLeft, bottomRight);
+    m_box = QRectF(mercatorCenter.x() - width / 2,
+                   mercatorCenter.y() - height / 2,
+                   width, height);
 }
 
 template <typename T>

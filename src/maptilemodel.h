@@ -47,7 +47,7 @@ private:
                                      const GeoRect &boundingBox,
                                      int maxPixelsPerLon);
     std::shared_ptr<TileFactory> m_tileFactory;
-    Pos m_topLeft;
+    Pos m_center;
     double m_pixelsPerLon = 50000;
     QHash<int, QByteArray> m_roleNames;
     QVector<TileFactory::Tile> m_tiles;

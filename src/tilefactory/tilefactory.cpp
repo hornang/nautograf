@@ -201,16 +201,19 @@ std::vector<std::shared_ptr<Chart>> TileFactory::tileData(const GeoRect &rect,
     return std::vector<std::shared_ptr<Chart>>(chartDatas.rbegin(), chartDatas.rend());
 }
 
-std::vector<TileFactory::Tile> TileFactory::tiles(const Pos &topLeft,
+std::vector<TileFactory::Tile> TileFactory::tiles(const Pos &center,
                                                   float pixelsPerLongitude,
                                                   int width,
                                                   int height)
 {
     assert(width > 0 && height > 0);
 
-    double right = Mercator::mercatorWidthInverse(topLeft.lon(), width, pixelsPerLongitude);
-    double bottom = Mercator::mercatorHeightInverse(topLeft.lat(), height, pixelsPerLongitude);
-    const GeoRect viewport(topLeft.lat(), bottom, topLeft.lon(), right);
+    double east = Mercator::mercatorWidthInverse(center.lon(), width / 2, pixelsPerLongitude);
+    double south = Mercator::mercatorHeightInverse(center.lat(), height / 2, pixelsPerLongitude);
+    double west = Mercator::mercatorWidthInverse(center.lon(), -width / 2, pixelsPerLongitude);
+    double north = Mercator::mercatorHeightInverse(center.lat(), -height / 2, pixelsPerLongitude);
+
+    const GeoRect viewport(north, south, west, east);
     double logArg = 360 * pixelsPerLongitude / static_cast<double>(maxTileSize);
     double zoom = ceil(log2(logArg));
     zoom = std::clamp<double>(zoom, 0, 23);

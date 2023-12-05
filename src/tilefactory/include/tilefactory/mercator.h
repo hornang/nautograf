@@ -21,6 +21,8 @@ public:
                                        double pixels,
                                        double pixelsPerLongitude);
 
+    static double mercatorWidthInverse(double pixels, double pixelsPerLon);
+
     static double mercatorHeight(double topLatitude,
                                  double bottomLatitude,
                                  double pixelsPerLongitude);
