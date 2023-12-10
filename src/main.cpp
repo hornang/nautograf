@@ -3,6 +3,10 @@
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 
+#ifdef USE_XDG_FILE_DIALOG
+#include <xdg-file-dialog/xdg-file-dialog.h>
+#endif
+
 #include "chartmodel.h"
 #include "licenses.h"
 #include "maptile.h"
@@ -93,6 +97,15 @@ int main(int argc, char *argv[])
     constexpr bool canReadEncryptedCatalog = false;
 #endif
     engine.rootContext()->setContextProperty("CanReadEncryptedCatalog", canReadEncryptedCatalog);
+
+#ifdef USE_XDG_FILE_DIALOG
+    qmlRegisterType<XdgFileDialog>("org.seatronomy.nautograf", 1, 0, "XdgFileDialog");
+    constexpr bool useXdgFileDialog = true;
+#else
+    constexpr bool useXdgFileDialog = false;
+#endif
+    engine.rootContext()->setContextProperty("UseXdgFileDialog", useXdgFileDialog);
+
     engine.load(QStringLiteral(QML_DIR) + "/main.qml");
 
     int result = application.exec();

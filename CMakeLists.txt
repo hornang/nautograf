@@ -47,7 +47,12 @@ find_program(RSVG-CONVERT
 
 find_package(UnixCommands)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(USE_XDG_FILE_DIALOG "Use xdg-file-dialog library when user selects chart catalog" OFF)
+endif()
+
 add_subdirectory(cutlines)
+add_subdirectory(external)
 add_subdirectory(oesenc)
 add_subdirectory(MercatorTile)
 add_subdirectory(src/tilefactory)
@@ -128,7 +133,7 @@ endif()
 
 target_include_directories(nautograf PRIVATE src)
 
-target_link_libraries(nautograf
+target_link_libraries(nautograf PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::QuickControls2
@@ -144,6 +149,17 @@ install(
     RUNTIME_DEPENDENCY_SET dependency_set
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 )
+
+if(${USE_XDG_FILE_DIALOG})
+    target_compile_definitions(nautograf PRIVATE USE_XDG_FILE_DIALOG)
+
+    target_link_libraries(nautograf PRIVATE xdg-file-dialog)
+
+    install(
+        TARGETS xdg-file-dialog
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
+    )
+endif()
 
 install(
     IMPORTED_RUNTIME_ARTIFACTS nautograf
