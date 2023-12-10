@@ -13,3 +13,6 @@
 [submodule "MercatorTile"]
 	path = MercatorTile
 	url = https://github.com/hornang/MercatorTile
+[submodule "external/xdg-file-dialog"]
+	path = external/xdg-file-dialog
+	url = git@github.com:hornang/xdg-file-dialog.git

@@ -3,7 +3,6 @@ import QtQuick.Window
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Controls.Universal
-import Qt.labs.platform
 import org.seatronomy.nautograf
 
 ApplicationWindow {
@@ -50,6 +49,10 @@ ApplicationWindow {
             viewer.centerOnCatalogExtentWhenLoaded = true;
             ChartModel.setUrl(folder);
         }
+
+        useXdgFileDialog: UseXdgFileDialog
+        folder: "file:///" + ChartModel.dir
+        parentWindow: root
     }
 
     function toggleFullscreen() {

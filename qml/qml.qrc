@@ -2,12 +2,14 @@
     <qresource prefix="/qml">
         <file>main.qml</file>
         <file>About.qml</file>
+        <file>FolderDialog.qml</file>
         <file>Viewer.qml</file>
         <file>ViewerMenu.qml</file>
         <file>ViewerMenuItem.qml</file>
         <file>ChartSelector.qml</file>
         <file>StatusBar.qml</file>
         <file>TileInfo.qml</file>
+        <file>XdgFileDialogWrapper.qml</file>
         <file>about.md</file>
         <file>graphics/title.svg</file>
     </qresource>
