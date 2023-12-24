@@ -152,6 +152,18 @@ Item {
                     mousePressLon = root.centerLon;
                     mouseStartPos = Qt.point(mouse.x, mouse.y);
                     mouse.accept = false;
+                }
+
+                onPositionChanged: function (mouse) {
+                    if (pressed) {
+                        root.centerLon = Mercator.offsetLon(mouseArea.mousePressLon,
+                                                            mouseArea.mouseStartPos.x - mouse.x,
+                                                            root.pixelsPerLon);
+
+                        root.centerLat = Mercator.offsetLat(mouseArea.mousePressLat,
+                                                            mouseArea.mouseStartPos.y - mouse.y,
+                                                            root.pixelsPerLon);
+                    }
 
                     const viewPortCenter = Qt.point(mapRoot.width / 2, mapRoot.height / 2);
 
@@ -164,29 +176,6 @@ Item {
                                                    root.pixelsPerLon);
 
                     root.newMousePos(lon, lat);
-
-                }
-
-                onPositionChanged: function (mouse) {
-                    if (pressed) {
-                        root.centerLon = Mercator.offsetLon(mouseArea.mousePressLon,
-                                                            mouseArea.mouseStartPos.x - mouse.x,
-                                                            root.pixelsPerLon);
-
-                        root.centerLat = Mercator.offsetLat(mouseArea.mousePressLat,
-                                                            mouseArea.mouseStartPos.y - mouse.y,
-                                                            root.pixelsPerLon);
-                    } else {
-                        const lon = Mercator.offsetLon(root.centerLon,
-                                                       mouseArea.mouseStartPos.x - mouse.x,
-                                                       root.pixelsPerLon);
-
-                        const lat = Mercator.offsetLat(root.centerLat,
-                                                       mouseArea.mouseStartPos.y - mouse.y,
-                                                       root.pixelsPerLon);
-
-                        root.newMousePos(lon, lat);
-                    }
                 }
 
                 onWheel: function (wheel) {
