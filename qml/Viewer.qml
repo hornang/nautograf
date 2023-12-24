@@ -50,12 +50,16 @@ Item {
         adjustZoom(pixelsPerLatitude, Qt.point(mapRoot.width / 2, mapRoot.height / 2), Qt.point(0, 0));
     }
 
+    function clampPixelsPerLon(pixelsPerLon) {
+        return Math.max(root.minPixelsPerLon, Math.min(root.maxPixelsPerLon, pixelsPerLon));
+    }
+
     function centerViewOnExtent(top, bottom, left, right)  {
         const pixelsPerLonToFitWidth = Mercator.pixelsPerLonInterval(left, right, mapRoot.width);
         const pixelsPerLonToFitHeight = Mercator.pixelsPerLatInterval(top, bottom, mapRoot.height);
         const pixelsPerLon = Math.min(pixelsPerLonToFitWidth, pixelsPerLonToFitHeight);
 
-        root.pixelsPerLon = Math.max(root.minPixelsPerLon, Math.min(root.maxPixelsPerLon, pixelsPerLon));
+        root.pixelsPerLon = clampPixelsPerLon(pixelsPerLon);
         root.centerLat = (top + bottom) / 2;
         root.centerLon = (left + right) / 2;
     }
@@ -349,9 +353,7 @@ Item {
     function adjustZoom(newPixelsPerLongitude, zoomOrigin, offset) {
         const viewPortCenter = Qt.point(mapRoot.width / 2, mapRoot.height / 2);
 
-        newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude,
-                                                  root.minPixelsPerLon),
-                                         root.maxPixelsPerLon);
+        newPixelsPerLongitude = clampPixelsPerLon(newPixelsPerLongitude);
 
         const lockedLon = Mercator.offsetLon(root.centerLon,
                                              zoomOrigin.x - viewPortCenter.x,
