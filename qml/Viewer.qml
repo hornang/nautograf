@@ -349,6 +349,10 @@ Item {
     function adjustZoom(newPixelsPerLongitude, zoomOrigin, offset) {
         const viewPortCenter = Qt.point(mapRoot.width / 2, mapRoot.height / 2);
 
+        newPixelsPerLongitude = Math.min(Math.max(newPixelsPerLongitude,
+                                                  root.minPixelsPerLon),
+                                         root.maxPixelsPerLon);
+
         const lockedLon = Mercator.offsetLon(root.centerLon,
                                              zoomOrigin.x - viewPortCenter.x,
                                              root.pixelsPerLon);
