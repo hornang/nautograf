@@ -24,6 +24,30 @@
 #define QML_DIR "qrc:/qml"
 #endif
 
+#if defined(USE_OEXSERVERD) && defined(Q_OS_WIN)
+void addDirToPath(const QString &dir)
+{
+    const char *pathVariable = "PATH";
+    QByteArray path = qgetenv(pathVariable);
+    path += QByteArray(";") + dir.toLocal8Bit();
+    qputenv(pathVariable, path);
+}
+
+void addOexserverdToPath()
+{
+    const auto appDataFolder = QStandardPaths::locate(QStandardPaths::HomeLocation,
+                                                      "AppData",
+                                                      QStandardPaths::LocateDirectory);
+    if (appDataFolder.isEmpty()) {
+        qWarning() << "Unable to find AppData folder";
+        return;
+    }
+
+    const auto oexserverdDir = QDir(appDataFolder).filePath("Local/opencpn/plugins");
+    addDirToPath(oexserverdDir);
+}
+#endif
+
 int main(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
@@ -35,6 +59,13 @@ int main(int argc, char *argv[])
 
     std::shared_ptr<TileFactory> tileFactory = std::make_shared<TileFactory>();
     MapTileModel mapTileModel(tileFactory);
+
+#if defined(USE_OEXSERVERD) && defined(Q_OS_WIN)
+    // oexserverd.exe must be in PATH for oesenc::ServerControl to find it.
+    // See ChartModel:m_oesencServerControl
+    addOexserverdToPath();
+#endif
+
     ChartModel chartModel(tileFactory);
 
     tileFactory->setUpdateCallback([&]() {
