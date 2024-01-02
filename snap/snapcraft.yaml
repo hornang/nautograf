@@ -53,6 +53,7 @@ parts:
       - -DCMAKE_TOOLCHAIN_FILE=${CRAFT_PART_SRC}/vcpkg/scripts/buildsystems/vcpkg.cmake
       - -DBUILD_TESTING=off
       - -DUSE_XDG_FILE_DIALOG=on
+      - -DUSE_OEXSERVERD=off
       - -DCMAKE_INSTALL_PREFIX=/usr
     build-packages:
       # curl, zip, unzip and tar is needed by vcpkg:
