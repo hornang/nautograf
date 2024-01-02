@@ -43,6 +43,8 @@ ChartModel::ChartModel(std::shared_ptr<TileFactory> tileFactory)
 
 #ifdef USE_OEXSERVERD
     enableOesencServerControl();
+#else
+    setWaitingForServerFalse();
 #endif
 
     QSettings settings(orgName, appName);
