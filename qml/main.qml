@@ -42,9 +42,33 @@ ApplicationWindow {
         UserSettings.geometry = Qt.rect(x, y, width, height);
     }
 
+    Dialog {
+        id: folderDialogErrorDialog
+
+        title: qsTr("Failed to open folder dialog")
+        anchors.centerIn: parent
+        width: 600
+
+        modal: true
+        standardButtons: Dialog.Close
+
+        Label {
+            id: errorMessageLabel
+
+            anchors.fill: parent
+            wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+        }
+    }
+
     FolderDialog {
         id: folderDialog
         title: "Please choose a chart directory"
+
+        onError: function(message) {
+            errorMessageLabel.text = message;
+            folderDialogErrorDialog.open();
+        }
+
         onAccepted: function () {
             viewer.centerOnCatalogExtentWhenLoaded = true;
             ChartModel.setUrl(folder);
