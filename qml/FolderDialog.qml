@@ -11,11 +11,13 @@ Item {
     property string folder
 
     signal accepted
+    signal error(var message)
 
     visible: false
 
     Connections {
         target: loader.item
+        ignoreUnknownSignals: true
 
         function onAccepted() {
             root.folder = loader.item.folder;
@@ -24,6 +26,10 @@ Item {
 
         function onVisibleChanged() {
             root.visible = loader.item.visible;
+        }
+
+        function onErrorOccurred() {
+            root.error("Please ensure that xdg-desktop-portal-gnome or other portal implementation is installed.");
         }
     }
 
