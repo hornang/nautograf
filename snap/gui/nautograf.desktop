@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Nautograf
+Comment=Tile-based nautical chart viewer
+Exec=nautograf
+Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/nautograf.svg
