@@ -116,6 +116,17 @@ if(ICON_GENERATED)
         BASE ${CMAKE_BINARY_DIR}
         FILES ${CMAKE_BINARY_DIR}/icon.ico
     )
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        install(
+            FILES
+                ${CMAKE_CURRENT_SOURCE_DIR}/logo.svg
+            DESTINATION
+                "share/icons/hicolor/scalable/apps/"
+            RENAME
+                ${CMAKE_PROJECT_NAME}.svg
+        )
+    endif()
 endif()
 
 option(USE_OEXSERVERD "Use oexserverd to decrypt chart catalogs" ON)
