@@ -254,11 +254,11 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
             if (overlayNodesParent->childCount() > 0) {
                 Q_ASSERT(overlayNodesParent->childCount() == 1);
                 polygonNode = static_cast<PolygonNode *>(overlayNodesParent->firstChild());
-                polygonNode->updateVertices(m_tessellators[m_focusedTile]->overlayVertices(m_overlayColor));
+                polygonNode->updateVertices(m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
             } else {
                 PolygonNode *polygonNode = new PolygonNode(m_focusedTile,
                                                            rootNode->blendColorMaterial(),
-                                                           m_tessellators[m_focusedTile]->overlayVertices(m_overlayColor));
+                                                           m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
                 overlayNodesParent->appendChildNode(polygonNode);
             }
         } else {

@@ -41,7 +41,7 @@ public:
     QString id() const { return m_id; }
     void setId(const QString &tileId);
     static int pixelsPerLon();
-    QList<PolygonNode::Vertex> overlayVertices(const QColor &color) const;
+    QList<PolygonNode::Vertex> createTileVertices(const QColor &color) const;
 
 public slots:
     void finished();
