@@ -77,6 +77,7 @@ if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
         ${CMAKE_BINARY_DIR}/icon.rc
     )
 
+    set(ICON_GENERATED TRUE)
     set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_BINARY_DIR}/icon.rc")
 
     add_custom_command(
@@ -109,7 +110,7 @@ add_executable(nautograf WIN32
     ${APP_ICON_RESOURCE_WINDOWS}
 )
 
-if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
+if(ICON_GENERATED)
     qt_add_resources(nautograf "icon"
         PREFIX "/"
         BASE ${CMAKE_BINARY_DIR}
@@ -200,7 +201,7 @@ if(WIN32)
 
     # Replace this if statement with a more explicit relation between the variable
     # beeing checked and the existence of the PNG files.
-    if(NOT ${APP_ICON_RESOURCE_WINDOWS} STREQUAL "")
+    if(ICON_GENERATED)
         install(
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/logo_44.png
