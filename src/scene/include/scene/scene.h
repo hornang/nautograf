@@ -84,7 +84,6 @@ private:
     void fetchAll();
 
     QHash<QString, std::shared_ptr<Tessellator>> m_tessellators;
-    QSet<QString> m_newTessellators;
     QSet<QString> m_tessellatorsWithPendingData;
     std::shared_ptr<SymbolImage> m_symbolImage;
     std::shared_ptr<FontImage> m_fontImage;
