@@ -22,6 +22,8 @@ static const QColor pontoonColor = builtUpAreaColor.darker(120);
 static const QColor pontoonBorderColor = pontoonColor.darker(150);
 static const QColor roadColor = landAreaColor.darker(120);
 static const QColor roadColorBorder = roadColor.darker(150);
+static const QColor tilePlaceholderOutlineColor = QColor(224, 224, 224);
+static const QColor tilePlaceholderFillColor = QColor(240, 240, 240);
 
 // Arbitrary chosen conversion factor to transform lat/lon to an internal mercator
 // projection that can be linearly transformed in scene graph/vertex shader.
@@ -1111,6 +1113,7 @@ Tessellator::Tessellator(TileFactoryWrapper *tileFactory,
     , m_recipe(recipe)
 {
     connect(&m_watcher, &QFutureWatcher<TileData>::finished, this, &Tessellator::finished);
+    m_data.geometryLayers.append(createLoadingIndicatorLayer());
 }
 
 void Tessellator::setId(const QString &id)
@@ -1198,4 +1201,23 @@ QList<PolygonNode::Vertex> Tessellator::createTileVertices(const QColor &color) 
         vertexCount++;
     }
     return vertices;
+}
+
+GeometryLayer Tessellator::createLoadingIndicatorLayer() const
+{
+    GeometryLayer geometryLayer;
+    geometryLayer.polygonVertices = createTileVertices(tilePlaceholderFillColor);
+
+    const GeoRect &boundingBox = m_recipe.rect;
+
+    QList<QPointF> linePoints = {
+        posToMercator(boundingBox.topLeft()),
+        posToMercator(boundingBox.bottomLeft()),
+        posToMercator(boundingBox.bottomRight()),
+        posToMercator(boundingBox.topRight()),
+        posToMercator(boundingBox.topLeft())
+    };
+
+    geometryLayer.lineVertices = tessellateLine(linePoints, tilePlaceholderOutlineColor);
+    return geometryLayer;
 }

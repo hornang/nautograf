@@ -50,6 +50,7 @@ signals:
     void dataChanged(const QString &id);
 
 private:
+    GeometryLayer createLoadingIndicatorLayer() const;
     QFuture<TileData> m_result;
     QFutureWatcher<TileData> m_watcher;
     QString m_id;

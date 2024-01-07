@@ -248,7 +248,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         m_tessellatorsWithPendingData.clear();
     }
 
-    if (m_focusedTileChanged || m_tessellatorRemoved || m_newTessellators.contains(m_focusedTile)) {
+    if (m_focusedTileChanged || m_tessellatorRemoved) {
         if (m_tessellators.contains(m_focusedTile)) {
             PolygonNode *polygonNode = nullptr;
             if (overlayNodesParent->childCount() > 0) {
@@ -273,7 +273,6 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 
     m_focusedTileChanged = false;
     m_tessellatorRemoved = false;
-    m_newTessellators.clear();
 
     if (m_zoom != zoom) {
         materials.symbol->setScale(zoom);
@@ -404,7 +403,8 @@ void Scene::addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first,
             connect(tessellator.get(), &Tessellator::dataChanged, this, &Scene::tessellatorDone);
             tessellator->setId(tileId);
             m_tessellators.insert(tileId, tessellator);
-            m_newTessellators.insert(tileId);
+            m_tessellatorsWithPendingData.insert(tileId);
+            update();
             tessellator->fetchAgain();
         } else {
             qWarning() << "Failed to parse tile ref";
@@ -492,10 +492,10 @@ std::optional<TileFactoryWrapper::TileRecipe> Scene::parseTileRef(const QVariant
 
 void Scene::tessellatorDone(const QString &tileId)
 {
-    if (m_tessellatorsWithPendingData.contains(tileId)) {
-        return;
+    if (!m_tessellatorsWithPendingData.contains(tileId)) {
+        m_tessellatorsWithPendingData.insert(tileId);
     }
-    m_tessellatorsWithPendingData.insert(tileId);
+
     update();
 }
 
