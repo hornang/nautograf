@@ -105,4 +105,5 @@ private:
     bool m_tessellatorRemoved = false;
     float m_zoom = 1.0;
     QColor m_accentColor;
+    QColor m_overlayColor;
 };

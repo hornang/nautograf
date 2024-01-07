@@ -13,6 +13,10 @@
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
 
+namespace {
+constexpr float overlayColorOpacity = 50.f / 255.f;
+}
+
 #ifndef SYMBOLS_DIR
 #error SYMBOLS_DIR must be defined
 #endif
@@ -250,11 +254,11 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
             if (overlayNodesParent->childCount() > 0) {
                 Q_ASSERT(overlayNodesParent->childCount() == 1);
                 polygonNode = static_cast<PolygonNode *>(overlayNodesParent->firstChild());
-                polygonNode->updateVertices(m_tessellators[m_focusedTile]->overlayVertices(m_accentColor));
+                polygonNode->updateVertices(m_tessellators[m_focusedTile]->overlayVertices(m_overlayColor));
             } else {
                 PolygonNode *polygonNode = new PolygonNode(m_focusedTile,
                                                            rootNode->blendColorMaterial(),
-                                                           m_tessellators[m_focusedTile]->overlayVertices(m_accentColor));
+                                                           m_tessellators[m_focusedTile]->overlayVertices(m_overlayColor));
                 overlayNodesParent->appendChildNode(polygonNode);
             }
         } else {
@@ -530,4 +534,7 @@ void Scene::setAccentColor(const QColor &newAccentColor)
         return;
     m_accentColor = newAccentColor;
     emit accentColorChanged();
+
+    m_overlayColor = m_accentColor;
+    m_overlayColor.setAlphaF(overlayColorOpacity);
 }

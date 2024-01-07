@@ -1194,7 +1194,7 @@ QList<PolygonNode::Vertex> Tessellator::overlayVertices(const QColor &color) con
                                   static_cast<uchar>(color.red()),
                                   static_cast<uchar>(color.green()),
                                   static_cast<uchar>(color.blue()),
-                                  50 };
+                                  static_cast<uchar>(color.alpha()) };
         vertexCount++;
     }
     return vertices;
