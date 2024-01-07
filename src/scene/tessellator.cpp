@@ -274,9 +274,9 @@ QList<LineNode::Vertex> drawLines(const typename capnp::List<T>::Reader &areas,
     line is partly inside the polygon. The result is that polygons crossing tiles
     will have a small section without stroked edges.
 
-    The best way to solve this without introducing graphical tile clipping would be
-    to stack graphical items in terms on the chart stacking and not into tiles that
-    are then stacked.
+    The best way to solve this without introducing graphical tile clipping would
+    be to stack graphical items in the same order as their source chart and not
+    group them into tiles first which are then stacked.
 */
 template <typename T>
 QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &areas,
