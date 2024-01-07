@@ -135,8 +135,8 @@ struct Symbol
     CollisionRule collisionRule;
 };
 
-QList<LineNode::Vertex> calcLine(const QList<QPointF> &points,
-                                 const QColor &color)
+QList<LineNode::Vertex> tessellateLine(const QList<QPointF> &points,
+                                       const QColor &color)
 {
     Q_ASSERT(points.size() > 1);
     QList<LineNode::Vertex> output;
@@ -244,7 +244,7 @@ QList<LineNode::Vertex> drawLines(const typename capnp::List<T>::Reader &areas,
                 points.append(posToMercator(position.getLatitude(), position.getLongitude()));
             }
 
-            vertices.append(calcLine(points, color));
+            vertices.append(tessellateLine(points, color));
         }
     }
 
@@ -327,7 +327,7 @@ QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &ar
                 for (const cutlines::Point &point : line) {
                     points.append(posToMercator(point[1], point[0]));
                 }
-                vertices.append(calcLine(points, color));
+                vertices.append(tessellateLine(points, color));
             }
         }
     }
