@@ -1173,7 +1173,7 @@ void Tessellator::setRemoved()
     m_removed = true;
 }
 
-QList<PolygonNode::Vertex> Tessellator::overlayVertices(const QColor &color) const
+QList<PolygonNode::Vertex> Tessellator::createTileVertices(const QColor &color) const
 {
     QList<QPointF> points;
     points << posToMercator(m_recipe.rect.topLeft());
