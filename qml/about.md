@@ -8,4 +8,4 @@ Please open the "Licenses" tab to review the licenses of the other dependent sof
 
 For more information, see the [GitHub repository for the project](https://github.com/hornang/nautograf).
 
-Copyright 2023 Stig Hornang
+Copyright 2024 Stig Hornang
