@@ -6,6 +6,15 @@ Nautograf is a viewer for marine vector charts. It is inspired by [OpenCPN](http
 
 Because getting chart data is not free for many geographic areas, Nautograf only supports oesu charts from [o-charts.org](https://www.o-charts.org). This format primarily adds some bells and whistles on top of the S-57 data model to support the OpenCPN and o-charts.org infrastructure.
 
+## Installing
+
+Releases are available from The Microsoft Store and the Snap Store:
+
+[<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="165"/>](https://apps.microsoft.com/detail/Nautograf/9NP97HF6LW08)
+[![Get it from the snap store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/nautograf)
+
+The version in the Snap Store only supports unencrypted charts. Binaries are also available as artifacts in the releases page at GitHub.
+
 ## Development status
 
 ![Windows](https://github.com/hornang/nautograf/actions/workflows/ci.yml/badge.svg)
@@ -14,9 +23,7 @@ Nautograf is a spare time project so progress is varying and non-deterministic. 
 
 Nonetheless, the current implementation can display the most prominent S-57 features such as land areas, depth areas and depth numbers. Chart navigation works by using conventional _zoom to cursor_ or pinch zoom on touch capable devices.
 
-If you are running Windows you can fetch the latest release in the [Microsoft Store](https://apps.microsoft.com/store/detail/nautograf/9NP97HF6LW08). But note that the release is usually much older than the code in the `main` branch.
-
-Nautograf only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. The decryption mechanism is only implemented in the Windows version of Nautograf. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
+Nautograf only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
 
 ## Windows build instructions
 
