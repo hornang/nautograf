@@ -25,22 +25,6 @@ Nonetheless, the current implementation can display the most prominent S-57 feat
 
 Nautograf only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
 
-## Windows build instructions
-
-To build Nautograf you will need CMake, Visual Studio 2019, Qt and vcpkg. If you are familiar with QtCreator that is the easiest way to get it built and debug any problems. You can also have a look on how it [builds with Github Actions](.github/workflows/windows.yaml).
-
-A basic recipe for manual build in a cmd window follows here: (adjust paths as neccessary):
-
-* Make Visual Studio compiler available. This should also make `cmake` available.
-  * `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"`.
-* Run cmake configure with with the preset `ninja-multi-vcpkg` from `CMakePresets.json`.
-  * `cmake --preset ninja-multi-vcpkg`
-* Build it: `cmake --build --preset win-release`.
-* Enter the build folder: `cd builds\ninja-multi-vcpkg\RelWithDebInfo`
-* Use the `windeployqt` to bring in the required Qt DLLs and resources into the build folder: 
-  * `C:\Qt\6.2.0\msvc2019_64\bin\windeployqt.exe -qmldir ..\..\..\qml nautograf.exe`
-* Run it: `nautograf.exe`
-
 ## Design
 
 Most online map viewers are based on [tiled web maps](https://en.wikipedia.org/wiki/Tiled_web_map). Tiling is an important feature to support smooth zooming and panning for the user. Online map viewers usually renders tiles that are already generated and hosted from a server. Nautograf is also tile based, but has to create those tiles internally because the chart data is provided by the user.
