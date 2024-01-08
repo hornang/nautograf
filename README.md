@@ -43,7 +43,7 @@ At the start of the project the tiles were rendered on the CPU using [QPainter](
 
 ## Background
 
-Electronic nautical charts have historically not been given much attention to by open source or web technology. Nautical navigation is indeed a niche for the average consumer that mostly navigates cities and roads. As a result nautical chart technology is lagging years behind well-known services like Google Maps and OpenStreetMaps.
+Electronic nautical charts have historically not been given much attention to by open source or web technology. Nautical navigation is indeed a niche for the average consumer that mostly navigates cities and roads. As a result nautical chart technology is lagging years behind well-known services such as Google Maps and OpenStreetMap.
 
 Access to free nautical chart data is also still quite limited and depends on authorities' willingness to provide map data to the public. The lack of free public nautical data creates a burden for non-profit research and innovation at sea.
 
