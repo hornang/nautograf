@@ -46,7 +46,7 @@ parts:
   nautograf:
     override-pull: |
       craftctl default
-      craftctl set version=$(git describe --tags)
+      craftctl set version=$(git describe --tags | sed 's/^v\?\(.*\)$/\1/')
     source: .
     plugin: cmake
     cmake-parameters:
