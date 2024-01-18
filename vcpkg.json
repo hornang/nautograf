@@ -2,5 +2,11 @@
     "name": "nautograf",
     "version": "0.1.0",
     "builtin-baseline": "a1703aa3e8b3fccd8c98ab9685444c2a3f007aab",
-    "dependencies": ["capnproto", "tinyxml2", "freetype-gl", "earcut-hpp", "boost-geometry", "clipper2"]
+    "dependencies": ["capnproto", "tinyxml2", "earcut-hpp", "boost-geometry", "clipper2",
+    {
+        "name": "freetype",
+        "default-features": false,
+        "features": ["zlib"]
+    },
+    "libpng"]
 }

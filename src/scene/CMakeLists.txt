@@ -3,22 +3,6 @@ find_package(Qt6
     REQUIRED
 )
 
-# find_package for freetype shouldn't be necessary, but it suddenly became
-# required on the ubuntu-20.04 runner on GitHub Actions. Without it the
-# find_package for freetype-gl failed because it couldn't find zlib::zlib.
-#
-# The problem started ocurring after GitHub's 20231204 Image Update:
-# https://github.com/actions/runner-images/pull/8965 which means it could be
-# related.
-#
-# freetype-gl should be replaced with https://github.com/Chlumsky/msdf-atlas-gen
-# because of several reasons. So I didn't spend more time investing the
-# root cause.
-find_package(freetype CONFIG REQUIRED)
-
-find_package(freetype-gl CONFIG REQUIRED)
-install_license(FILE ${freetype-gl_DIR}/copyright)
-
 if(NOT DEFINED SYMBOLS_DIR)
     message(FATAL_ERROR "SYMBOLS_DIR not defined")
 endif()
@@ -97,11 +81,11 @@ target_include_directories(scene
 target_link_libraries(scene PUBLIC
     Qt6::Core
     Qt6::Quick
+    msdf-atlas-gen
 )
 
 target_link_libraries(scene PRIVATE
     Qt6::Concurrent
-    freetype-gl
     msdfgen-core
     msdfgen-ext
     tilefactory

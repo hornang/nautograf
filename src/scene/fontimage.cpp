@@ -1,6 +1,3 @@
-#include <freetype-gl/freetype-gl.h>
-#include <freetype-gl/texture-font.h>
-
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -10,21 +7,30 @@
 #include <QRectF>
 #include <QSGTexture>
 #include <QStandardPaths>
+#include <QString>
 
 #include "scene/fontimage.h"
 
-constexpr float basePointSize = 20;
+using namespace msdf_atlas;
 
 FontImage::FontImage()
 {
-    const QList<FontType> fontsToLoad = { FontType::Normal,
-                                          FontType::Soundings };
+    msdfgen::FreetypeHandle *freetype = msdfgen::initializeFreetype();
 
-    constexpr int atlasWidth = 512;
-    constexpr int atlasHeight = 512;
-    m_textureAtlas = texture_atlas_new(atlasWidth, atlasHeight, 1);
+    if (freetype == nullptr) {
+        qWarning() << "Unable to initialize freetype";
+        return;
+    }
+
+    const QList<FontType> fontsToLoad = { FontType::Normal, FontType::Soundings };
 
     const QString glyphsToRender(R"(ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅabcdefghijklmnopqrstuvwxyz1234567890æøå.,-? )");
+
+    Charset charset;
+
+    for (const QChar &c : glyphsToRender) {
+        charset.add(c.unicode());
+    }
 
     for (const auto &fontType : fontsToLoad) {
         const auto fontFile = locateFontFile(fontType);
@@ -34,32 +40,41 @@ FontImage::FontImage()
             continue;
         }
 
-        qInfo() << "Found font file: " << fontFile;
+        msdfgen::FontHandle *font = msdfgen::loadFont(freetype, fontFile.toLocal8Bit().data());
 
-        auto textureFont = texture_font_new_from_file(m_textureAtlas,
-                                                      basePointSize,
-                                                      fontFile.toUtf8().data());
-
-        if (!textureFont) {
-            qWarning() << "Failed to create texture font";
+        if (font == nullptr) {
+            qWarning() << "Failed to load font";
             continue;
         }
 
-        textureFont->rendermode = RENDER_SIGNED_DISTANCE_FIELD;
-        textureFont->padding = 2;
-        QHash<QChar, struct texture_glyph_t *> glyphs;
+        qInfo() << "Found font file: " << fontFile;
 
-        for (const QChar &c : glyphsToRender) {
-            QString s = c;
-            // I guess this functions reads as many bytes it needs to get a valid UTF-8 char
-            glyphs[c] = texture_font_get_glyph(textureFont, s.toUtf8().data());
-        }
+        FontGeometry fontGeometry(&m_glyphStorage);
+        fontGeometry.loadCharset(font, 1.0, charset);
+        msdfgen::destroyFont(font);
 
-        m_glyphs[fontType] = { fontType, textureFont, glyphs };
+        m_glyphs[fontType] = std::move(fontGeometry);
     }
 
-    QImage image(m_textureAtlas->data, atlasWidth, atlasHeight, QImage::Format_Grayscale8);
-    m_image = image;
+    msdfgen::deinitializeFreetype(freetype);
+
+    TightAtlasPacker packer;
+    packer.setDimensionsConstraint(TightAtlasPacker::DimensionsConstraint::SQUARE);
+    packer.setMinimumScale(24);
+    packer.setPixelRange(8.0);
+    packer.setMiterLimit(8.0);
+    int width = 0;
+    int height = 0;
+
+    packer.pack(m_glyphStorage.data(), m_glyphStorage.size());
+    packer.getDimensions(width, height);
+    ImmediateAtlasGenerator<float, 1, sdfGenerator, BitmapAtlasStorage<byte, 1>> generator(width, height);
+    generator.generate(m_glyphStorage.data(), m_glyphStorage.size());
+    msdfgen::BitmapConstRef<byte, 1> atlas = generator.atlasStorage();
+    QImage image(atlas.pixels, atlas.width, atlas.height, atlas.width * 1, QImage::Format_Grayscale8);
+
+    // msdf-atlas-gen defines y-axis up. We'll flip it here to make it easier to debug
+    m_image = image.mirrored(false, true);
 }
 
 QRectF FontImage::boundingBox(const QString &text, float pointSize, FontType type) const
@@ -83,34 +98,51 @@ QList<FontImage::Glyph> FontImage::glyphs(const QString &text,
                                           float pointSize,
                                           FontType type) const
 {
+    float left = 0;
+    QList<FontImage::Glyph> glyphs;
+
     if (!m_glyphs.contains(type)) {
         return {};
     }
 
-    float advance = 0;
-    QString prevChar = 0;
-    const float ratio = pointSize / basePointSize;
-    QList<FontImage::Glyph> glyphs;
+    const FontGeometry &fontGeometry = m_glyphs[type];
 
-    for (int i = 0; i < text.length(); i++) {
-        texture_glyph_t *glyph = m_glyphs[type].glyphs[text.at(i)];
+    for (QString::const_iterator it = text.cbegin(); it != text.cend(); ++it) {
+        const GlyphGeometry *glyph = fontGeometry.getGlyph(it->unicode());
 
         if (!glyph) {
             continue;
         }
 
-        QPointF topLeft(advance + glyph->offset_x * ratio, -glyph->offset_y * ratio);
-        QPointF bottomRight = topLeft + QPointF(glyph->width * ratio, glyph->height * ratio);
-        QRectF texture(QPointF(glyph->s0, glyph->t0), QPointF(glyph->s1, glyph->t1));
+        const GlyphBox glyphBox = static_cast<GlyphBox>(*glyph);
+
+        QPointF topLeft(left + glyphBox.bounds.l * pointSize, -glyphBox.bounds.t * pointSize);
+        QPointF bottomRight = QPointF(left + glyphBox.bounds.r * pointSize, -glyphBox.bounds.b * pointSize);
+        QRectF textureCoords(static_cast<float>(glyphBox.rect.x) / m_image.width(),
+                             1 - static_cast<float>(glyphBox.rect.y + glyphBox.rect.h) / m_image.height(),
+                             static_cast<float>(glyphBox.rect.w) / m_image.width(),
+                             static_cast<float>(glyphBox.rect.h) / m_image.height());
 
         Glyph outputGlyph {
-            texture,
+            textureCoords,
             QRectF(topLeft, bottomRight)
         };
 
         glyphs.append(outputGlyph);
-        advance += (glyph->advance_x + texture_glyph_get_kerning(glyph, prevChar.toUtf8().data())) * ratio;
-        prevChar = text.at(i);
+
+        msdfgen::GlyphIndex nextGlyphIndex;
+        QString::const_iterator nextIt = it + 1;
+        if (nextIt != text.cend()) {
+            const GlyphGeometry *nextGlyphGeometry = fontGeometry.getGlyph(nextIt->unicode());
+            if (nextGlyphGeometry) {
+                nextGlyphIndex = nextGlyphGeometry->getGlyphIndex();
+            }
+        }
+
+        double advance = 0;
+        if (fontGeometry.getAdvance(advance, glyph->getGlyphIndex(), nextGlyphIndex)) {
+            left += advance * pointSize;
+        }
     }
 
     return glyphs;
@@ -148,15 +180,4 @@ QString FontImage::locateFontFile(FontType type)
     }
 
     return dir.filePath(fonts.first());
-}
-
-FontImage::~FontImage()
-{
-    for (const FontGlyphs &fontGlyphs : qAsConst(m_glyphs)) {
-        texture_font_delete(fontGlyphs.textureFont);
-    }
-
-    if (m_textureAtlas) {
-        texture_atlas_delete(m_textureAtlas);
-    }
 }

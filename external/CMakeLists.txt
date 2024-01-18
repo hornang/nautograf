@@ -9,3 +9,12 @@ set(MSDFGEN_DYNAMIC_RUNTIME ON)
 
 add_subdirectory(msdfgen)
 install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdfgen/LICENSE.txt)
+
+set(MSDF_ATLAS_MSDFGEN_EXTERNAL ON)
+set(MSDF_ATLAS_NO_ARTERY_FONT ON)
+set(MSDF_ATLAS_INSTALL ON)
+set(MSDF_ATLAS_BUILD_STANDALONE OFF)
+set(MSDF_ATLAS_DYNAMIC_RUNTIME ON)
+
+add_subdirectory(msdf-atlas-gen)
+install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdf-atlas-gen/LICENSE.txt)

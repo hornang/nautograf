@@ -15,8 +15,8 @@ layout(binding = 1) uniform sampler2D ourTexture;
 layout(location = 0) out vec4 fragColor;
 
 const float smoothing = 2.0 / 16.0;
-const float borderSmoothing = 7.0 / 16.0;
-const float outlineWidth = 6.0 / 16.0;
+const float borderSmoothing = 3.0 / 16.0;
+const float outlineWidth = 4.0 / 16.0;
 const float edgeCenter = 0.5;
 const float outerEdgeCenter = edgeCenter - outlineWidth;
 const vec4 u_outlineColor = vec4(1, 1, 1, 1);
