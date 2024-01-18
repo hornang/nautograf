@@ -26,17 +26,6 @@ find_package(Qt6
     CMAKE_FIND_ROOT_PATH_BOTH
 )
 
-function(AddMdfgen)
-    # Used for creating signed distance field for symbols. Only the traditional
-    # single channel mode is used.
-    set(BUILD_SHARED_LIBS OFF)
-    set(MSDFGEN_BUILD_STANDALONE false)
-    add_subdirectory(msdfgen)
-    install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdfgen/LICENSE.txt)
-endfunction()
-
-AddMdfgen()
-
 find_program(IMAGEMAGICK
     NAMES magick convert
 )
