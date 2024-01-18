@@ -5,7 +5,7 @@
 	path = oesenc
 	url = https://github.com/hornang/oesenc.git
 [submodule "msdfgen"]
-	path = msdfgen
+	path = external/msdfgen
 	url = https://github.com/hornang/msdfgen.git
 [submodule "cutlines"]
 	path = cutlines
