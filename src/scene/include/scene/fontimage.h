@@ -3,6 +3,8 @@
 #include <QHash>
 #include <QImage>
 
+#include <msdf-atlas-gen/msdf-atlas-gen.h>
+
 class QSGTexture;
 
 namespace ftgl {
@@ -15,7 +17,6 @@ class FontImage
 
 public:
     FontImage();
-    ~FontImage();
     FontImage(const FontImage &other) = delete;
 
     enum class FontType {
@@ -34,15 +35,8 @@ public:
     QRectF boundingBox(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
 
 private:
-    struct FontGlyphs
-    {
-        FontType type;
-        struct texture_font_t *textureFont;
-        QHash<QChar, struct texture_glyph_t *> glyphs;
-    };
-
     static QString locateFontFile(FontType type);
     QImage m_image;
-    QHash<FontType, FontGlyphs> m_glyphs;
-    struct texture_atlas_t *m_textureAtlas = nullptr;
+    std::vector<msdf_atlas::GlyphGeometry> m_glyphStorage;
+    QHash<FontType, msdf_atlas::FontGeometry> m_glyphs;
 };

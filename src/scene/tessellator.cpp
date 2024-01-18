@@ -2,9 +2,6 @@
 
 #include <limits>
 
-#include <freetype-gl/freetype-gl.h>
-#include <freetype-gl/texture-font.h>
-
 #include "cutlines/cutlines.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
