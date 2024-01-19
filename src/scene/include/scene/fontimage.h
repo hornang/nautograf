@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QImage>
 
 class QSGTexture;
@@ -28,7 +29,7 @@ public:
         QRectF target;
     };
 
-    QImage image() const { return m_image; }
+    const QImage &image() const { return m_image; }
     QList<Glyph> glyphs(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
     QRectF boundingBox(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
 

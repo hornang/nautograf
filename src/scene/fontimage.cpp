@@ -11,7 +11,7 @@
 #include <QSGTexture>
 #include <QStandardPaths>
 
-#include "fontimage.h"
+#include "scene/fontimage.h"
 
 constexpr float basePointSize = 20;
 

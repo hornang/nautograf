@@ -46,7 +46,8 @@ add_library(scene
     polygon/polygonshader.h
 
     fontimage.cpp
-    fontimage.h
+    include/scene/fontimage.h
+
     geometrynode.cpp
     geometrynode.h
     rootnode.cpp
@@ -93,13 +94,20 @@ target_include_directories(scene
         include
 )
 
-target_link_libraries(scene PRIVATE
+target_link_libraries(scene PUBLIC
     Qt6::Core
     Qt6::Quick
+)
+
+target_link_libraries(scene PRIVATE
     Qt6::Concurrent
+    freetype-gl
     msdfgen-core
     msdfgen-ext
-    freetype-gl
     tilefactory
     cutlines
 )
+
+if(BUILD_TESTING)
+    add_subdirectory(test)
+endif()

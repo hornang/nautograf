@@ -8,8 +8,8 @@
 #include <QtConcurrent>
 
 #include "annotation/annotationnode.h"
-#include "fontimage.h"
 #include "polygon/polygonnode.h"
+#include "scene/fontimage.h"
 #include "scene/tilefactorywrapper.h"
 #include "symbolimage.h"
 #include "tilefactory/chart.h"
