@@ -60,7 +60,8 @@ jobs:
           cd "${{ github.workspace }}/builds/ninja-release-vcpkg";
           PACKAGE_NAME=nautograf_$(cat version.txt)_$SYSTEM_NAME;
           echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT;
-          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME"
+          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME";
+          rm -r "$(pwd)/install/$PACKAGE_NAME/lib" "$(pwd)/install/$PACKAGE_NAME/include"
 
       - name: Deploy Qt libraries to install dir
         shell: bash
@@ -117,7 +118,8 @@ jobs:
           cd "${{ github.workspace }}/builds/ninja-release-vcpkg-static";
           PACKAGE_NAME=nautograf_$(cat version.txt)_$SYSTEM_NAME;
           echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT;
-          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME"
+          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME";
+          rm -r "$(pwd)/install/$PACKAGE_NAME/lib" "$(pwd)/install/$PACKAGE_NAME/include"
 
       - name: Upload package
         uses: actions/upload-artifact@v3
