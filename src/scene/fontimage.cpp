@@ -14,6 +14,21 @@ using namespace std;
 
 namespace {
 
+Charset createLatinCharset()
+{
+    Charset charset;
+
+    for (unicode_t codepoint = 0x0020; codepoint < 0x007f; codepoint++) {
+        charset.add(codepoint);
+    }
+
+    for (unicode_t codepoint = 0x00A0; codepoint < 0x00ff; codepoint++) {
+        charset.add(codepoint);
+    }
+
+    return charset;
+}
+
 string getFontName(FontImage::FontType type)
 {
     switch (type) {
@@ -61,13 +76,7 @@ bool generateAtlas(const string &pngFileName, const string &layoutFileName)
     vector<GlyphGeometry> glyphStorage;
     vector<FontGeometry> fontGeometries;
 
-    const QString glyphsToRender(R"(ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅabcdefghijklmnopqrstuvwxyz1234567890æøå.,-? )");
-
-    Charset charset;
-
-    for (const QChar &c : glyphsToRender) {
-        charset.add(c.unicode());
-    }
+    Charset charset = createLatinCharset();
 
     for (const auto &fontType : { FontImage::FontType::Normal,
                                   FontImage::FontType::Soundings }) {
