@@ -238,7 +238,12 @@ QList<msdf_atlas_read::GlyphMapping> FontImage::glyphs(const QString &text,
         const msdf_atlas_read::Glyph *glyph = fontGeometry.getGlyph(it->unicode());
 
         if (!glyph) {
-            continue;
+            QChar space(QChar::Space);
+            glyph = fontGeometry.getGlyph(space.unicode());
+
+            if (!glyph) {
+                continue;
+            }
         }
 
         if (glyph->hasMapping()) {
