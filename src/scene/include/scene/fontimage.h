@@ -1,9 +1,11 @@
 #pragma once
 
+#include <QDir>
 #include <QHash>
 #include <QImage>
 
 #include <msdf-atlas-gen/msdf-atlas-gen.h>
+#include <msdf-atlas-read.h>
 
 class QSGTexture;
 
@@ -20,23 +22,21 @@ public:
     FontImage(const FontImage &other) = delete;
 
     enum class FontType {
+        Unknown,
         Soundings,
         Normal,
     };
 
-    struct Glyph
-    {
-        QRectF texture;
-        QRectF target;
-    };
-
     const QImage &image() const { return m_image; }
-    QList<Glyph> glyphs(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
+    QList<msdf_atlas_read::GlyphMapping> glyphs(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
+    QSize atlasSize() const { return m_image.size(); }
     QRectF boundingBox(const QString &text, float pixelSize, FontType type = FontType::Soundings) const;
+    static QString locateFontFile(FontType type);
 
 private:
-    static QString locateFontFile(FontType type);
+    bool createCache(const QDir &dir);
+    bool loadCache(const QDir &dir);
     QImage m_image;
-    std::vector<msdf_atlas::GlyphGeometry> m_glyphStorage;
-    QHash<FontType, msdf_atlas::FontGeometry> m_glyphs;
+    msdf_atlas_read::AtlasProperties m_atlasProperties;
+    std::unordered_map<FontType, msdf_atlas_read::FontGeometry> m_fontGeometries;
 };

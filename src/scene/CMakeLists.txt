@@ -66,7 +66,10 @@ qt6_add_shaders(scene "shaders"
 include(GenerateExportHeader)
 generate_export_header(scene)
 
-target_compile_definitions(scene PRIVATE SYMBOLS_DIR="${SYMBOLS_DIR}")
+target_compile_definitions(scene PRIVATE
+    SYMBOLS_DIR="${SYMBOLS_DIR}"
+    APP_VERSION="${NAUTOGRAF_VERSION_DESCRIBE}"
+)
 
 set_target_properties(scene PROPERTIES AUTOMOC TRUE)
 
@@ -82,6 +85,7 @@ target_link_libraries(scene PUBLIC
     Qt6::Core
     Qt6::Quick
     msdf-atlas-gen
+    msdf-atlas-read
 )
 
 target_link_libraries(scene PRIVATE

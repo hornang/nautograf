@@ -8,5 +8,6 @@
         "default-features": false,
         "features": ["zlib"]
     },
-    "libpng"]
+    "libpng",
+    "nlohmann-json"]
 }
