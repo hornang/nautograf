@@ -448,6 +448,7 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
 {
     QList<AnnotationNode::Vertex> list;
     int glyphCounter = 0;
+    QSize imageSize = fontImage->atlasSize();
 
     for (const auto &label : labels) {
         if (!label.scaleLimit.has_value()) {
@@ -461,13 +462,13 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                                         label.font);
         const QColor &color = label.color;
 
-        for (const auto glyph : glyphs) {
+        for (const msdf_atlas_read::GlyphMapping mapping : glyphs) {
             const QPointF metricsOffset(0, -label.boundingBox.top());
-            QPointF glyphPos = glyph.target.topLeft();
+            QPointF glyphPos(mapping.targetBounds.left, mapping.targetBounds.top);
             glyphPos += label.offset + metricsOffset;
-            QRectF texture = glyph.texture;
-            const auto glyphWidth = static_cast<float>(glyph.target.width());
-            const auto glyphHeight = static_cast<float>(glyph.target.height());
+            msdf_atlas_read::Bounds texture = mapping.atlasBounds.getNormalized(imageSize.width(), imageSize.height());
+            const auto glyphWidth = static_cast<float>(mapping.targetBounds.getWidth());
+            const auto glyphHeight = static_cast<float>(mapping.targetBounds.getHeight());
             const auto &pos = label.pos;
 
             list.resize(list.size() + 6);
@@ -478,8 +479,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x()),
                         static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.top()),
+                        static_cast<float>(texture.getLeft()),
+                        static_cast<float>(texture.getTop()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
@@ -490,8 +491,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x() + glyphWidth),
                         static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.top()),
+                        static_cast<float>(texture.getRight()),
+                        static_cast<float>(texture.getTop()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
@@ -502,8 +503,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x()),
                         static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.bottom()),
+                        static_cast<float>(texture.getLeft()),
+                        static_cast<float>(texture.getBottom()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
@@ -514,8 +515,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x()),
                         static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.left()),
-                        static_cast<float>(texture.bottom()),
+                        static_cast<float>(texture.getLeft()),
+                        static_cast<float>(texture.getBottom()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
@@ -526,8 +527,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x() + glyphWidth),
                         static_cast<float>(glyphPos.y()),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.top()),
+                        static_cast<float>(texture.getRight()),
+                        static_cast<float>(texture.getTop()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
@@ -538,8 +539,8 @@ QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
                         static_cast<float>(pos.y()),
                         static_cast<float>(glyphPos.x() + glyphWidth),
                         static_cast<float>(glyphPos.y() + glyphHeight),
-                        static_cast<float>(texture.right()),
-                        static_cast<float>(texture.bottom()),
+                        static_cast<float>(texture.getRight()),
+                        static_cast<float>(texture.getBottom()),
                         static_cast<uchar>(color.red()),
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),

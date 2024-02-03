@@ -1,3 +1,5 @@
+#include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -12,17 +14,56 @@
 #include "scene/fontimage.h"
 
 using namespace msdf_atlas;
+using namespace std;
 
-FontImage::FontImage()
+namespace {
+
+string getFontName(FontImage::FontType type)
+{
+    switch (type) {
+    case FontImage::FontType::Normal:
+        return "normal";
+    case FontImage::FontType::Soundings:
+        return "soundings";
+    }
+    return {};
+}
+
+FontImage::FontType getFontType(const string &name)
+{
+    if (name == "normal") {
+        return FontImage::FontType::Normal;
+    } else if (name == "soundings") {
+        return FontImage::FontType::Soundings;
+    }
+    return FontImage::FontType::Unknown;
+}
+
+QString getCacheDir()
+{
+    QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+
+    if (cacheDir.isEmpty()) {
+        return {};
+    }
+
+    QByteArray hashOfAppVersion = QCryptographicHash::hash(QByteArray(APP_VERSION), QCryptographicHash::Md5);
+
+    return cacheDir
+        + QDir::separator() + "glyphs" + QDir::separator() + hashOfAppVersion.toHex() + QDir::separator();
+}
+
+bool generateAtlas(const string &pngFileName, const string &layoutFileName)
 {
     msdfgen::FreetypeHandle *freetype = msdfgen::initializeFreetype();
 
     if (freetype == nullptr) {
         qWarning() << "Unable to initialize freetype";
-        return;
+        return false;
     }
 
-    const QList<FontType> fontsToLoad = { FontType::Normal, FontType::Soundings };
+    vector<GlyphGeometry> glyphStorage;
+    vector<FontGeometry> fontGeometries;
 
     const QString glyphsToRender(R"(ABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅabcdefghijklmnopqrstuvwxyz1234567890æøå.,-? )");
 
@@ -32,8 +73,9 @@ FontImage::FontImage()
         charset.add(c.unicode());
     }
 
-    for (const auto &fontType : fontsToLoad) {
-        const auto fontFile = locateFontFile(fontType);
+    for (const auto &fontType : { FontImage::FontType::Normal,
+                                  FontImage::FontType::Soundings }) {
+        const auto fontFile = FontImage::locateFontFile(fontType);
 
         if (fontFile.isEmpty()) {
             qWarning() << "Unable to find a system font";
@@ -49,11 +91,12 @@ FontImage::FontImage()
 
         qInfo() << "Found font file: " << fontFile;
 
-        FontGeometry fontGeometry(&m_glyphStorage);
+        FontGeometry fontGeometry(&glyphStorage);
+        fontGeometry.setName(getFontName(fontType).data());
         fontGeometry.loadCharset(font, 1.0, charset);
         msdfgen::destroyFont(font);
 
-        m_glyphs[fontType] = std::move(fontGeometry);
+        fontGeometries.push_back(fontGeometry);
     }
 
     msdfgen::deinitializeFreetype(freetype);
@@ -66,15 +109,92 @@ FontImage::FontImage()
     int width = 0;
     int height = 0;
 
-    packer.pack(m_glyphStorage.data(), m_glyphStorage.size());
+    packer.pack(glyphStorage.data(), glyphStorage.size());
     packer.getDimensions(width, height);
-    ImmediateAtlasGenerator<float, 1, sdfGenerator, BitmapAtlasStorage<byte, 1>> generator(width, height);
-    generator.generate(m_glyphStorage.data(), m_glyphStorage.size());
-    msdfgen::BitmapConstRef<byte, 1> atlas = generator.atlasStorage();
-    QImage image(atlas.pixels, atlas.width, atlas.height, atlas.width * 1, QImage::Format_Grayscale8);
+    ImmediateAtlasGenerator<float, 1, sdfGenerator, BitmapAtlasStorage<msdfgen::byte, 1>> generator(width, height);
+    generator.generate(glyphStorage.data(), glyphStorage.size());
+    msdfgen::BitmapConstRef<msdfgen::byte, 1> atlas = generator.atlasStorage();
 
-    // msdf-atlas-gen defines y-axis up. We'll flip it here to make it easier to debug
-    m_image = image.mirrored(false, true);
+    if (!saveImage(static_cast<msdfgen::BitmapConstRef<msdfgen::byte, 1>>(atlas),
+                   ImageFormat::PNG,
+                   pngFileName.data(),
+                   YDirection::TOP_DOWN)) {
+        qWarning() << "Failed to save atlas image";
+        return false;
+    }
+
+    if (!exportJSON(fontGeometries.data(), fontGeometries.size(), 12, 8,
+                    atlas.width, atlas.height,
+                    ImageType::SDF, YDirection::TOP_DOWN, layoutFileName.data(), true)) {
+        qWarning() << "Failed to save atlas layout";
+        return false;
+    }
+
+    return true;
+}
+
+unordered_map<FontImage::FontType, msdf_atlas_read::FontGeometry> getGeometriesByFontType(const msdf_atlas_read::AtlasLayout &atlas)
+{
+    unordered_map<FontImage::FontType, msdf_atlas_read::FontGeometry> geometriesByType;
+
+    for (const msdf_atlas_read::FontGeometry &fontGeometry : atlas.fontGeometries) {
+        FontImage::FontType type = getFontType(fontGeometry.name);
+
+        if (type == FontImage::FontType::Unknown) {
+            continue;
+        }
+
+        geometriesByType[type] = fontGeometry;
+    }
+
+    return geometriesByType;
+}
+}
+
+FontImage::FontImage()
+{
+    QDir cacheDir = getCacheDir();
+
+    if (!loadCache(cacheDir)) {
+        if (createCache(cacheDir) && loadCache(cacheDir)) {
+            qWarning() << "Failed to generate font atlas. Cannot display text in map";
+        }
+    }
+}
+
+const char *glyphImageFileName = "glyphs.png";
+const char *glyphLayoutFileName = "layout.json";
+
+bool FontImage::createCache(const QDir &cacheDir)
+{
+    if (!cacheDir.mkpath(".")) {
+        return false;
+    }
+
+    return generateAtlas(cacheDir.filePath(glyphImageFileName).toStdString(),
+                         cacheDir.filePath(glyphLayoutFileName).toStdString());
+}
+
+bool FontImage::loadCache(const QDir &cacheDir)
+{
+    if (!cacheDir.exists()) {
+        return false;
+    }
+
+    try {
+        msdf_atlas_read::AtlasLayout atlas = msdf_atlas_read::loadJson(cacheDir.filePath(glyphLayoutFileName).toStdString());
+
+        m_fontGeometries = getGeometriesByFontType(atlas);
+
+        if (!m_image.load(cacheDir.filePath(glyphImageFileName))) {
+            return false;
+        }
+    } catch (std::exception &e) {
+        qWarning() << "Exception catched: " << e.what();
+        return false;
+    }
+
+    return true;
 }
 
 QRectF FontImage::boundingBox(const QString &text, float pointSize, FontType type) const
@@ -85,63 +205,57 @@ QRectF FontImage::boundingBox(const QString &text, float pointSize, FontType typ
 
     auto glyphs = FontImage::glyphs(text, pointSize, type);
 
-    for (const auto & glyph: glyphs) {
-        yMin = std::min<float>(glyph.target.top(), yMin);
-        yMax = std::max<float>(glyph.target.bottom(), yMax);
-        xMax = std::max<float>(glyph.target.right(), xMax);
+    for (const msdf_atlas_read::GlyphMapping &mapping : glyphs) {
+        yMin = min<float>(mapping.targetBounds.top, yMin);
+        yMax = max<float>(mapping.targetBounds.bottom, yMax);
+        xMax = max<float>(mapping.targetBounds.right, xMax);
     }
 
     return QRectF(0, yMin, xMax, yMax - yMin);
 }
 
-QList<FontImage::Glyph> FontImage::glyphs(const QString &text,
-                                          float pointSize,
-                                          FontType type) const
+QList<msdf_atlas_read::GlyphMapping> FontImage::glyphs(const QString &text,
+                                                       float pointSize,
+                                                       FontType type) const
 {
-    float left = 0;
-    QList<FontImage::Glyph> glyphs;
 
-    if (!m_glyphs.contains(type)) {
+    float left = 0;
+    QList<msdf_atlas_read::GlyphMapping> glyphs;
+
+    if (!m_fontGeometries.contains(type)) {
         return {};
     }
 
-    const FontGeometry &fontGeometry = m_glyphs[type];
+    const msdf_atlas_read::FontGeometry &fontGeometry = m_fontGeometries.at(type);
 
     for (QString::const_iterator it = text.cbegin(); it != text.cend(); ++it) {
-        const GlyphGeometry *glyph = fontGeometry.getGlyph(it->unicode());
+
+        const msdf_atlas_read::Glyph *glyph = fontGeometry.getGlyph(it->unicode());
 
         if (!glyph) {
             continue;
         }
 
-        const GlyphBox glyphBox = static_cast<GlyphBox>(*glyph);
+        if (glyph->hasMapping()) {
+            const msdf_atlas_read::GlyphMapping &glyphBox = glyph->getMapping();
 
-        QPointF topLeft(left + glyphBox.bounds.l * pointSize, -glyphBox.bounds.t * pointSize);
-        QPointF bottomRight = QPointF(left + glyphBox.bounds.r * pointSize, -glyphBox.bounds.b * pointSize);
-        QRectF textureCoords(static_cast<float>(glyphBox.rect.x) / m_image.width(),
-                             1 - static_cast<float>(glyphBox.rect.y + glyphBox.rect.h) / m_image.height(),
-                             static_cast<float>(glyphBox.rect.w) / m_image.width(),
-                             static_cast<float>(glyphBox.rect.h) / m_image.height());
-
-        Glyph outputGlyph {
-            textureCoords,
-            QRectF(topLeft, bottomRight)
-        };
-
-        glyphs.append(outputGlyph);
-
-        msdfgen::GlyphIndex nextGlyphIndex;
-        QString::const_iterator nextIt = it + 1;
-        if (nextIt != text.cend()) {
-            const GlyphGeometry *nextGlyphGeometry = fontGeometry.getGlyph(nextIt->unicode());
-            if (nextGlyphGeometry) {
-                nextGlyphIndex = nextGlyphGeometry->getGlyphIndex();
-            }
+            msdf_atlas_read::GlyphMapping glyphMapping = glyph->getMapping();
+            glyphMapping.scale(pointSize);
+            glyphMapping.moveRight(left);
+            glyphs.append(glyphMapping);
         }
 
-        double advance = 0;
-        if (fontGeometry.getAdvance(advance, glyph->getGlyphIndex(), nextGlyphIndex)) {
-            left += advance * pointSize;
+        left += glyph->advance * pointSize;
+
+        QString::const_iterator nextIt = it + 1;
+        if (nextIt != text.cend()) {
+            if (fontGeometry.kerning.contains(it->unicode())) {
+                const auto &kerningMap = fontGeometry.kerning.at(it->unicode());
+                if (kerningMap.contains(nextIt->unicode())) {
+                    float advance = kerningMap.at(nextIt->unicode());
+                    left += advance * pointSize;
+                }
+            }
         }
     }
 
@@ -167,10 +281,10 @@ QString FontImage::locateFontFile(FontType type)
 
     QStringList fonts;
     switch (type) {
-    case FontType::Normal:
+    case FontImage::FontType::Normal:
         fonts = dir.entryList({ "arial*" });
         break;
-    case FontType::Soundings:
+    case FontImage::FontType::Soundings:
         fonts = dir.entryList({ "ariali*" });
         break;
     }

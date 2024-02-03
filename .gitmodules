@@ -19,3 +19,6 @@
 [submodule "external/msdf-atlas-gen"]
 	path = external/msdf-atlas-gen
 	url = https://github.com/Chlumsky/msdf-atlas-gen.git
+[submodule "external/msdf-atlas-read"]
+	path = external/msdf-atlas-read
+	url = git@github.com:hornang/msdf-atlas-read.git
