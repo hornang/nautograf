@@ -2,12 +2,8 @@
 #include <QCryptographicHash>
 #include <QDebug>
 #include <QDir>
-#include <QFile>
 #include <QImage>
-#include <QPainter>
-#include <QRawFont>
 #include <QRectF>
-#include <QSGTexture>
 #include <QStandardPaths>
 #include <QString>
 

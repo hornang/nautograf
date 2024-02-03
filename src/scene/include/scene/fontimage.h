@@ -1,18 +1,14 @@
 #pragma once
 
 #include <QDir>
-#include <QHash>
 #include <QImage>
+#include <QList>
+#include <QRectF>
+#include <QSize>
+#include <QString>
 
 #include <msdf-atlas-gen/msdf-atlas-gen.h>
 #include <msdf-atlas-read.h>
-
-class QSGTexture;
-
-namespace ftgl {
-struct texture_atlas_t;
-struct texture_font_t;
-}
 
 class FontImage
 {
