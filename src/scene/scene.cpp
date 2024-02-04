@@ -372,12 +372,15 @@ void Scene::setModel(QAbstractListModel *newTileModel)
             this, &Scene::dataChanged);
 
     if (m_tileModel->rowCount() > 0) {
-        addTessellatorsFromModel(m_tileFactory, 0, m_tileModel->rowCount() - 1);
+        initializeTessellators();
     }
 }
 
 void Scene::addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first, int last)
 {
+    Q_ASSERT(m_tileFactory);
+    Q_ASSERT(m_tileModel);
+
     for (int i = first; i < last + 1; i++) {
         QVariant tileRefVariant = m_tileModel->data(m_tileModel->index(i, 0), 0);
         QVariantMap tileRef = tileRefVariant.toMap();
@@ -403,6 +406,15 @@ void Scene::addTessellatorsFromModel(TileFactoryWrapper *tileFactory, int first,
 void Scene::rowsInserted(const QModelIndex &parent, int first, int last)
 {
     addTessellatorsFromModel(m_tileFactory, first, last);
+}
+
+void Scene::initializeTessellators()
+{
+    m_tessellators.clear();
+    m_tessellatorsWithPendingData.clear();
+    m_tessellatorRemoved = false;
+
+    addTessellatorsFromModel(m_tileFactory, 0, m_tileModel->rowCount() - 1);
 }
 
 void Scene::fetchAll()
