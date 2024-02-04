@@ -111,15 +111,20 @@ enum class CollisionRule {
     OnlyWithSameType
 };
 
-struct SymbolLabel
+struct Label
 {
-    QPointF pos;
     QString text;
-    QPointF offset;
-    QRectF boundingBox;
     FontImage::FontType font;
     QColor color;
     float pointSize;
+};
+
+struct SymbolLabel
+{
+    Label label;
+    QPointF pos;
+    QPointF offset;
+    QRectF boundingBox;
     std::optional<float> scaleLimit;
     std::optional<float> parentScaleLimit;
 };
@@ -443,33 +448,33 @@ QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &labels,
+QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &symbolLabels,
                                         const FontImage *fontImage)
 {
     QList<AnnotationNode::Vertex> list;
     int glyphCounter = 0;
     QSize imageSize = fontImage->atlasSize();
 
-    for (const auto &label : labels) {
-        if (!label.scaleLimit.has_value()) {
+    for (const auto &symbolLabel : symbolLabels) {
+        if (!symbolLabel.scaleLimit.has_value()) {
             continue;
         }
 
-        float scaleLimit = label.scaleLimit.value();
+        float scaleLimit = symbolLabel.scaleLimit.value();
 
-        auto glyphs = fontImage->glyphs(label.text,
-                                        label.pointSize,
-                                        label.font);
-        const QColor &color = label.color;
+        auto glyphs = fontImage->glyphs(symbolLabel.label.text,
+                                        symbolLabel.label.pointSize,
+                                        symbolLabel.label.font);
+        const QColor &color = symbolLabel.label.color;
 
         for (const msdf_atlas_read::GlyphMapping mapping : glyphs) {
-            const QPointF metricsOffset(0, -label.boundingBox.top());
+            const QPointF metricsOffset(0, -symbolLabel.boundingBox.top());
             QPointF glyphPos(mapping.targetBounds.left, mapping.targetBounds.top);
-            glyphPos += label.offset + metricsOffset;
+            glyphPos += symbolLabel.offset + metricsOffset;
             msdf_atlas_read::Bounds texture = mapping.atlasBounds.getNormalized(imageSize.width(), imageSize.height());
             const auto glyphWidth = static_cast<float>(mapping.targetBounds.getWidth());
             const auto glyphHeight = static_cast<float>(mapping.targetBounds.getHeight());
-            const auto &pos = label.pos;
+            const auto &pos = symbolLabel.pos;
 
             list.resize(list.size() + 6);
             AnnotationNode::Vertex *data = list.data();
@@ -613,7 +618,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
 
-    QList<SymbolLabel> labels;
+    QList<SymbolLabel> symbolLabels;
 
     for (const auto &chart : charts) {
         for (const auto &sounding : chart->soundings()) {
@@ -628,20 +633,21 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto labelBox = fontImage->boundingBox(depthLabel,
                                                          soundingPointSize,
                                                          FontImage::FontType::Soundings);
-            symbols.append({ pos,
-                             std::nullopt,
-                             0,
-                             { { pos,
-                                 depthLabel,
-                                 QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                                 labelBox,
-                                 FontImage::FontType::Soundings,
-                                 QColor(120, 120, 120),
-                                 soundingPointSize,
-                                 std::nullopt,
-                                 std::nullopt } },
-                             0,
-                             CollisionRule::NoCheck });
+
+            symbols.append(Symbol {
+                pos,
+                std::nullopt,
+                0,
+                { SymbolLabel {
+                    Label { depthLabel,
+                            FontImage::FontType::Soundings,
+                            QColor(120, 120, 120),
+                            soundingPointSize },
+                    pos,
+                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
+                    labelBox } },
+                0,
+                CollisionRule::NoCheck });
         }
 
         for (const auto &rock : chart->underwaterRocks()) {
@@ -661,20 +667,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto boundingBox = fontImage->boundingBox(depthLabel,
                                                             rockPointSize,
                                                             FontImage::FontType::Soundings);
-            symbols.append({ pos,
-                             symbol.value(),
-                             std::nullopt,
-                             { { pos,
-                                 depthLabel,
-                                 labelOffset(boundingBox, symbol.value(), LabelPlacement::Below),
-                                 boundingBox,
-                                 FontImage::FontType::Soundings,
-                                 symbolLabelColor,
-                                 rockPointSize,
-                                 std::nullopt,
-                                 std::nullopt } },
-                             1,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                symbol.value(),
+                std::nullopt,
+                { SymbolLabel {
+                    Label { depthLabel,
+                            FontImage::FontType::Soundings,
+                            symbolLabelColor,
+                            rockPointSize },
+                    pos,
+                    labelOffset(boundingBox, symbol.value(), LabelPlacement::Below),
+                    boundingBox } },
+                1,
+                CollisionRule::Always });
         }
 
         for (const auto &buoy : chart->lateralBuoys()) {
@@ -690,19 +696,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto labelBox = fontImage->boundingBox(label,
                                                          soundingPointSize,
                                                          FontImage::FontType::Normal);
-            symbols.append({ pos,
-                             symbol.value(),
-                             std::nullopt,
-                             { { pos,
-                                 label,
-                                 labelOffset(labelBox, symbol.value(), LabelPlacement::Below),
-                                 labelBox,
-                                 FontImage::FontType::Normal,
-                                 symbolLabelColor,
-                                 soundingPointSize,
-                                 std::nullopt } },
-                             2,
-                             CollisionRule::OnlyWithSameType });
+            symbols.append(Symbol {
+                pos,
+                symbol.value(),
+                std::nullopt,
+                { SymbolLabel {
+                    Label { label,
+                            FontImage::FontType::Normal,
+                            symbolLabelColor,
+                            soundingPointSize },
+                    pos,
+                    labelOffset(labelBox, symbol.value(), LabelPlacement::Below),
+                    labelBox } },
+                2,
+                CollisionRule::OnlyWithSameType });
         }
 
         for (const auto &item : chart->landRegions()) {
@@ -711,19 +718,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto labelBox = fontImage->boundingBox(name,
                                                          landRegionPointSize,
                                                          FontImage::FontType::Normal);
-            symbols.append({ pos,
-                             std::nullopt,
-                             std::nullopt,
-                             { { pos,
-                                 name,
-                                 QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                                 labelBox,
-                                 FontImage::FontType::Normal,
-                                 labelColor,
-                                 landRegionPointSize,
-                                 std::nullopt } },
-                             3,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                std::nullopt,
+                std::nullopt,
+                { SymbolLabel {
+                    Label { name,
+                            FontImage::FontType::Normal,
+                            labelColor,
+                            landRegionPointSize },
+                    pos,
+                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
+                    labelBox } },
+                3,
+                CollisionRule::Always });
         }
 
         for (const auto &item : chart->builtUpPoints()) {
@@ -736,19 +744,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                          builtUpPointSize,
                                                          FontImage::FontType::Normal);
             const QPointF pos(x, y);
-            symbols.append({ pos,
-                             std::nullopt,
-                             std::nullopt,
-                             { { pos,
-                                 name,
-                                 QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                                 labelBox,
-                                 FontImage::FontType::Normal,
-                                 labelColor,
-                                 builtUpPointSize,
-                                 std::nullopt } },
-                             4,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                std::nullopt,
+                std::nullopt,
+                { SymbolLabel {
+                    Label { name,
+                            FontImage::FontType::Normal,
+                            labelColor,
+                            builtUpPointSize },
+                    pos,
+                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
+                    labelBox } },
+                4,
+                CollisionRule::Always });
         }
 
         for (const auto &item : chart->landAreas()) {
@@ -772,19 +781,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                          landAreaPointSize,
                                                          FontImage::FontType::Normal);
             const QPointF pos(x, y);
-            symbols.append({ pos,
-                             std::nullopt,
-                             std::nullopt,
-                             { { pos,
-                                 name,
-                                 QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                                 labelBox,
-                                 FontImage::FontType::Normal,
-                                 symbolLabelColor,
-                                 landAreaPointSize,
-                                 std::nullopt } },
-                             4,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                std::nullopt,
+                std::nullopt,
+                { SymbolLabel {
+                    Label { name,
+                            FontImage::FontType::Normal,
+                            symbolLabelColor,
+                            landAreaPointSize },
+                    pos,
+                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
+                    labelBox } },
+                4,
+                CollisionRule::Always });
         }
 
         for (const auto &item : chart->builtUpAreas()) {
@@ -809,19 +819,21 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                         FontImage::FontType::Normal);
             const QPointF labelOffset(-metrics.width() / 2, 0);
             const QPointF pos(x, y);
-            symbols.append({ pos,
-                             std::nullopt,
-                             std::nullopt,
-                             { { pos,
-                                 name,
-                                 labelOffset,
-                                 metrics,
-                                 FontImage::FontType::Normal,
-                                 symbolLabelColor,
-                                 builtUpAreaPointSize,
-                                 std::nullopt } },
-                             4,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                std::nullopt,
+                std::nullopt,
+                { SymbolLabel {
+                    Label {
+                        name,
+                        FontImage::FontType::Normal,
+                        symbolLabelColor,
+                        builtUpAreaPointSize },
+                    pos,
+                    labelOffset,
+                    metrics } },
+                4,
+                CollisionRule::Always });
         }
 
         for (const auto &beacon : chart->beacons()) {
@@ -837,19 +849,21 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto metrics = fontImage->boundingBox(name,
                                                         beaconPointSize,
                                                         FontImage::FontType::Normal);
-            symbols.append({ pos,
-                             symbol.value(),
-                             std::nullopt,
-                             { { pos,
-                                 name,
-                                 labelOffset(metrics, symbol.value(), LabelPlacement::Below),
-                                 metrics,
-                                 FontImage::FontType::Normal,
-                                 symbolLabelColor,
-                                 beaconPointSize,
-                                 std::nullopt } },
-                             5,
-                             CollisionRule::Always });
+            symbols.append(Symbol {
+                pos,
+                symbol.value(),
+                std::nullopt,
+                { SymbolLabel {
+                    Label {
+                        name,
+                        FontImage::FontType::Normal,
+                        symbolLabelColor,
+                        beaconPointSize },
+                    pos,
+                    labelOffset(metrics, symbol.value(), LabelPlacement::Below),
+                    metrics } },
+                5,
+                CollisionRule::Always });
         }
     }
 
@@ -939,7 +953,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     for (auto &symbol : symbols) {
         for (auto &label : symbol.labels) {
             label.parentScaleLimit = symbol.scaleLimit;
-            labels.append(label);
+            symbolLabels.append(label);
         }
     }
 
@@ -956,20 +970,20 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
         }
 
-        for (auto &label : labels) {
+        for (auto &label : symbolLabels) {
             if (label.scaleLimit.has_value()) {
                 const auto pos = transform.map(label.pos) + label.offset;
                 boxes.append(QRectF(pos, label.boundingBox.size()));
             }
         }
 
-        for (auto &label : labels) {
-            if (!label.parentScaleLimit.has_value() || scale < label.parentScaleLimit.value()) {
+        for (auto &symbolLabel : symbolLabels) {
+            if (!symbolLabel.parentScaleLimit.has_value() || scale < symbolLabel.parentScaleLimit.value()) {
                 continue;
             }
 
-            const auto pos = transform.map(label.pos) + label.offset;
-            QRectF labelBox(pos, label.boundingBox.size());
+            const auto pos = transform.map(symbolLabel.pos) + symbolLabel.offset;
+            QRectF labelBox(pos, symbolLabel.boundingBox.size());
 
             bool collision = false;
 
@@ -981,14 +995,14 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
 
             if (!collision) {
-                label.scaleLimit = scale;
+                symbolLabel.scaleLimit = scale;
                 boxes.append(labelBox);
             }
         }
     }
 
     tileData.symbolVertices = addSymbols(symbols);
-    tileData.textVertices = addLabels(labels, fontImage.get());
+    tileData.textVertices = addLabels(symbolLabels, fontImage.get());
 
     int clippingMarginInPixels = 4;
 
