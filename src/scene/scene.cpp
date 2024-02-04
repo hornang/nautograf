@@ -26,6 +26,7 @@ Scene::Scene(QQuickItem *parent)
     , m_fontImage(std::make_shared<FontImage>())
 {
     setFlag(ItemHasContents, true);
+    connect(m_fontImage.get(), &FontImage::atlasChanged, this, &Scene::atlasChanged);
 }
 
 void Scene::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
@@ -160,6 +161,12 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     QSGNode *textNodesParent = nullptr;
     QSGNode *overlayNodesParent = nullptr;
 
+    if (m_atlasChanged) {
+        delete rootNode;
+        rootNode = nullptr;
+        m_zoom = -1;
+    }
+
     if (!rootNode) {
         rootNode = new RootNode(m_symbolImage->image(),
                                 m_fontImage->image(),
@@ -268,7 +275,9 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         materials.symbol->setScale(zoom);
         materials.text->setScale(zoom);
     }
+
     m_zoom = zoom;
+    m_atlasChanged = false;
 
     return rootNode;
 }
@@ -432,6 +441,12 @@ void Scene::dataChanged(const QModelIndex &topLeft,
                         const QList<int> &roles)
 {
     fetchAll();
+}
+
+void Scene::atlasChanged()
+{
+    m_atlasChanged = true;
+    initializeTessellators();
 }
 
 void Scene::rowsAboutToBeRemoved(const QModelIndex &parent, int first, int last)

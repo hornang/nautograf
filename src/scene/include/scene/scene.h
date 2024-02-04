@@ -63,6 +63,7 @@ public slots:
                      const QList<int> &roles);
     void tessellatorDone(const QString &tileId);
     void tileDataChanged(const QStringList &tileIds);
+    void atlasChanged();
 
 signals:
     void tileFactoryChanged();
@@ -106,4 +107,5 @@ private:
     float m_zoom = -1.0;
     QColor m_accentColor;
     QColor m_overlayColor;
+    bool m_atlasChanged = false;
 };

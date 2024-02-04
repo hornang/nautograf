@@ -6,6 +6,7 @@
 #include <QRectF>
 #include <QStandardPaths>
 #include <QString>
+#include <QThread>
 
 #include "scene/fontimage.h"
 
@@ -50,17 +51,17 @@ FontImage::FontType getFontType(const string &name)
     return FontImage::FontType::Unknown;
 }
 
-QString getCacheDir()
+QString getAtlasDir()
 {
-    QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    QString atlasDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 
-    if (cacheDir.isEmpty()) {
+    if (atlasDir.isEmpty()) {
         return {};
     }
 
     QByteArray hashOfAppVersion = QCryptographicHash::hash(QByteArray(APP_VERSION), QCryptographicHash::Md5);
 
-    return cacheDir
+    return atlasDir
         + QDir::separator() + "glyphs" + QDir::separator() + hashOfAppVersion.toHex() + QDir::separator();
 }
 
@@ -154,23 +155,11 @@ unordered_map<FontImage::FontType, msdf_atlas_read::FontGeometry> getGeometriesB
 
     return geometriesByType;
 }
-}
-
-FontImage::FontImage()
-{
-    QDir cacheDir = getCacheDir();
-
-    if (!loadCache(cacheDir)) {
-        if (createCache(cacheDir) && loadCache(cacheDir)) {
-            qWarning() << "Failed to generate font atlas. Cannot display text in map";
-        }
-    }
-}
 
 const char *glyphImageFileName = "glyphs.png";
 const char *glyphLayoutFileName = "layout.json";
 
-bool FontImage::createCache(const QDir &cacheDir)
+bool createCache(const QDir &cacheDir)
 {
     if (!cacheDir.mkpath(".")) {
         return false;
@@ -180,26 +169,67 @@ bool FontImage::createCache(const QDir &cacheDir)
                          cacheDir.filePath(glyphLayoutFileName).toStdString());
 }
 
-bool FontImage::loadCache(const QDir &cacheDir)
+std::optional<FontImage::Atlas> getAtlas(const QDir &cacheDir)
 {
     if (!cacheDir.exists()) {
-        return false;
+        createCache(cacheDir);
     }
+
+    msdf_atlas_read::AtlasLayout atlasLayout;
 
     try {
-        msdf_atlas_read::AtlasLayout atlas = msdf_atlas_read::loadJson(cacheDir.filePath(glyphLayoutFileName).toStdString());
-
-        m_fontGeometries = getGeometriesByFontType(atlas);
-
-        if (!m_image.load(cacheDir.filePath(glyphImageFileName))) {
-            return false;
-        }
-    } catch (std::exception &e) {
-        qWarning() << "Exception catched: " << e.what();
-        return false;
+        atlasLayout = msdf_atlas_read::loadJson(cacheDir.filePath(glyphLayoutFileName).toStdString());
+    } catch (const std::exception &e) {
+        qWarning() << "Failed to load";
+        return {};
     }
 
-    return true;
+    QImage image;
+    if (!image.load(cacheDir.filePath(glyphImageFileName))) {
+        return {};
+    }
+    return FontImage::Atlas { image, getGeometriesByFontType(atlasLayout) };
+}
+}
+
+class FontWorker : public QThread
+{
+    Q_OBJECT
+
+    void run() override
+    {
+        QDir cacheDir = getAtlasDir();
+        std::optional<FontImage::Atlas> cache = getAtlas(cacheDir);
+        if (!cache.has_value()) {
+            qWarning() << "Failed to generate font atlas. Cannot display text in map";
+            return;
+        }
+        emit atlasUpdated(cache.value());
+    }
+
+signals:
+    void atlasUpdated(const FontImage::Atlas &cache);
+};
+
+#include "fontimage.moc"
+
+FontImage::FontImage()
+{
+    m_worker = new FontWorker();
+    connect(m_worker, &FontWorker::atlasUpdated, this, &FontImage::setAtlas);
+    m_worker->start();
+}
+
+FontImage::~FontImage()
+{
+    m_worker->wait();
+    delete m_worker;
+}
+
+void FontImage::setAtlas(const FontImage::Atlas &atlas)
+{
+    m_atlas = atlas;
+    emit atlasChanged();
 }
 
 QRectF FontImage::boundingBox(const QString &text, float pointSize, FontType type) const
@@ -223,15 +253,18 @@ QList<msdf_atlas_read::GlyphMapping> FontImage::glyphs(const QString &text,
                                                        float pointSize,
                                                        FontType type) const
 {
+    if (!m_atlas.has_value()) {
+        return {};
+    }
 
     float left = 0;
     QList<msdf_atlas_read::GlyphMapping> glyphs;
 
-    if (!m_fontGeometries.contains(type)) {
+    if (!m_atlas->geometries.contains(type)) {
         return {};
     }
 
-    const msdf_atlas_read::FontGeometry &fontGeometry = m_fontGeometries.at(type);
+    const msdf_atlas_read::FontGeometry &fontGeometry = m_atlas->geometries.at(type);
 
     for (QString::const_iterator it = text.cbegin(); it != text.cend(); ++it) {
 
