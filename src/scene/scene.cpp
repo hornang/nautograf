@@ -66,16 +66,6 @@ void Scene::removeStaleNodes(QSGNode *parent) const
     }
 }
 
-void Scene::markChildrensDirtyMaterial(QSGNode *parent)
-{
-    QSGNode *tile = static_cast<QSGNode *>(parent->firstChild());
-
-    while (tile) {
-        tile->markDirty(QSGNode::DirtyMaterial);
-        tile = static_cast<QSGNode *>(tile->nextSibling());
-    }
-}
-
 namespace {
 
 struct Materials
@@ -276,9 +266,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 
     if (m_zoom != zoom) {
         materials.symbol->setScale(zoom);
-        markChildrensDirtyMaterial(symbolNodesParent);
         materials.text->setScale(zoom);
-        markChildrensDirtyMaterial(textNodesParent);
     }
     m_zoom = zoom;
 
