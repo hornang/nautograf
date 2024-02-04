@@ -82,6 +82,7 @@ private:
     void updateBox();
     void getData();
     void fetchAll();
+    void initializeTessellators();
 
     QHash<QString, std::shared_ptr<Tessellator>> m_tessellators;
     QSet<QString> m_tessellatorsWithPendingData;
