@@ -32,6 +32,8 @@ add_library(scene
     fontimage.cpp
     include/scene/fontimage.h
 
+    annotater.cpp
+    annotater.h
     geometrynode.cpp
     geometrynode.h
     rootnode.cpp
