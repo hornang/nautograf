@@ -119,7 +119,7 @@ struct Label
     float pointSize;
 };
 
-struct SymbolLabel
+struct AnnotationLabel
 {
     Label label;
     QPointF pos;
@@ -129,12 +129,12 @@ struct SymbolLabel
     std::optional<float> parentScaleLimit;
 };
 
-struct Symbol
+struct Annotation
 {
     QPointF pos;
     std::optional<SymbolImage::TextureSymbol> symbol;
     std::optional<float> scaleLimit;
-    QList<SymbolLabel> labels;
+    QList<AnnotationLabel> labels;
     int priority = 0;
     CollisionRule collisionRule;
 };
@@ -339,12 +339,12 @@ QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &ar
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
+QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotations)
 {
     int validSymbols = 0;
 
-    for (const Symbol &element : input) {
-        if (element.symbol.has_value()) {
+    for (const Annotation &annotation : annotations) {
+        if (annotation.symbol.has_value()) {
             validSymbols++;
         }
     }
@@ -352,22 +352,22 @@ QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
     QList<AnnotationNode::Vertex> vertices(validSymbols * 6);
     AnnotationNode::Vertex *data = vertices.data();
 
-    for (const auto &element : input) {
-        if (!element.symbol.has_value()) {
+    for (const auto &annotation : annotations) {
+        if (!annotation.symbol.has_value()) {
             continue;
         }
 
-        const auto &symbol = element.symbol.value();
+        const auto &symbol = annotation.symbol.value();
         const auto &center = symbol.center;
-        const auto &pos = element.pos;
+        const auto &pos = annotation.pos;
         const auto &sourceRect = symbol.coords;
         const auto &symbolSize = symbol.size;
         const auto &color = symbol.color;
 
         float scaleLimit = 1000;
 
-        if (element.scaleLimit) {
-            scaleLimit = element.scaleLimit.value();
+        if (annotation.scaleLimit) {
+            scaleLimit = annotation.scaleLimit.value();
         }
 
         data[0] = { static_cast<float>(pos.x()),
@@ -448,33 +448,33 @@ QList<AnnotationNode::Vertex> addSymbols(const QList<Symbol> &input)
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> addLabels(const QList<SymbolLabel> &symbolLabels,
-                                        const FontImage *fontImage)
+QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &annotationLabels,
+                                              const FontImage *fontImage)
 {
     QList<AnnotationNode::Vertex> list;
     int glyphCounter = 0;
     QSize imageSize = fontImage->atlasSize();
 
-    for (const auto &symbolLabel : symbolLabels) {
-        if (!symbolLabel.scaleLimit.has_value()) {
+    for (const auto &annotationLabel : annotationLabels) {
+        if (!annotationLabel.scaleLimit.has_value()) {
             continue;
         }
 
-        float scaleLimit = symbolLabel.scaleLimit.value();
+        float scaleLimit = annotationLabel.scaleLimit.value();
 
-        auto glyphs = fontImage->glyphs(symbolLabel.label.text,
-                                        symbolLabel.label.pointSize,
-                                        symbolLabel.label.font);
-        const QColor &color = symbolLabel.label.color;
+        auto glyphs = fontImage->glyphs(annotationLabel.label.text,
+                                        annotationLabel.label.pointSize,
+                                        annotationLabel.label.font);
+        const QColor &color = annotationLabel.label.color;
 
         for (const msdf_atlas_read::GlyphMapping mapping : glyphs) {
-            const QPointF metricsOffset(0, -symbolLabel.boundingBox.top());
+            const QPointF metricsOffset(0, -annotationLabel.boundingBox.top());
             QPointF glyphPos(mapping.targetBounds.left, mapping.targetBounds.top);
-            glyphPos += symbolLabel.offset + metricsOffset;
+            glyphPos += annotationLabel.offset + metricsOffset;
             msdf_atlas_read::Bounds texture = mapping.atlasBounds.getNormalized(imageSize.width(), imageSize.height());
             const auto glyphWidth = static_cast<float>(mapping.targetBounds.getWidth());
             const auto glyphHeight = static_cast<float>(mapping.targetBounds.getHeight());
-            const auto &pos = symbolLabel.pos;
+            const auto &pos = annotationLabel.pos;
 
             list.resize(list.size() + 6);
             AnnotationNode::Vertex *data = list.data();
@@ -603,7 +603,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     }
 
     TileData tileData;
-    QList<Symbol> symbols;
+    QList<Annotation> annotations;
     const auto locale = QLocale::system();
 
     const float soundingPointSize = 16;
@@ -618,7 +618,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
 
-    QList<SymbolLabel> symbolLabels;
+    QList<AnnotationLabel> annotationLabels;
 
     for (const auto &chart : charts) {
         for (const auto &sounding : chart->soundings()) {
@@ -634,11 +634,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                          soundingPointSize,
                                                          FontImage::FontType::Soundings);
 
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 std::nullopt,
                 0,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { depthLabel,
                             FontImage::FontType::Soundings,
                             QColor(120, 120, 120),
@@ -667,11 +667,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto boundingBox = fontImage->boundingBox(depthLabel,
                                                             rockPointSize,
                                                             FontImage::FontType::Soundings);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 symbol.value(),
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { depthLabel,
                             FontImage::FontType::Soundings,
                             symbolLabelColor,
@@ -696,11 +696,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto labelBox = fontImage->boundingBox(label,
                                                          soundingPointSize,
                                                          FontImage::FontType::Normal);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 symbol.value(),
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { label,
                             FontImage::FontType::Normal,
                             symbolLabelColor,
@@ -718,11 +718,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto labelBox = fontImage->boundingBox(name,
                                                          landRegionPointSize,
                                                          FontImage::FontType::Normal);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 std::nullopt,
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { name,
                             FontImage::FontType::Normal,
                             labelColor,
@@ -744,11 +744,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                          builtUpPointSize,
                                                          FontImage::FontType::Normal);
             const QPointF pos(x, y);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 std::nullopt,
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { name,
                             FontImage::FontType::Normal,
                             labelColor,
@@ -781,11 +781,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                          landAreaPointSize,
                                                          FontImage::FontType::Normal);
             const QPointF pos(x, y);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 std::nullopt,
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label { name,
                             FontImage::FontType::Normal,
                             symbolLabelColor,
@@ -819,11 +819,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                                                         FontImage::FontType::Normal);
             const QPointF labelOffset(-metrics.width() / 2, 0);
             const QPointF pos(x, y);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 std::nullopt,
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label {
                         name,
                         FontImage::FontType::Normal,
@@ -849,11 +849,11 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             const auto metrics = fontImage->boundingBox(name,
                                                         beaconPointSize,
                                                         FontImage::FontType::Normal);
-            symbols.append(Symbol {
+            annotations.append(Annotation {
                 pos,
                 symbol.value(),
                 std::nullopt,
-                { SymbolLabel {
+                { AnnotationLabel {
                     Label {
                         name,
                         FontImage::FontType::Normal,
@@ -867,7 +867,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
         }
     }
 
-    std::sort(symbols.begin(), symbols.end(), [](const Symbol &a, const Symbol &b) {
+    std::sort(annotations.begin(), annotations.end(), [](const Annotation &a, const Annotation &b) {
         return a.priority > b.priority;
     });
 
@@ -902,41 +902,40 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
         QList<SymbolBox> existingBoxes;
 
         // Create collision rectangles for symbols already shown at smaller scale
-        for (auto &symbol : symbols) {
-            if (symbol.symbol.has_value() && symbol.scaleLimit.has_value()) {
+        for (auto &annotation : annotations) {
+            if (annotation.symbol.has_value() && annotation.scaleLimit.has_value()) {
                 auto a = computeSymbolBox(transform,
-                                          symbol.pos,
-                                          symbol.symbol.value());
-                existingBoxes.append(SymbolBox { a, symbol.symbol.value() });
+                                          annotation.pos,
+                                          annotation.symbol.value());
+                existingBoxes.append(SymbolBox { a, annotation.symbol.value() });
             }
         }
 
-        for (auto &symbol : symbols) {
-            if (!symbol.symbol.has_value()) {
-                // This symbol has no actual symbol so we set allowed scale
-                // to any scale so that child labels can be shown. This sitation
-                // is currently used to shown text labels which doesnt have a
-                // parent symbol.
-                symbol.scaleLimit = 0;
+        for (auto &annotation : annotations) {
+            if (!annotation.symbol.has_value()) {
+                // This annotation has no actual symbol so we set allowed scale
+                // to any scale so that child labels can be shown. This is done
+                // to show label(s) for annotations without a symbol.
+                annotation.scaleLimit = 0;
                 continue;
             }
 
-            if (symbol.scaleLimit.has_value()) {
-                // This symbol was already set to be shown at smaller scale
+            if (annotation.scaleLimit.has_value()) {
+                // This annotation was already set to be shown at smaller scale
                 continue;
             }
 
             SymbolBox symbolBox { computeSymbolBox(transform,
-                                                   symbol.pos,
-                                                   symbol.symbol.value()),
-                                  symbol.symbol.value() };
+                                                   annotation.pos,
+                                                   annotation.symbol.value()),
+                                  annotation.symbol.value() };
 
             bool collision = false;
 
-            if (symbol.collisionRule != CollisionRule::NoCheck) {
+            if (annotation.collisionRule != CollisionRule::NoCheck) {
                 for (const auto &other : existingBoxes) {
                     if (symbolBox.box.intersects(other.box)
-                        && (symbol.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
+                        && (annotation.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
                         collision = true;
                         break;
                     }
@@ -944,16 +943,16 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
 
             if (!collision) {
-                symbol.scaleLimit = scale;
+                annotation.scaleLimit = scale;
                 existingBoxes.append(symbolBox);
             }
         }
     }
 
-    for (auto &symbol : symbols) {
-        for (auto &label : symbol.labels) {
-            label.parentScaleLimit = symbol.scaleLimit;
-            symbolLabels.append(label);
+    for (auto &annotation : annotations) {
+        for (auto &label : annotation.labels) {
+            label.parentScaleLimit = annotation.scaleLimit;
+            annotationLabels.append(label);
         }
     }
 
@@ -963,27 +962,27 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
         QList<QRectF> boxes;
 
-        for (auto &symbol : symbols) {
-            if (symbol.symbol.has_value() && symbol.scaleLimit.has_value()) {
-                const auto pos = transform.map(symbol.pos) - symbol.symbol.value().center;
-                boxes.append(QRectF(pos, symbol.symbol.value().size));
+        for (auto &annotation : annotations) {
+            if (annotation.symbol.has_value() && annotation.scaleLimit.has_value()) {
+                const auto pos = transform.map(annotation.pos) - annotation.symbol.value().center;
+                boxes.append(QRectF(pos, annotation.symbol.value().size));
             }
         }
 
-        for (auto &label : symbolLabels) {
-            if (label.scaleLimit.has_value()) {
-                const auto pos = transform.map(label.pos) + label.offset;
-                boxes.append(QRectF(pos, label.boundingBox.size()));
+        for (auto &annotationLabel : annotationLabels) {
+            if (annotationLabel.scaleLimit.has_value()) {
+                const auto pos = transform.map(annotationLabel.pos) + annotationLabel.offset;
+                boxes.append(QRectF(pos, annotationLabel.boundingBox.size()));
             }
         }
 
-        for (auto &symbolLabel : symbolLabels) {
-            if (!symbolLabel.parentScaleLimit.has_value() || scale < symbolLabel.parentScaleLimit.value()) {
+        for (auto &annotationLabel : annotationLabels) {
+            if (!annotationLabel.parentScaleLimit.has_value() || scale < annotationLabel.parentScaleLimit.value()) {
                 continue;
             }
 
-            const auto pos = transform.map(symbolLabel.pos) + symbolLabel.offset;
-            QRectF labelBox(pos, symbolLabel.boundingBox.size());
+            const auto pos = transform.map(annotationLabel.pos) + annotationLabel.offset;
+            QRectF labelBox(pos, annotationLabel.boundingBox.size());
 
             bool collision = false;
 
@@ -995,14 +994,14 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
 
             if (!collision) {
-                symbolLabel.scaleLimit = scale;
+                annotationLabel.scaleLimit = scale;
                 boxes.append(labelBox);
             }
         }
     }
 
-    tileData.symbolVertices = addSymbols(symbols);
-    tileData.textVertices = addLabels(symbolLabels, fontImage.get());
+    tileData.symbolVertices = getSymbolVertices(annotations);
+    tileData.textVertices = getTextVertices(annotationLabels, fontImage.get());
 
     int clippingMarginInPixels = 4;
 
