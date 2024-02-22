@@ -576,7 +576,7 @@ QPointF labelOffset(const QRectF &labelBox,
 
 QRectF computeSymbolBox(const QTransform &transform,
                         const QPointF &pos,
-                        SymbolImage::TextureSymbol &textureSymbol)
+                        const SymbolImage::TextureSymbol &textureSymbol)
 {
     const auto topLeft = transform.map(pos) - textureSymbol.center;
     return QRectF(topLeft + textureSymbol.roi.topLeft(),
@@ -902,7 +902,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
         QList<SymbolBox> existingBoxes;
 
         // Create collision rectangles for symbols already shown at smaller scale
-        for (auto &annotation : annotations) {
+        for (const auto &annotation : annotations) {
             if (annotation.symbol.has_value() && annotation.scaleLimit.has_value()) {
                 auto a = computeSymbolBox(transform,
                                           annotation.pos,
