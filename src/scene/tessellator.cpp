@@ -26,6 +26,8 @@ static const QColor tilePlaceholderFillColor = QColor(240, 240, 240);
 // projection that can be linearly transformed in scene graph/vertex shader.
 const int s_pixelsPerLon = 1000;
 
+using namespace std;
+
 namespace {
 QPointF posToMercator(const ChartData::Position::Reader &pos)
 {
@@ -560,9 +562,9 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
     return list;
 }
 
-QPointF labelOffset(const QRectF &labelBox,
-                    const SymbolImage::TextureSymbol &symbol,
-                    LabelPlacement placement)
+QPointF getLabelOffset(const QRectF &labelBox,
+                       const SymbolImage::TextureSymbol &symbol,
+                       LabelPlacement placement)
 {
     const int labelMargin = 2;
 
@@ -581,6 +583,81 @@ QRectF computeSymbolBox(const QTransform &transform,
     const auto topLeft = transform.map(pos) - textureSymbol.center;
     return QRectF(topLeft + textureSymbol.roi.topLeft(),
                   textureSymbol.roi.size());
+}
+
+template <typename T>
+QList<Annotation> generateAnnotations(
+    const typename capnp::List<T>::Reader &elements,
+    const FontImage *fontImage,
+    std::function<std::optional<SymbolImage::TextureSymbol>(const typename T::Reader &)> symbolGetter,
+    std::function<optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
+    std::function<Label(const typename T::Reader &)> func,
+    int priority = 0,
+    CollisionRule collissionRule = CollisionRule::NoCheck)
+
+{
+    assert(getPosition);
+
+    QList<Annotation> symbols;
+
+    for (const auto &element : elements) {
+        const optional<ChartData::Position::Reader> maybePosition = getPosition(element);
+
+        if (!maybePosition.has_value()) {
+            continue;
+        }
+
+        const auto pos = posToMercator(maybePosition.value());
+
+        Label label = func(element);
+        const auto labelBoundingBox = fontImage->boundingBox(label.text,
+                                                             label.pointSize,
+                                                             label.font);
+
+        std::optional<SymbolImage::TextureSymbol> symbol;
+
+        if (symbolGetter != nullptr) {
+            symbol = symbolGetter(element);
+
+            if (!symbol.has_value()) {
+                continue;
+            }
+        }
+
+        QPointF labelOffset;
+
+        if (symbol.has_value()) {
+            labelOffset = getLabelOffset(labelBoundingBox, symbol.value(), LabelPlacement::Below);
+        } else {
+            labelOffset = QPointF(-labelBoundingBox.width() / 2, -labelBoundingBox.height() / 2);
+        }
+
+        symbols.append(Annotation {
+            pos,
+            symbol,
+            std::nullopt,
+            { AnnotationLabel {
+                label,
+                pos,
+                labelOffset,
+                labelBoundingBox } },
+            priority,
+            collissionRule });
+    }
+
+    return symbols;
+}
+
+QLocale systemLocale = QLocale::system();
+
+QString getDepthString(float depth)
+{
+    int precision = 0;
+    if (depth < 30) {
+        precision = 1;
+    }
+
+    return systemLocale.toString(depth, 'f', precision);
 }
 
 /*!
@@ -621,250 +698,124 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     QList<AnnotationLabel> annotationLabels;
 
     for (const auto &chart : charts) {
-        for (const auto &sounding : chart->soundings()) {
-            const auto pos = posToMercator(sounding.getPosition());
+        annotations += generateAnnotations<ChartData::Sounding>(
+            chart->soundings(),
+            fontImage.get(),
+            nullptr,
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &item) {
+                return Label { getDepthString(item.getDepth()),
+                               FontImage::FontType::Soundings,
+                               QColor(120, 120, 120),
+                               soundingPointSize };
+            },
+            0,
+            CollisionRule::NoCheck);
 
-            int precision = 0;
-            if (sounding.getDepth() < 30) {
-                precision = 1;
-            }
+        annotations += generateAnnotations<ChartData::UnderwaterRock>(
+            chart->underwaterRocks(),
+            fontImage.get(),
+            [&](const auto &item) {
+                return symbolImage->underwaterRock(item);
+            },
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &rock) {
+                return Label { getDepthString(rock.getDepth()),
+                               FontImage::FontType::Soundings,
+                               symbolLabelColor,
+                               rockPointSize };
+            },
+            1,
+            CollisionRule::Always);
 
-            const auto depthLabel = locale.toString(sounding.getDepth(), 'f', precision);
-            const auto labelBox = fontImage->boundingBox(depthLabel,
-                                                         soundingPointSize,
-                                                         FontImage::FontType::Soundings);
+        annotations += generateAnnotations<ChartData::BuoyLateral>(
+            chart->lateralBuoys(),
+            fontImage.get(),
+            [&](const auto &item) {
+                return symbolImage->lateralBuoy(item);
+            },
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &item) {
+                // At some point this should be the color letter of the buoy
+                const auto label = QStringLiteral("?");
 
-            annotations.append(Annotation {
-                pos,
-                std::nullopt,
-                0,
-                { AnnotationLabel {
-                    Label { depthLabel,
-                            FontImage::FontType::Soundings,
-                            QColor(120, 120, 120),
-                            soundingPointSize },
-                    pos,
-                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                    labelBox } },
-                0,
-                CollisionRule::NoCheck });
-        }
+                return Label { label,
+                               FontImage::FontType::Normal,
+                               symbolLabelColor,
+                               soundingPointSize };
+            },
+            2,
+            CollisionRule::OnlyWithSameType);
 
-        for (const auto &rock : chart->underwaterRocks()) {
-            auto symbol = symbolImage->underwaterRock(rock);
+        annotations += generateAnnotations<ChartData::LandRegion>(
+            chart->landRegions(),
+            fontImage.get(),
+            nullptr,
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &item) {
+                return Label { QString::fromStdString(item.getName()),
+                               FontImage::FontType::Normal,
+                               labelColor,
+                               landRegionPointSize };
+            },
+            3,
+            CollisionRule::Always);
 
-            if (!symbol.has_value()) {
-                continue;
-            }
+        annotations += generateAnnotations<ChartData::BuiltUpPoint>(
+            chart->builtUpPoints(),
+            fontImage.get(),
+            nullptr,
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &item) {
+                return Label { QString::fromStdString(item.getName()),
+                               FontImage::FontType::Normal,
+                               labelColor,
+                               builtUpPointSize };
+            },
+            4,
+            CollisionRule::Always);
 
-            int precision = 0;
-            if (rock.getDepth() < 30) {
-                precision = 1;
-            }
+        annotations += generateAnnotations<ChartData::LandArea>(
+            chart->landAreas(),
+            fontImage.get(),
+            nullptr,
+            [](const auto &item) { return item.getCentroid(); },
+            [&](const auto &item) {
+                return Label { QString::fromStdString(item.getName()),
+                               FontImage::FontType::Normal,
+                               symbolLabelColor,
+                               landAreaPointSize };
+            },
+            4,
+            CollisionRule::Always);
 
-            const auto pos = posToMercator(rock.getPosition());
-            const auto depthLabel = locale.toString(rock.getDepth(), 'f', precision);
-            const auto boundingBox = fontImage->boundingBox(depthLabel,
-                                                            rockPointSize,
-                                                            FontImage::FontType::Soundings);
-            annotations.append(Annotation {
-                pos,
-                symbol.value(),
-                std::nullopt,
-                { AnnotationLabel {
-                    Label { depthLabel,
-                            FontImage::FontType::Soundings,
-                            symbolLabelColor,
-                            rockPointSize },
-                    pos,
-                    labelOffset(boundingBox, symbol.value(), LabelPlacement::Below),
-                    boundingBox } },
-                1,
-                CollisionRule::Always });
-        }
+        annotations += generateAnnotations<ChartData::BuiltUpArea>(
+            chart->builtUpAreas(),
+            fontImage.get(),
+            nullptr,
+            [](const auto &item) { return item.getCentroid(); },
+            [&](const auto &item) {
+                return Label { QString::fromStdString(item.getName()),
+                               FontImage::FontType::Normal,
+                               symbolLabelColor,
+                               builtUpAreaPointSize };
+            },
+            4,
+            CollisionRule::Always);
 
-        for (const auto &buoy : chart->lateralBuoys()) {
-            auto symbol = symbolImage->lateralBuoy(buoy);
-            if (!symbol.has_value()) {
-                continue;
-            }
-
-            const auto pos = posToMercator(buoy.getPosition());
-
-            // At some point this should be the color letter of the buoy
-            const auto label("?");
-            const auto labelBox = fontImage->boundingBox(label,
-                                                         soundingPointSize,
-                                                         FontImage::FontType::Normal);
-            annotations.append(Annotation {
-                pos,
-                symbol.value(),
-                std::nullopt,
-                { AnnotationLabel {
-                    Label { label,
-                            FontImage::FontType::Normal,
-                            symbolLabelColor,
-                            soundingPointSize },
-                    pos,
-                    labelOffset(labelBox, symbol.value(), LabelPlacement::Below),
-                    labelBox } },
-                2,
-                CollisionRule::OnlyWithSameType });
-        }
-
-        for (const auto &item : chart->landRegions()) {
-            const auto pos = posToMercator(item.getPosition());
-            const auto name = QString::fromStdString(item.getName());
-            const auto labelBox = fontImage->boundingBox(name,
-                                                         landRegionPointSize,
-                                                         FontImage::FontType::Normal);
-            annotations.append(Annotation {
-                pos,
-                std::nullopt,
-                std::nullopt,
-                { AnnotationLabel {
-                    Label { name,
-                            FontImage::FontType::Normal,
-                            labelColor,
-                            landRegionPointSize },
-                    pos,
-                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                    labelBox } },
-                3,
-                CollisionRule::Always });
-        }
-
-        for (const auto &item : chart->builtUpPoints()) {
-            const auto &position = item.getPosition();
-            const auto x = Mercator::mercatorWidth(0, position.getLongitude(), s_pixelsPerLon);
-            const auto y = Mercator::mercatorHeight(0, position.getLatitude(), s_pixelsPerLon);
-            const auto name = QString::fromStdString(item.getName());
-
-            const auto labelBox = fontImage->boundingBox(name,
-                                                         builtUpPointSize,
-                                                         FontImage::FontType::Normal);
-            const QPointF pos(x, y);
-            annotations.append(Annotation {
-                pos,
-                std::nullopt,
-                std::nullopt,
-                { AnnotationLabel {
-                    Label { name,
-                            FontImage::FontType::Normal,
-                            labelColor,
-                            builtUpPointSize },
-                    pos,
-                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                    labelBox } },
-                4,
-                CollisionRule::Always });
-        }
-
-        for (const auto &item : chart->landAreas()) {
-            if (item.getName().size() == 0) {
-                continue;
-            }
-
-            const auto &position = item.getCentroid();
-
-            // There is no inter-tile collision detection. Avoid showing labels
-            // with a position outside this tile. Shouldn't labels clipped out in chart.cpp?
-            if (!recipe.rect.contains(position.getLatitude(), position.getLongitude())) {
-                continue;
-            }
-
-            const auto x = Mercator::mercatorWidth(0, position.getLongitude(), s_pixelsPerLon);
-            const auto y = Mercator::mercatorHeight(0, position.getLatitude(), s_pixelsPerLon);
-            const auto name = QString::fromStdString(item.getName());
-
-            const auto labelBox = fontImage->boundingBox(name,
-                                                         landAreaPointSize,
-                                                         FontImage::FontType::Normal);
-            const QPointF pos(x, y);
-            annotations.append(Annotation {
-                pos,
-                std::nullopt,
-                std::nullopt,
-                { AnnotationLabel {
-                    Label { name,
-                            FontImage::FontType::Normal,
-                            symbolLabelColor,
-                            landAreaPointSize },
-                    pos,
-                    QPointF(-labelBox.width() / 2, -labelBox.height() / 2),
-                    labelBox } },
-                4,
-                CollisionRule::Always });
-        }
-
-        for (const auto &item : chart->builtUpAreas()) {
-            if (item.getName().size() == 0) {
-                continue;
-            }
-
-            const auto &position = item.getCentroid();
-
-            // There is no inter-tile collision detection. Avoid showing labels
-            // with a position outside this tile. Shouldn't labels clipped out in chart.cpp?
-            if (!recipe.rect.contains(position.getLatitude(), position.getLongitude())) {
-                continue;
-            }
-
-            const auto x = Mercator::mercatorWidth(0, position.getLongitude(), s_pixelsPerLon);
-            const auto y = Mercator::mercatorHeight(0, position.getLatitude(), s_pixelsPerLon);
-            const auto name = QString::fromStdString(item.getName());
-
-            const auto metrics = fontImage->boundingBox(name,
-                                                        builtUpAreaPointSize,
-                                                        FontImage::FontType::Normal);
-            const QPointF labelOffset(-metrics.width() / 2, 0);
-            const QPointF pos(x, y);
-            annotations.append(Annotation {
-                pos,
-                std::nullopt,
-                std::nullopt,
-                { AnnotationLabel {
-                    Label {
-                        name,
-                        FontImage::FontType::Normal,
-                        symbolLabelColor,
-                        builtUpAreaPointSize },
-                    pos,
-                    labelOffset,
-                    metrics } },
-                4,
-                CollisionRule::Always });
-        }
-
-        for (const auto &beacon : chart->beacons()) {
-            auto symbol = symbolImage->beacon(beacon);
-
-            if (!symbol.has_value()) {
-                continue;
-            }
-
-            const auto pos = posToMercator(beacon.getPosition());
-            const QPoint symbolSize(symbol->size.width(), symbol->size.height());
-            const auto name = QString::fromStdString(beacon.getName());
-            const auto metrics = fontImage->boundingBox(name,
-                                                        beaconPointSize,
-                                                        FontImage::FontType::Normal);
-            annotations.append(Annotation {
-                pos,
-                symbol.value(),
-                std::nullopt,
-                { AnnotationLabel {
-                    Label {
-                        name,
-                        FontImage::FontType::Normal,
-                        symbolLabelColor,
-                        beaconPointSize },
-                    pos,
-                    labelOffset(metrics, symbol.value(), LabelPlacement::Below),
-                    metrics } },
-                5,
-                CollisionRule::Always });
-        }
+        annotations += generateAnnotations<ChartData::Beacon>(
+            chart->beacons(),
+            fontImage.get(),
+            [&](const auto &item) { return symbolImage->beacon(item); },
+            [](const auto &item) { return item.getPosition(); },
+            [&](const auto &item) {
+                return Label { QString::fromStdString(item.getName()),
+                               FontImage::FontType::Normal,
+                               symbolLabelColor,
+                               beaconPointSize };
+            },
+            5,
+            CollisionRule::Always);
     }
 
     std::sort(annotations.begin(), annotations.end(), [](const Annotation &a, const Annotation &b) {
