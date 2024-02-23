@@ -23,13 +23,10 @@ const vec4 u_outlineColor = vec4(1, 1, 1, 1);
 
 void main()
 {
-    // Replace conditional with smoothstep
-    if (ubuf.scale < zoomLimit) {
-        fragColor = vec4(0, 0, 0, 0);
-    } else {
-        float dist = texture(ourTexture, vTexCoord).r;
-        float alpha = smoothstep(outerEdgeCenter - smoothing, outerEdgeCenter + smoothing, dist) * ubuf.qt_Opacity;
-        float border = smoothstep(edgeCenter - borderSmoothing, edgeCenter + borderSmoothing, dist);
-        fragColor = vec4(mix(u_outlineColor.rgb, color.rgb, border) * alpha, alpha);
-    }
+    float dist = texture(ourTexture, vTexCoord).r;
+    float alpha = smoothstep(outerEdgeCenter - smoothing, outerEdgeCenter + smoothing, dist) * ubuf.qt_Opacity;
+    float zoomRevealAlpha = smoothstep(0, 1, ((ubuf.scale - zoomLimit) + 1));
+    alpha *= zoomRevealAlpha;
+    float border = smoothstep(edgeCenter - borderSmoothing, edgeCenter + borderSmoothing, dist);
+    fragColor = vec4(mix(u_outlineColor.rgb, color.rgb, border) * alpha, alpha);
 }
