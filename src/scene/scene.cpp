@@ -125,12 +125,9 @@ void updateGeometryLayers(const QString &tileId,
         QSGNode *layerNode = new QSGNode();
         layerNode->setFlag(QSGNode::OwnedByParent, true);
         geometryNode->appendChildNode(layerNode);
-        layerNode->appendChildNode(new PolygonNode(tileId,
-                                                   materials.polygon,
+        layerNode->appendChildNode(new PolygonNode(materials.polygon,
                                                    layer.polygonVertices));
-
-        layerNode->appendChildNode(new LineNode(tileId,
-                                                materials.line,
+        layerNode->appendChildNode(new LineNode(materials.line,
                                                 layer.lineVertices));
     }
 }
@@ -253,8 +250,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 polygonNode = static_cast<PolygonNode *>(overlayNodesParent->firstChild());
                 polygonNode->updateVertices(m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
             } else {
-                PolygonNode *polygonNode = new PolygonNode(m_focusedTile,
-                                                           rootNode->blendColorMaterial(),
+                PolygonNode *polygonNode = new PolygonNode(rootNode->blendColorMaterial(),
                                                            m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
                 overlayNodesParent->appendChildNode(polygonNode);
             }

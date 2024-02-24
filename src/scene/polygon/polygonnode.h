@@ -17,12 +17,6 @@ public:
         uchar blue;
         uchar alpha;
     };
-    PolygonNode(const QString &tileId,
-                QSGMaterial *material,
-                const QList<PolygonNode::Vertex> &vertices);
-    const QString &id() const { return m_id; }
+    PolygonNode(QSGMaterial *material, const QList<PolygonNode::Vertex> &vertices);
     void updateVertices(const QList<Vertex> &vertices);
-
-private:
-    QString m_id;
 };

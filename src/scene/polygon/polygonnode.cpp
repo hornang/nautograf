@@ -15,10 +15,8 @@ static const QSGGeometry::Attribute attributes[2] = {
 static const QSGGeometry::AttributeSet attributeSet = { 2, 16, attributes };
 static_assert(sizeof(PolygonNode::Vertex) == 16, "Incorrect sizeof(PolygonNode::Vertex)");
 
-PolygonNode::PolygonNode(const QString &id,
-                         QSGMaterial *material,
+PolygonNode::PolygonNode(QSGMaterial *material,
                          const QList<PolygonNode::Vertex> &vertices)
-    : m_id(id)
 {
     setMaterial(material);
     QSGGeometry *geometry = new QSGGeometry(attributeSet, vertices.length());

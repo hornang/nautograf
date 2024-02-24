@@ -23,14 +23,9 @@ public:
         uchar blue;
         uchar alpha;
     };
-    LineNode(const QString &id,
-             QSGMaterial *material,
+    LineNode(QSGMaterial *material,
              const QList<LineNode::Vertex> &vertices);
-    const QString &id() const { return m_id; }
 
 public:
     void updateVertices(const QList<LineNode::Vertex> &vertices);
-
-private:
-    QString m_id;
 };

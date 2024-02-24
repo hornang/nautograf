@@ -11,10 +11,8 @@ static const QSGGeometry::AttributeSet attributeSet = { static_cast<int>(std::si
 
 static_assert(sizeof(LineNode::Vertex) == 24, "Incorrect sizeof(LineNode::Vertex)");
 
-LineNode::LineNode(const QString &id,
-                   QSGMaterial *material,
+LineNode::LineNode(QSGMaterial *material,
                    const QList<LineNode::Vertex> &vertices)
-    : m_id(id)
 {
     setMaterial(material);
 
