@@ -34,6 +34,8 @@ RootNode::~RootNode()
         delete m_fontTexture;
     }
 
+    delete m_polygonMaterial;
+    delete m_blendColorMaterial;
     delete m_symbolMaterial;
     delete m_textMaterial;
     delete m_lineMaterial;
