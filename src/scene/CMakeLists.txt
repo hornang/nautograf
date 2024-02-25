@@ -36,6 +36,8 @@ add_library(scene
     annotater.h
     geometrynode.cpp
     geometrynode.h
+    materialcreator.cpp
+    materialcreator.h
     rootnode.cpp
     rootnode.h
     symbolimage.cpp
