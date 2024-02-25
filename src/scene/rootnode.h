@@ -2,11 +2,9 @@
 
 #include <QSGTransformNode>
 
+class MaterialCreator;
 class QSGTexture;
 class QQuickWindow;
-class LineMaterial;
-class PolygonMaterial;
-class AnnotationMaterial;
 
 class RootNode : public QSGTransformNode
 {
@@ -15,20 +13,8 @@ public:
              const QImage &fontImage,
              const QQuickWindow *window);
     ~RootNode();
-    QSGTexture *symbolTexture() const { return m_symbolTexture; }
-    QSGTexture *fontTexture() const { return m_fontTexture; }
-    PolygonMaterial *polygonMaterial() const { return m_polygonMaterial; }
-    LineMaterial *lineMaterial() const { return m_lineMaterial; }
-    PolygonMaterial *blendColorMaterial() const { return m_blendColorMaterial; }
-    AnnotationMaterial *symbolMaterial() const { return m_symbolMaterial; }
-    AnnotationMaterial *textMaterial() const { return m_textMaterial; }
+    MaterialCreator *materialCreator() const;
 
 private:
-    QSGTexture *m_symbolTexture = nullptr;
-    QSGTexture *m_fontTexture = nullptr;
-    PolygonMaterial *m_polygonMaterial = nullptr;
-    PolygonMaterial *m_blendColorMaterial = nullptr;
-    AnnotationMaterial *m_symbolMaterial = nullptr;
-    AnnotationMaterial *m_textMaterial = nullptr;
-    LineMaterial *m_lineMaterial = nullptr;
+    MaterialCreator *m_materialCreator = nullptr;
 };

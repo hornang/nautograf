@@ -4,6 +4,7 @@
 #include "annotation/annotationnode.h"
 #include "geometrynode.h"
 #include "line/linematerial.h"
+#include "materialcreator.h"
 #include "polygon/polygonmaterial.h"
 #include "polygon/polygonnode.h"
 #include "rootnode.h"
@@ -69,14 +70,6 @@ void Scene::removeStaleNodes(QSGNode *parent) const
 
 namespace {
 
-struct Materials
-{
-    PolygonMaterial *polygon = nullptr;
-    LineMaterial *line = nullptr;
-    AnnotationMaterial *symbol = nullptr;
-    AnnotationMaterial *text = nullptr;
-};
-
 void deleteChildNodes(QSGNode *parent)
 {
     QSGNode *child = parent->firstChild();
@@ -107,7 +100,7 @@ T *findChild(const QSGNode *parent, const QString &id)
 void updateGeometryLayers(const QString &tileId,
                           QSGNode *parent,
                           const QList<GeometryLayer> &newData,
-                          const Materials &materials)
+                          MaterialCreator *materialCreator)
 {
     GeometryNode *geometryNode = findChild<GeometryNode>(parent, tileId);
 
@@ -125,9 +118,9 @@ void updateGeometryLayers(const QString &tileId,
         QSGNode *layerNode = new QSGNode();
         layerNode->setFlag(QSGNode::OwnedByParent, true);
         geometryNode->appendChildNode(layerNode);
-        layerNode->appendChildNode(new PolygonNode(materials.polygon,
+        layerNode->appendChildNode(new PolygonNode(materialCreator->opaquePolygonMaterial(),
                                                    layer.polygonVertices));
-        layerNode->appendChildNode(new LineNode(materials.line,
+        layerNode->appendChildNode(new LineNode(materialCreator->lineMaterial(),
                                                 layer.lineVertices));
     }
 }
@@ -189,11 +182,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
         Q_ASSERT(overlayNodesParent);
     }
 
-    Materials materials;
-    materials.polygon = rootNode->polygonMaterial();
-    materials.line = rootNode->lineMaterial();
-    materials.symbol = rootNode->symbolMaterial();
-    materials.text = rootNode->textMaterial();
+    MaterialCreator *materialCreator = rootNode->materialCreator();
 
     QRectF box = boundingRect();
 
@@ -221,14 +210,14 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
             updateGeometryLayers(tileId,
                                  geometryNodesParent,
                                  m_tessellators[tileId]->data().geometryLayers,
-                                 materials);
+                                 materialCreator);
 
             updateAnnotationNode(
                 tileId, symbolNodesParent,
                 [&](const TileData &tileData) {
                     return tileData.symbolVertices;
                 },
-                materials.symbol,
+                materialCreator->symbolMaterial(),
                 m_tessellators);
 
             updateAnnotationNode(
@@ -236,7 +225,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 [&](const TileData &tileData) {
                     return tileData.textVertices;
                 },
-                materials.text,
+                materialCreator->textMaterial(),
                 m_tessellators);
         }
         m_tessellatorsWithPendingData.clear();
@@ -250,7 +239,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
                 polygonNode = static_cast<PolygonNode *>(overlayNodesParent->firstChild());
                 polygonNode->updateVertices(m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
             } else {
-                PolygonNode *polygonNode = new PolygonNode(rootNode->blendColorMaterial(),
+                PolygonNode *polygonNode = new PolygonNode(materialCreator->blendedPolygonMaterial(),
                                                            m_tessellators[m_focusedTile]->createTileVertices(m_overlayColor));
                 overlayNodesParent->appendChildNode(polygonNode);
             }
@@ -268,8 +257,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     m_tessellatorRemoved = false;
 
     if (m_zoom != zoom) {
-        materials.symbol->setScale(zoom);
-        materials.text->setScale(zoom);
+        materialCreator->setScale(zoom);
     }
 
     m_zoom = zoom;
