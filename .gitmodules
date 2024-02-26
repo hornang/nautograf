@@ -9,16 +9,16 @@
 	url = https://github.com/hornang/msdfgen.git
 [submodule "cutlines"]
 	path = cutlines
-	url = git@github.com:hornang/cutlines.git
+	url = https://github.com/hornang/cutlines.git
 [submodule "MercatorTile"]
 	path = MercatorTile
 	url = https://github.com/hornang/MercatorTile
 [submodule "external/xdg-file-dialog"]
 	path = external/xdg-file-dialog
-	url = git@github.com:hornang/xdg-file-dialog.git
+	url = http://github.com/hornang/xdg-file-dialog.git
 [submodule "external/msdf-atlas-gen"]
 	path = external/msdf-atlas-gen
 	url = https://github.com/Chlumsky/msdf-atlas-gen.git
 [submodule "external/msdf-atlas-read"]
 	path = external/msdf-atlas-read
-	url = git@github.com:hornang/msdf-atlas-read.git
+	url = https://github.com/hornang/msdf-atlas-read.git
