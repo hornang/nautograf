@@ -147,7 +147,7 @@ QString SymbolImage::buoyHash(ChartData::BuoyShape buoyShape, SymbolImage::Later
     return QString("buoy" + QString::number((int)buoyShape + (int)laterality * 20));
 }
 
-std::optional<SymbolImage::TextureSymbol> SymbolImage::underwaterRock(const ChartData::UnderwaterRock::Reader &rock) const
+std::optional<TextureSymbol> SymbolImage::underwaterRock(const ChartData::UnderwaterRock::Reader &rock) const
 {
     const auto hash = underwaterRockHash(rock.getWaterlevelEffect());
 
@@ -158,7 +158,7 @@ std::optional<SymbolImage::TextureSymbol> SymbolImage::underwaterRock(const Char
     return m_symbols[hash];
 }
 
-std::optional<SymbolImage::TextureSymbol> SymbolImage::beacon(const ChartData::Beacon::Reader &beacon) const
+std::optional<TextureSymbol> SymbolImage::beacon(const ChartData::Beacon::Reader &beacon) const
 {
     const auto hash = beaconHash(beacon.getShape());
     if (!m_symbols.contains(hash)) {
@@ -168,7 +168,7 @@ std::optional<SymbolImage::TextureSymbol> SymbolImage::beacon(const ChartData::B
     return m_symbols[hash];
 }
 
-std::optional<SymbolImage::TextureSymbol> SymbolImage::lateralBuoy(const ChartData::BuoyLateral::Reader &buoy) const
+std::optional<TextureSymbol> SymbolImage::lateralBuoy(const ChartData::BuoyLateral::Reader &buoy) const
 {
     auto category = buoy.getCategory();
 
@@ -195,7 +195,7 @@ std::optional<SymbolImage::TextureSymbol> SymbolImage::lateralBuoy(const ChartDa
     return m_symbols[hash];
 }
 
-std::optional<SymbolImage::TextureSymbol> SymbolImage::testSymbol() const
+std::optional<TextureSymbol> SymbolImage::testSymbol() const
 {
     if (!m_symbols.contains("test")) {
         return {};

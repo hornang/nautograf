@@ -7,43 +7,9 @@
 #include <QRectF>
 
 #include "scene/annotations/fontimage.h"
+#include "scene/annotations/types.h"
 #include "symbolimage.h"
 #include <tilefactory/chart.h>
-
-// This only applies to symbol collisions. Labels are always checked.
-enum class CollisionRule {
-    NoCheck,
-    Always,
-    OnlyWithSameType
-};
-
-struct Label
-{
-    QString text;
-    FontImage::FontType font;
-    QColor color;
-    float pointSize;
-};
-
-struct AnnotationLabel
-{
-    Label label;
-    QPointF pos;
-    QPointF offset;
-    QRectF boundingBox;
-    std::optional<float> scaleLimit;
-    std::optional<float> parentScaleLimit;
-};
-
-struct Annotation
-{
-    QPointF pos;
-    std::optional<SymbolImage::TextureSymbol> symbol;
-    std::optional<float> scaleLimit;
-    QList<AnnotationLabel> labels;
-    int priority = 0;
-    CollisionRule collisionRule;
-};
 
 class Annotater
 {
@@ -58,7 +24,7 @@ private:
     template <typename T>
     QList<Annotation> getAnnotations(
         const typename capnp::List<T>::Reader &elements,
-        std::function<std::optional<SymbolImage::TextureSymbol>(const typename T::Reader &)> getSymbol,
+        std::function<std::optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
         std::function<std::optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
         std::function<Label(const typename T::Reader &)> getLabel,
         int priority = 0,

@@ -526,7 +526,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
 
 QRectF computeSymbolBox(const QTransform &transform,
                         const QPointF &pos,
-                        const SymbolImage::TextureSymbol &textureSymbol)
+                        const TextureSymbol &textureSymbol)
 {
     const auto topLeft = transform.map(pos) - textureSymbol.center;
     return QRectF(topLeft + textureSymbol.roi.topLeft(),
@@ -580,7 +580,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     struct SymbolBox
     {
         QRectF box;
-        SymbolImage::TextureSymbol symbol;
+        TextureSymbol symbol;
     };
 
     // Place symbols
