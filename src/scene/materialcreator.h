@@ -21,6 +21,7 @@ public:
     LineMaterial *lineMaterial();
 
 private:
+    float m_scale = 0;
     QSGTexture *m_symbolTexture = nullptr;
     QSGTexture *m_fontTexture = nullptr;
     std::unique_ptr<PolygonMaterial> m_opaquePolygonMaterial;

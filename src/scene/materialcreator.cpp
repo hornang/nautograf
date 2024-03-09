@@ -12,6 +12,8 @@ MaterialCreator::MaterialCreator(QSGTexture *symbolTexture,
 
 void MaterialCreator::setScale(float scale)
 {
+    m_scale = scale;
+
     if (m_symbolMaterial) {
         m_symbolMaterial->setScale(scale);
     }
@@ -43,6 +45,7 @@ AnnotationMaterial *MaterialCreator::symbolMaterial()
 {
     if (!m_symbolMaterial) {
         m_symbolMaterial = std::make_unique<AnnotationMaterial>(m_symbolTexture);
+        m_symbolMaterial->setScale(m_scale);
     }
 
     return m_symbolMaterial.get();
@@ -52,6 +55,7 @@ AnnotationMaterial *MaterialCreator::textMaterial()
 {
     if (!m_textMaterial) {
         m_textMaterial = std::make_unique<AnnotationMaterial>(m_fontTexture);
+        m_textMaterial->setScale(m_scale);
     }
 
     return m_textMaterial.get();
