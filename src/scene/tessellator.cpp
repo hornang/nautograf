@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "annotater.h"
+#include "annotations/annotater.h"
 #include "cutlines/cutlines.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"

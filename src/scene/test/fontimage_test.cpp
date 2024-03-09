@@ -3,7 +3,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include <scene/fontimage.h>
+#include "scene/annotations/fontimage.h"
 
 TEST(FontImageTest, SaveAtlasToFile)
 {

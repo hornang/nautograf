@@ -1,6 +1,6 @@
 #pragma once
 
-#include "annotation/annotationnode.h"
+#include "annotations/annotationnode.h"
 #include "line/linenode.h"
 #include "polygon/polygonnode.h"
 

@@ -8,12 +8,18 @@ if(NOT DEFINED SYMBOLS_DIR)
 endif()
 
 add_library(scene
-    annotation/annotationmaterial.cpp
-    annotation/annotationmaterial.h
-    annotation/annotationnode.cpp
-    annotation/annotationnode.h
-    annotation/annotationshader.cpp
-    annotation/annotationshader.h
+    annotations/annotationmaterial.cpp
+    annotations/annotationmaterial.h
+    annotations/annotationnode.cpp
+    annotations/annotationnode.h
+    annotations/annotationshader.cpp
+    annotations/annotationshader.h
+    annotations/fontimage.cpp
+    include/scene/annotations/fontimage.h
+    annotations/symbolimage.cpp
+    annotations/symbolimage.h
+    annotations/annotater.cpp
+    annotations/annotater.h
 
     line/linematerial.cpp
     line/linematerial.h
@@ -29,19 +35,12 @@ add_library(scene
     polygon/polygonshader.cpp
     polygon/polygonshader.h
 
-    fontimage.cpp
-    include/scene/fontimage.h
-
-    annotater.cpp
-    annotater.h
     geometrynode.cpp
     geometrynode.h
     materialcreator.cpp
     materialcreator.h
     rootnode.cpp
     rootnode.h
-    symbolimage.cpp
-    symbolimage.h
 
     scene.cpp
     include/scene/scene.h
@@ -59,8 +58,8 @@ qt6_add_shaders(scene "shaders"
     PREFIX
         "scene"
     FILES
-        "annotation/annotation.vert"
-        "annotation/annotation.frag"
+        "annotations/annotation.vert"
+        "annotations/annotation.frag"
         "polygon/polygon.frag"
         "polygon/polygon.vert"
         "line/line.frag"

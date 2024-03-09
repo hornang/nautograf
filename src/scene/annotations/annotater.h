@@ -6,8 +6,8 @@
 #include <QPointF>
 #include <QRectF>
 
+#include "scene/annotations/fontimage.h"
 #include "symbolimage.h"
-#include <scene/fontimage.h>
 #include <tilefactory/chart.h>
 
 // This only applies to symbol collisions. Labels are always checked.
