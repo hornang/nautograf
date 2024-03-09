@@ -561,9 +561,6 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     float maxScale = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
-    const auto leftX = Mercator::mercatorWidth(0, recipe.rect.left(), s_pixelsPerLon);
-    const auto topY = Mercator::mercatorHeight(0, recipe.rect.top(), s_pixelsPerLon);
-
     const float zoomRatios[] = { 5, 4, 3, 2, 1, 0 };
     QTransform transforms[std::size(zoomRatios)];
 
@@ -573,7 +570,6 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
         QTransform transform;
         transform.scale(scale, scale);
-        transform.translate(-leftX, -topY);
         transforms[i++] = transform;
     }
 
