@@ -30,25 +30,25 @@ Charset createLatinCharset()
     return charset;
 }
 
-string getFontName(FontImage::FontType type)
+string getFontName(FontType type)
 {
     switch (type) {
-    case FontImage::FontType::Normal:
+    case FontType::Normal:
         return "normal";
-    case FontImage::FontType::Soundings:
+    case FontType::Soundings:
         return "soundings";
     }
     return {};
 }
 
-FontImage::FontType getFontType(const string &name)
+FontType getFontType(const string &name)
 {
     if (name == "normal") {
-        return FontImage::FontType::Normal;
+        return FontType::Normal;
     } else if (name == "soundings") {
-        return FontImage::FontType::Soundings;
+        return FontType::Soundings;
     }
-    return FontImage::FontType::Unknown;
+    return FontType::Unknown;
 }
 
 QString getAtlasDir()
@@ -79,8 +79,8 @@ bool generateAtlas(const string &pngFileName, const string &layoutFileName)
 
     Charset charset = createLatinCharset();
 
-    for (const auto &fontType : { FontImage::FontType::Normal,
-                                  FontImage::FontType::Soundings }) {
+    for (const auto &fontType : { FontType::Normal,
+                                  FontType::Soundings }) {
         const auto fontFile = FontImage::locateFontFile(fontType);
 
         if (fontFile.isEmpty()) {
@@ -139,14 +139,14 @@ bool generateAtlas(const string &pngFileName, const string &layoutFileName)
     return true;
 }
 
-unordered_map<FontImage::FontType, msdf_atlas_read::FontGeometry> getGeometriesByFontType(const msdf_atlas_read::AtlasLayout &atlas)
+unordered_map<FontType, msdf_atlas_read::FontGeometry> getGeometriesByFontType(const msdf_atlas_read::AtlasLayout &atlas)
 {
-    unordered_map<FontImage::FontType, msdf_atlas_read::FontGeometry> geometriesByType;
+    unordered_map<FontType, msdf_atlas_read::FontGeometry> geometriesByType;
 
     for (const msdf_atlas_read::FontGeometry &fontGeometry : atlas.fontGeometries) {
-        FontImage::FontType type = getFontType(fontGeometry.name);
+        FontType type = getFontType(fontGeometry.name);
 
-        if (type == FontImage::FontType::Unknown) {
+        if (type == FontType::Unknown) {
             continue;
         }
 
@@ -328,10 +328,10 @@ QString FontImage::locateFontFile(FontType type)
 
     QStringList fonts;
     switch (type) {
-    case FontImage::FontType::Normal:
+    case FontType::Normal:
         fonts = dir.entryList({ "arial*" });
         break;
-    case FontImage::FontType::Soundings:
+    case FontType::Soundings:
         fonts = dir.entryList({ "ariali*" });
         break;
     }

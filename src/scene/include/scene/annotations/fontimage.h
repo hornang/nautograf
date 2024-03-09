@@ -13,6 +13,8 @@
 #include <msdf-atlas-gen/msdf-atlas-gen.h>
 #include <msdf-atlas-read.h>
 
+#include "types.h"
+
 class FontWorker;
 
 class FontImage : public QObject
@@ -23,12 +25,6 @@ public:
     FontImage();
     ~FontImage();
     FontImage(const FontImage &other) = delete;
-
-    enum class FontType {
-        Unknown,
-        Soundings,
-        Normal,
-    };
 
     struct Atlas
     {

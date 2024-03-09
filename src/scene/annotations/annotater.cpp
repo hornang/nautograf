@@ -20,7 +20,7 @@ enum class LabelPlacement {
 };
 
 QPointF getLabelOffset(const QRectF &labelBox,
-                       const SymbolImage::TextureSymbol &symbol,
+                       const TextureSymbol &symbol,
                        LabelPlacement placement)
 {
     const int labelMargin = 2;
@@ -62,7 +62,7 @@ QString Annotater::getDepthString(float depth) const
 template <typename T>
 QList<Annotation> Annotater::getAnnotations(
     const typename capnp::List<T>::Reader &elements,
-    function<optional<SymbolImage::TextureSymbol>(const typename T::Reader &)> getSymbol,
+    function<optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
     function<optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
     function<Label(const typename T::Reader &)> getLabel,
     int priority,
@@ -87,7 +87,7 @@ QList<Annotation> Annotater::getAnnotations(
                                                                label.pointSize,
                                                                label.font);
 
-        optional<SymbolImage::TextureSymbol> symbol;
+        optional<TextureSymbol> symbol;
 
         if (getSymbol != nullptr) {
             symbol = getSymbol(element);
@@ -145,7 +145,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getPosition(); },
             [&](const auto &item) {
                 return Label { getDepthString(item.getDepth()),
-                               FontImage::FontType::Soundings,
+                               FontType::Soundings,
                                QColor(120, 120, 120),
                                soundingPointSize };
             },
@@ -160,7 +160,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getPosition(); },
             [&](const auto &rock) {
                 return Label { getDepthString(rock.getDepth()),
-                               FontImage::FontType::Soundings,
+                               FontType::Soundings,
                                symbolLabelColor,
                                rockPointSize };
             },
@@ -178,7 +178,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
                 const auto label = QStringLiteral("?");
 
                 return Label { label,
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                symbolLabelColor,
                                soundingPointSize };
             },
@@ -191,7 +191,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getPosition(); },
             [&](const auto &item) {
                 return Label { QString::fromStdString(item.getName()),
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                labelColor,
                                landRegionPointSize };
             },
@@ -204,7 +204,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getPosition(); },
             [&](const auto &item) {
                 return Label { QString::fromStdString(item.getName()),
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                labelColor,
                                builtUpPointSize };
             },
@@ -217,7 +217,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getCentroid(); },
             [&](const auto &item) {
                 return Label { QString::fromStdString(item.getName()),
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                symbolLabelColor,
                                landAreaPointSize };
             },
@@ -230,7 +230,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getCentroid(); },
             [&](const auto &item) {
                 return Label { QString::fromStdString(item.getName()),
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                symbolLabelColor,
                                builtUpAreaPointSize };
             },
@@ -243,7 +243,7 @@ QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &cha
             [](const auto &item) { return item.getPosition(); },
             [&](const auto &item) {
                 return Label { QString::fromStdString(item.getName()),
-                               FontImage::FontType::Normal,
+                               FontType::Normal,
                                symbolLabelColor,
                                beaconPointSize };
             },

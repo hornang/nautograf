@@ -16,6 +16,7 @@ add_library(scene
     annotations/annotationshader.h
     annotations/fontimage.cpp
     include/scene/annotations/fontimage.h
+    include/scene/annotations/types.h
     annotations/symbolimage.cpp
     annotations/symbolimage.h
     annotations/annotater.cpp
