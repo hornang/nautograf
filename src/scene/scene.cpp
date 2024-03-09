@@ -1,16 +1,16 @@
 #include <QtConcurrent>
 
-#include "annotation/annotationmaterial.h"
-#include "annotation/annotationnode.h"
+#include "annotations/annotationmaterial.h"
+#include "annotations/annotationnode.h"
+#include "annotations/symbolimage.h"
 #include "geometrynode.h"
 #include "line/linematerial.h"
 #include "materialcreator.h"
 #include "polygon/polygonmaterial.h"
 #include "polygon/polygonnode.h"
 #include "rootnode.h"
-#include "scene/fontimage.h"
+#include "scene/annotations/fontimage.h"
 #include "scene/scene.h"
-#include "symbolimage.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
 

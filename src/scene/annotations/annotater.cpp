@@ -4,7 +4,7 @@
 #include <QString>
 
 #include "annotater.h"
-#include "scene/fontimage.h"
+#include "scene/annotations/fontimage.h"
 #include "symbolimage.h"
 #include "tilefactory/mercator.h"
 

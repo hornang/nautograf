@@ -7,11 +7,11 @@
 #include <QSGTexture>
 #include <QtConcurrent>
 
-#include "annotation/annotationnode.h"
+#include "annotations/annotationnode.h"
+#include "annotations/symbolimage.h"
 #include "polygon/polygonnode.h"
-#include "scene/fontimage.h"
+#include "scene/annotations/fontimage.h"
 #include "scene/tilefactorywrapper.h"
-#include "symbolimage.h"
 #include "tilefactory/chart.h"
 
 #include "tiledata.h"

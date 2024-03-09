@@ -1,12 +1,12 @@
 #include <QQuickWindow>
 #include <QSGTexture>
 
-#include "annotation/annotationmaterial.h"
+#include "annotations/annotationmaterial.h"
+#include "annotations/symbolimage.h"
 #include "line/linematerial.h"
 #include "materialcreator.h"
 #include "polygon/polygonmaterial.h"
 #include "rootnode.h"
-#include "symbolimage.h"
 
 RootNode::RootNode(const QImage &symbolImage,
                    const QImage &fontImage,

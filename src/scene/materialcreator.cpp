@@ -1,5 +1,5 @@
 #include "materialcreator.h"
-#include "annotation/annotationmaterial.h"
+#include "annotations/annotationmaterial.h"
 #include "line/linematerial.h"
 #include "polygon/polygonmaterial.h"
 

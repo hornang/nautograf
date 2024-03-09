@@ -8,7 +8,7 @@
 #include <QString>
 #include <QThread>
 
-#include "scene/fontimage.h"
+#include "scene/annotations/fontimage.h"
 
 using namespace msdf_atlas;
 using namespace std;
