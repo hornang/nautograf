@@ -23,7 +23,7 @@ public:
         uchar green;
         uchar blue;
         uchar alpha; // For padding purposes. Ignored by shader
-        float scaleLimit;
+        float minZoom;
     };
     AnnotationNode(const QString &tileId,
                    QSGMaterial *material,

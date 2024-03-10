@@ -12,15 +12,15 @@ public:
     int compare(const QSGMaterial *other) const override;
     QSGMaterialShader *createShader(QSGRendererInterface::RenderMode) const override;
     QSGTexture *texture() const { return m_texture; }
-    void setScale(float scale)
+    void setZoom(float zoom)
     {
-        uniforms.scale = scale;
+        uniforms.zoom = zoom;
         uniforms.dirty = true;
     }
 
     struct
     {
-        float scale = 0;
+        float zoom = 0;
         bool dirty = false;
     } uniforms;
 

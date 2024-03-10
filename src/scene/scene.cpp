@@ -257,7 +257,7 @@ QSGNode *Scene::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
     m_tessellatorRemoved = false;
 
     if (m_zoom != zoom) {
-        materialCreator->setScale(zoom);
+        materialCreator->setZoom(zoom);
     }
 
     m_zoom = zoom;

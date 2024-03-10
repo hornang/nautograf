@@ -22,7 +22,7 @@ bool AnnotationShader::updateUniformData(RenderState &state, QSGMaterial *newMat
 
     auto *annotationMaterial = static_cast<AnnotationMaterial *>(newMaterial);
     if (oldMaterial != newMaterial || annotationMaterial->uniforms.dirty) {
-        memcpy(uniformBuffer->data() + 132, &annotationMaterial->uniforms.scale, 4);
+        memcpy(uniformBuffer->data() + 132, &annotationMaterial->uniforms.zoom, 4);
         annotationMaterial->uniforms.dirty = false;
         changed = true;
     }

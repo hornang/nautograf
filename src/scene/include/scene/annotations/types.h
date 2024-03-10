@@ -61,15 +61,15 @@ struct AnnotationLabel
     QPointF pos;
     QPointF offset;
     QRectF boundingBox;
-    std::optional<float> scaleLimit;
-    std::optional<float> parentScaleLimit;
+    std::optional<float> minZoom;
+    std::optional<float> parentMinZoom;
 };
 
 struct Annotation
 {
     QPointF pos;
     std::optional<TextureSymbol> symbol;
-    std::optional<float> scaleLimit;
+    std::optional<float> minZoom;
     QList<AnnotationLabel> labels;
     int priority = 0;
     CollisionRule collisionRule;
