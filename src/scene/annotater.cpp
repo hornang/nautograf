@@ -97,6 +97,10 @@ QList<Annotation> Annotater::getAnnotations(
             }
         }
 
+        if (!symbol.has_value() && label.text.isEmpty()) {
+            continue;
+        }
+
         QPointF labelOffset;
 
         if (symbol.has_value()) {
