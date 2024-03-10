@@ -21,6 +21,8 @@ add_library(scene
     annotations/symbolimage.h
     annotations/annotater.cpp
     annotations/annotater.h
+    annotations/zoomsweeper.cpp
+    annotations/zoomsweeper.h
 
     line/linematerial.cpp
     line/linematerial.h
