@@ -234,6 +234,10 @@ void FontImage::setAtlas(const FontImage::Atlas &atlas)
 
 QRectF FontImage::boundingBox(const QString &text, float pointSize, FontType type) const
 {
+    if (text.isEmpty()) {
+        return {};
+    }
+
     int yMin = std::numeric_limits<int>::max();
     int yMax = std::numeric_limits<int>::min();
     int xMax = std::numeric_limits<int>::min();
