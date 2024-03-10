@@ -10,16 +10,16 @@ MaterialCreator::MaterialCreator(QSGTexture *symbolTexture,
 {
 }
 
-void MaterialCreator::setScale(float scale)
+void MaterialCreator::setZoom(float zoom)
 {
-    m_scale = scale;
+    m_scale = zoom;
 
     if (m_symbolMaterial) {
-        m_symbolMaterial->setScale(scale);
+        m_symbolMaterial->setZoom(zoom);
     }
 
     if (m_textMaterial) {
-        m_textMaterial->setScale(scale);
+        m_textMaterial->setZoom(zoom);
     }
 }
 
@@ -45,7 +45,7 @@ AnnotationMaterial *MaterialCreator::symbolMaterial()
 {
     if (!m_symbolMaterial) {
         m_symbolMaterial = std::make_unique<AnnotationMaterial>(m_symbolTexture);
-        m_symbolMaterial->setScale(m_scale);
+        m_symbolMaterial->setZoom(m_scale);
     }
 
     return m_symbolMaterial.get();
@@ -55,7 +55,7 @@ AnnotationMaterial *MaterialCreator::textMaterial()
 {
     if (!m_textMaterial) {
         m_textMaterial = std::make_unique<AnnotationMaterial>(m_fontTexture);
-        m_textMaterial->setScale(m_scale);
+        m_textMaterial->setZoom(m_scale);
     }
 
     return m_textMaterial.get();

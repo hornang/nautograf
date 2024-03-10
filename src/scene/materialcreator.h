@@ -13,7 +13,7 @@ class MaterialCreator
 public:
     MaterialCreator() = delete;
     MaterialCreator(QSGTexture *symbolTexture, QSGTexture *fontTexture);
-    void setScale(float scale);
+    void setZoom(float zoom);
     PolygonMaterial *opaquePolygonMaterial();
     PolygonMaterial *blendedPolygonMaterial();
     AnnotationMaterial *symbolMaterial();

@@ -328,10 +328,10 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
         const auto &symbolSize = symbol.size;
         const auto &color = symbol.color;
 
-        float scaleLimit = 1000;
+        float minZoom = 1000;
 
-        if (annotation.scaleLimit) {
-            scaleLimit = annotation.scaleLimit.value();
+        if (annotation.minZoom) {
+            minZoom = annotation.minZoom.value();
         }
 
         data[0] = { static_cast<float>(pos.x()),
@@ -344,7 +344,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data[1] = { static_cast<float>(pos.x()),
                     static_cast<float>(pos.y()),
@@ -356,7 +356,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data[2] = { static_cast<float>(pos.x()),
                     static_cast<float>(pos.y()),
@@ -368,7 +368,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data[3] = { static_cast<float>(pos.x()),
                     static_cast<float>(pos.y()),
@@ -380,7 +380,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data[4] = { static_cast<float>(pos.x()),
                     static_cast<float>(pos.y()),
@@ -392,7 +392,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data[5] = { static_cast<float>(pos.x()),
                     static_cast<float>(pos.y()),
@@ -404,7 +404,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotat
                     static_cast<uchar>(color.green()),
                     static_cast<uchar>(color.blue()),
                     static_cast<uchar>(color.alpha()),
-                    scaleLimit };
+                    minZoom };
 
         data += 6;
     }
@@ -420,11 +420,11 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
     QSize imageSize = fontImage->atlasSize();
 
     for (const auto &annotationLabel : annotationLabels) {
-        if (!annotationLabel.scaleLimit.has_value()) {
+        if (!annotationLabel.minZoom.has_value()) {
             continue;
         }
 
-        float scaleLimit = annotationLabel.scaleLimit.value();
+        float minZoom = annotationLabel.minZoom.value();
 
         auto glyphs = fontImage->glyphs(annotationLabel.label.text,
                                         annotationLabel.label.pointSize,
@@ -454,7 +454,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             data[1] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
@@ -466,7 +466,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             data[2] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
@@ -478,7 +478,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             data[3] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
@@ -490,7 +490,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             data[4] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
@@ -502,7 +502,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             data[5] = { static_cast<float>(pos.x()),
                         static_cast<float>(pos.y()),
@@ -514,7 +514,7 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
                         static_cast<uchar>(color.green()),
                         static_cast<uchar>(color.blue()),
                         static_cast<uchar>(color.alpha()),
-                        scaleLimit };
+                        minZoom };
 
             glyphCounter++;
         }
@@ -559,17 +559,18 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
         return a.priority > b.priority;
     });
 
-    float maxScale = recipe.pixelsPerLongitude / s_pixelsPerLon;
+    float maxZoom = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
     const float zoomRatios[] = { 5, 4, 3, 2, 1, 0 };
     QTransform transforms[std::size(zoomRatios)];
 
     int i = 0;
     for (const auto &zoomExp : zoomRatios) {
-        const float scale = maxScale / pow(2, zoomExp / 5);
+        const float zoom = maxZoom / pow(2, zoomExp / 5);
 
         QTransform transform;
-        transform.scale(scale, scale);
+        transform.scale(zoom, zoom);
+
         transforms[i++] = transform;
     }
 
@@ -581,13 +582,13 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     // Place symbols
     for (const auto &transform : transforms) {
-        const auto scale = transform.m11();
+        const auto zoom = transform.m11();
 
         QList<SymbolBox> existingBoxes;
 
-        // Create collision rectangles for symbols already shown at smaller scale
+        // Create collision rectangles for symbols already shown at smaller zoom
         for (const auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.scaleLimit.has_value()) {
+            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
                 auto a = computeSymbolBox(transform,
                                           annotation.pos,
                                           annotation.symbol.value());
@@ -597,15 +598,15 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
         for (auto &annotation : annotations) {
             if (!annotation.symbol.has_value()) {
-                // This annotation has no actual symbol so we set allowed scale
-                // to any scale so that child labels can be shown. This is done
+                // This annotation has no actual symbol so we set minimum zoom
+                // to any zoom so that child labels can be shown. This is done
                 // to show label(s) for annotations without a symbol.
-                annotation.scaleLimit = 0;
+                annotation.minZoom = 0;
                 continue;
             }
 
-            if (annotation.scaleLimit.has_value()) {
-                // This annotation was already set to be shown at smaller scale
+            if (annotation.minZoom.has_value()) {
+                // This annotation was already set to be shown at smaller zoom
                 continue;
             }
 
@@ -627,7 +628,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
 
             if (!collision) {
-                annotation.scaleLimit = scale;
+                annotation.minZoom = zoom;
                 existingBoxes.append(symbolBox);
             }
         }
@@ -637,33 +638,33 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     for (auto &annotation : annotations) {
         for (auto &label : annotation.labels) {
-            label.parentScaleLimit = annotation.scaleLimit;
+            label.parentMinZoom = annotation.minZoom;
             annotationLabels.append(label);
         }
     }
 
     // Place labels
     for (const auto &transform : transforms) {
-        const auto scale = transform.m11();
+        const auto zoom = transform.m11();
 
         QList<QRectF> boxes;
 
         for (auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.scaleLimit.has_value()) {
+            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
                 const auto pos = transform.map(annotation.pos) - annotation.symbol.value().center;
                 boxes.append(QRectF(pos, annotation.symbol.value().size));
             }
         }
 
         for (auto &annotationLabel : annotationLabels) {
-            if (annotationLabel.scaleLimit.has_value()) {
+            if (annotationLabel.minZoom.has_value()) {
                 const auto pos = transform.map(annotationLabel.pos) + annotationLabel.offset;
                 boxes.append(QRectF(pos, annotationLabel.boundingBox.size()));
             }
         }
 
         for (auto &annotationLabel : annotationLabels) {
-            if (!annotationLabel.parentScaleLimit.has_value() || scale < annotationLabel.parentScaleLimit.value()) {
+            if (!annotationLabel.parentMinZoom.has_value() || zoom < annotationLabel.parentMinZoom.value()) {
                 continue;
             }
 
@@ -680,7 +681,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             }
 
             if (!collision) {
-                annotationLabel.scaleLimit = scale;
+                annotationLabel.minZoom = zoom;
                 boxes.append(labelBox);
             }
         }
