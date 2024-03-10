@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "annotations/annotater.h"
+#include "annotations/zoomsweeper.h"
 #include "cutlines/cutlines.h"
 #include "tessellator.h"
 #include "tilefactory/mercator.h"
@@ -524,15 +525,6 @@ QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &anno
     return list;
 }
 
-QRectF computeSymbolBox(const QTransform &transform,
-                        const QPointF &pos,
-                        const TextureSymbol &textureSymbol)
-{
-    const auto topLeft = transform.map(pos) - textureSymbol.center;
-    return QRectF(topLeft + textureSymbol.roi.topLeft(),
-                  textureSymbol.roi.size());
-}
-
 /*!
     Fetch data from the tilefactory and converts to vertex data
 */
@@ -561,131 +553,10 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     float maxZoom = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
-    const float zoomRatios[] = { 5, 4, 3, 2, 1, 0 };
-    QTransform transforms[std::size(zoomRatios)];
+    ZoomSweeper zoomSweeper(maxZoom);
+    zoomSweeper.calcAnnotations(annotations);
 
-    int i = 0;
-    for (const auto &zoomExp : zoomRatios) {
-        const float zoom = maxZoom / pow(2, zoomExp / 5);
-
-        QTransform transform;
-        transform.scale(zoom, zoom);
-
-        transforms[i++] = transform;
-    }
-
-    struct SymbolBox
-    {
-        QRectF box;
-        TextureSymbol symbol;
-    };
-
-    // Place symbols
-    for (const auto &transform : transforms) {
-        const auto zoom = transform.m11();
-
-        QList<SymbolBox> existingBoxes;
-
-        // Create collision rectangles for symbols already shown at smaller zoom
-        for (const auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
-                auto a = computeSymbolBox(transform,
-                                          annotation.pos,
-                                          annotation.symbol.value());
-                existingBoxes.append(SymbolBox { a, annotation.symbol.value() });
-            }
-        }
-
-        for (auto &annotation : annotations) {
-            if (!annotation.symbol.has_value()) {
-                // This annotation has no actual symbol so we set minimum zoom
-                // to any zoom so that child labels can be shown. This is done
-                // to show label(s) for annotations without a symbol.
-                annotation.minZoom = 0;
-                continue;
-            }
-
-            if (annotation.minZoom.has_value()) {
-                // This annotation was already set to be shown at smaller zoom
-                continue;
-            }
-
-            SymbolBox symbolBox { computeSymbolBox(transform,
-                                                   annotation.pos,
-                                                   annotation.symbol.value()),
-                                  annotation.symbol.value() };
-
-            bool collision = false;
-
-            if (annotation.collisionRule != CollisionRule::NoCheck) {
-                for (const auto &other : existingBoxes) {
-                    if (symbolBox.box.intersects(other.box)
-                        && (annotation.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
-                        collision = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!collision) {
-                annotation.minZoom = zoom;
-                existingBoxes.append(symbolBox);
-            }
-        }
-    }
-
-    QList<AnnotationLabel> annotationLabels;
-
-    for (auto &annotation : annotations) {
-        for (auto &label : annotation.labels) {
-            label.parentMinZoom = annotation.minZoom;
-            annotationLabels.append(label);
-        }
-    }
-
-    // Place labels
-    for (const auto &transform : transforms) {
-        const auto zoom = transform.m11();
-
-        QList<QRectF> boxes;
-
-        for (auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
-                const auto pos = transform.map(annotation.pos) - annotation.symbol.value().center;
-                boxes.append(QRectF(pos, annotation.symbol.value().size));
-            }
-        }
-
-        for (auto &annotationLabel : annotationLabels) {
-            if (annotationLabel.minZoom.has_value()) {
-                const auto pos = transform.map(annotationLabel.pos) + annotationLabel.offset;
-                boxes.append(QRectF(pos, annotationLabel.boundingBox.size()));
-            }
-        }
-
-        for (auto &annotationLabel : annotationLabels) {
-            if (!annotationLabel.parentMinZoom.has_value() || zoom < annotationLabel.parentMinZoom.value()) {
-                continue;
-            }
-
-            const auto pos = transform.map(annotationLabel.pos) + annotationLabel.offset;
-            QRectF labelBox(pos, annotationLabel.boundingBox.size());
-
-            bool collision = false;
-
-            for (const auto &collisionRect : boxes) {
-                if (labelBox.intersects(collisionRect)) {
-                    collision = true;
-                    break;
-                }
-            }
-
-            if (!collision) {
-                annotationLabel.minZoom = zoom;
-                boxes.append(labelBox);
-            }
-        }
-    }
+    QList<AnnotationLabel> annotationLabels = zoomSweeper.calcLabels(annotations);
 
     TileData tileData;
     tileData.symbolVertices = getSymbolVertices(annotations);
