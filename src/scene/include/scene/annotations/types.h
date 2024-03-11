@@ -59,10 +59,10 @@ struct AnnotationLabel
 {
     Label label;
     QPointF pos;
+    size_t parentSymbolIndex;
     QPointF offset;
     QRectF boundingBox;
     std::optional<float> minZoom;
-    std::optional<float> parentMinZoom;
 };
 
 struct AnnotationSymbol
@@ -70,7 +70,6 @@ struct AnnotationSymbol
     QPointF pos;
     std::optional<TextureSymbol> symbol;
     std::optional<float> minZoom;
-    QList<AnnotationLabel> labels;
     int priority = 0;
     CollisionRule collisionRule;
 };

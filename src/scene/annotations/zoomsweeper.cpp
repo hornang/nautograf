@@ -6,6 +6,8 @@
 #include "annotater.h"
 #include "zoomsweeper.h"
 
+using namespace std;
+
 namespace {
 QRectF computeSymbolRect(const QTransform &transform,
                          const QPointF &pos,
@@ -30,13 +32,22 @@ ZoomSweeper::ZoomSweeper(float maxZoom)
     }
 }
 
-void ZoomSweeper::calcSymbols(QList<AnnotationSymbol> &symbols)
+void ZoomSweeper::calcSymbols(vector<AnnotationSymbol> &symbols)
 {
     struct SymbolBox
     {
         QRectF box;
         TextureSymbol symbol;
     };
+
+    vector<AnnotationSymbol *> sortedSymbols;
+    for (auto &symbol : symbols) {
+        sortedSymbols.push_back(&symbol);
+    }
+
+    sort(sortedSymbols.begin(), sortedSymbols.end(), [](const AnnotationSymbol *a, const AnnotationSymbol *b) {
+        return a->priority > b->priority;
+    });
 
     // Place symbols
     for (const auto &transform : m_transforms) {
@@ -54,31 +65,31 @@ void ZoomSweeper::calcSymbols(QList<AnnotationSymbol> &symbols)
             }
         }
 
-        for (auto &symbol : symbols) {
-            if (!symbol.symbol.has_value()) {
+        for (auto *annotationSymbol : sortedSymbols) {
+            if (!annotationSymbol->symbol.has_value()) {
                 // This annotation has no actual symbol so we set minimum zoom
                 // to any zoom so that child labels can be shown. This is done
                 // to show label(s) for annotations without a symbol.
-                symbol.minZoom = 0;
+                annotationSymbol->minZoom = 0;
                 continue;
             }
 
-            if (symbol.minZoom.has_value()) {
+            if (annotationSymbol->minZoom.has_value()) {
                 // This annotation was already set to be shown at smaller zoom
                 continue;
             }
 
             SymbolBox symbolBox { computeSymbolRect(transform,
-                                                    symbol.pos,
-                                                    symbol.symbol.value()),
-                                  symbol.symbol.value() };
+                                                    annotationSymbol->pos,
+                                                    annotationSymbol->symbol.value()),
+                                  annotationSymbol->symbol.value() };
 
             bool collision = false;
 
-            if (symbol.collisionRule != CollisionRule::NoCheck) {
+            if (annotationSymbol->collisionRule != CollisionRule::NoCheck) {
                 for (const auto &other : existingBoxes) {
                     if (symbolBox.box.intersects(other.box)
-                        && (symbol.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
+                        && (annotationSymbol->collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
                         collision = true;
                         break;
                     }
@@ -86,24 +97,16 @@ void ZoomSweeper::calcSymbols(QList<AnnotationSymbol> &symbols)
             }
 
             if (!collision) {
-                symbol.minZoom = zoom;
+                annotationSymbol->minZoom = zoom;
                 existingBoxes.append(symbolBox);
             }
         }
     }
 }
 
-QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<AnnotationSymbol> &symbols)
+void ZoomSweeper::calcLabels(const vector<AnnotationSymbol> &symbols,
+                             vector<AnnotationLabel> &labels)
 {
-    QList<AnnotationLabel> labels;
-
-    for (const AnnotationSymbol &symbol : symbols) {
-        for (const AnnotationLabel &label : symbol.labels) {
-            auto it = labels.emplace(labels.cend(), label);
-            it->parentMinZoom = symbol.minZoom;
-        }
-    }
-
     for (const auto &transform : m_transforms) {
         const auto zoom = transform.m11();
 
@@ -124,7 +127,9 @@ QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<AnnotationSymbol> &sy
         }
 
         for (auto &label : labels) {
-            if (!label.parentMinZoom.has_value() || zoom < label.parentMinZoom.value()) {
+            const AnnotationSymbol &parentSymbol = symbols[label.parentSymbolIndex];
+
+            if (!parentSymbol.minZoom.has_value() || zoom < parentSymbol.minZoom.value()) {
                 continue;
             }
 
@@ -146,6 +151,4 @@ QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<AnnotationSymbol> &sy
             }
         }
     }
-
-    return labels;
 }
