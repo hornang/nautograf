@@ -304,7 +304,7 @@ QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &ar
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> getSymbolVertices(const QList<AnnotationSymbol> &annotations)
+QList<AnnotationNode::Vertex> getSymbolVertices(const vector<AnnotationSymbol> &annotations)
 {
     int validSymbols = 0;
 
@@ -413,7 +413,7 @@ QList<AnnotationNode::Vertex> getSymbolVertices(const QList<AnnotationSymbol> &a
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> getTextVertices(const QList<AnnotationLabel> &annotationLabels,
+QList<AnnotationNode::Vertex> getTextVertices(const vector<AnnotationLabel> &annotationLabels,
                                               const FontImage *fontImage)
 {
     QList<AnnotationNode::Vertex> list;
@@ -545,22 +545,18 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     }
 
     Annotater annotater(fontImage, symbolImage, s_pixelsPerLon);
-    QList<AnnotationSymbol> annotations = annotater.getAnnotations(charts);
-
-    std::sort(annotations.begin(), annotations.end(), [](const AnnotationSymbol &a, const AnnotationSymbol &b) {
-        return a.priority > b.priority;
-    });
+    Annotater::Annotations annotations = annotater.getAnnotations(charts);
+    std::vector<AnnotationSymbol> &symbols = annotations.symbols;
 
     float maxZoom = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
     ZoomSweeper zoomSweeper(maxZoom);
-    zoomSweeper.calcSymbols(annotations);
-
-    QList<AnnotationLabel> annotationLabels = zoomSweeper.calcLabels(annotations);
+    zoomSweeper.calcSymbols(annotations.symbols);
+    zoomSweeper.calcLabels(annotations.symbols, annotations.labels);
 
     TileData tileData;
-    tileData.symbolVertices = getSymbolVertices(annotations);
-    tileData.textVertices = getTextVertices(annotationLabels, fontImage.get());
+    tileData.symbolVertices = getSymbolVertices(annotations.symbols);
+    tileData.textVertices = getTextVertices(annotations.labels, fontImage.get());
 
     int clippingMarginInPixels = 4;
 

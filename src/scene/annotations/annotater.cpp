@@ -60,7 +60,7 @@ QString Annotater::getDepthString(float depth) const
 }
 
 template <typename T>
-QList<AnnotationSymbol> Annotater::getAnnotations(
+Annotater::Annotations Annotater::getAnnotations(
     const typename capnp::List<T>::Reader &elements,
     function<optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
     function<optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
@@ -71,7 +71,8 @@ QList<AnnotationSymbol> Annotater::getAnnotations(
 {
     assert(getPosition);
 
-    QList<AnnotationSymbol> symbols;
+    vector<AnnotationSymbol> symbols;
+    vector<AnnotationLabel> labels;
 
     for (const auto &element : elements) {
         const optional<ChartData::Position::Reader> maybePosition = getPosition(element);
@@ -109,26 +110,24 @@ QList<AnnotationSymbol> Annotater::getAnnotations(
             labelOffset = QPointF(-labelBoundingBox.width() / 2, -labelBoundingBox.height() / 2);
         }
 
-        symbols.append(AnnotationSymbol {
-            pos,
-            symbol,
-            nullopt,
-            { AnnotationLabel {
-                label,
-                pos,
-                labelOffset,
-                labelBoundingBox } },
-            priority,
-            collissionRule });
+        symbols.push_back(AnnotationSymbol { pos,
+                                             symbol,
+                                             nullopt,
+                                             priority,
+                                             collissionRule });
+
+        labels.push_back(AnnotationLabel { label,
+                                           pos,
+                                           symbols.size() - 1,
+                                           labelOffset,
+                                           labelBoundingBox });
     }
 
-    return symbols;
+    return { symbols, labels };
 }
 
-QList<AnnotationSymbol> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &charts)
+Annotater::Annotations Annotater::getAnnotations(const vector<shared_ptr<Chart>> &charts)
 {
-    QList<AnnotationSymbol> annotations;
-
     const float soundingPointSize = 16;
     const float rockPointSize = 17;
     const float beaconPointSize = 20;
@@ -137,6 +136,8 @@ QList<AnnotationSymbol> Annotater::getAnnotations(const vector<shared_ptr<Chart>
     const float builtUpPointSize = 22;
     const float landAreaPointSize = 22;
     const float builtUpAreaPointSize = 22;
+
+    Annotater::Annotations annotations;
 
     for (const auto &chart : charts) {
         annotations += getAnnotations<ChartData::Sounding>(

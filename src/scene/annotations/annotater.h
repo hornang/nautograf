@@ -18,11 +18,35 @@ public:
               std::shared_ptr<const SymbolImage> &symbolImage,
               int pixelsPerLon);
 
-    QList<AnnotationSymbol> getAnnotations(const std::vector<std::shared_ptr<Chart>> &charts);
+    struct Annotations
+    {
+        std::vector<AnnotationSymbol> symbols;
+        std::vector<AnnotationLabel> labels;
+
+        Annotations &operator+=(const Annotations &other)
+        {
+            symbols.insert(symbols.end(),
+                           other.symbols.begin(),
+                           other.symbols.end());
+
+            size_t initialLabelsSize = labels.size();
+
+            labels.insert(labels.end(),
+                          other.labels.begin(),
+                          other.labels.end());
+            for (int i = initialLabelsSize; i < labels.size(); i++) {
+                labels[i].parentSymbolIndex += initialLabelsSize;
+            }
+
+            return *this;
+        }
+    };
+
+    Annotations getAnnotations(const std::vector<std::shared_ptr<Chart>> &charts);
 
 private:
     template <typename T>
-    QList<AnnotationSymbol> getAnnotations(
+    Annotations getAnnotations(
         const typename capnp::List<T>::Reader &elements,
         std::function<std::optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
         std::function<std::optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
