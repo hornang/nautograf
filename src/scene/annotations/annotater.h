@@ -18,11 +18,11 @@ public:
               std::shared_ptr<const SymbolImage> &symbolImage,
               int pixelsPerLon);
 
-    QList<Annotation> getAnnotations(const std::vector<std::shared_ptr<Chart>> &charts);
+    QList<AnnotationSymbol> getAnnotations(const std::vector<std::shared_ptr<Chart>> &charts);
 
 private:
     template <typename T>
-    QList<Annotation> getAnnotations(
+    QList<AnnotationSymbol> getAnnotations(
         const typename capnp::List<T>::Reader &elements,
         std::function<std::optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
         std::function<std::optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
