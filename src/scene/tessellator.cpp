@@ -304,11 +304,11 @@ QList<LineNode::Vertex> strokePolygons(const typename capnp::List<T>::Reader &ar
     return vertices;
 }
 
-QList<AnnotationNode::Vertex> getSymbolVertices(const QList<Annotation> &annotations)
+QList<AnnotationNode::Vertex> getSymbolVertices(const QList<AnnotationSymbol> &annotations)
 {
     int validSymbols = 0;
 
-    for (const Annotation &annotation : annotations) {
+    for (const AnnotationSymbol &annotation : annotations) {
         if (annotation.symbol.has_value()) {
             validSymbols++;
         }
@@ -545,16 +545,16 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
     }
 
     Annotater annotater(fontImage, symbolImage, s_pixelsPerLon);
-    QList<Annotation> annotations = annotater.getAnnotations(charts);
+    QList<AnnotationSymbol> annotations = annotater.getAnnotations(charts);
 
-    std::sort(annotations.begin(), annotations.end(), [](const Annotation &a, const Annotation &b) {
+    std::sort(annotations.begin(), annotations.end(), [](const AnnotationSymbol &a, const AnnotationSymbol &b) {
         return a.priority > b.priority;
     });
 
     float maxZoom = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
     ZoomSweeper zoomSweeper(maxZoom);
-    zoomSweeper.calcAnnotations(annotations);
+    zoomSweeper.calcSymbols(annotations);
 
     QList<AnnotationLabel> annotationLabels = zoomSweeper.calcLabels(annotations);
 

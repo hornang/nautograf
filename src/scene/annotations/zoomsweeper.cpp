@@ -30,7 +30,7 @@ ZoomSweeper::ZoomSweeper(float maxZoom)
     }
 }
 
-void ZoomSweeper::calcAnnotations(QList<Annotation> &annotations)
+void ZoomSweeper::calcSymbols(QList<AnnotationSymbol> &symbols)
 {
     struct SymbolBox
     {
@@ -45,40 +45,40 @@ void ZoomSweeper::calcAnnotations(QList<Annotation> &annotations)
         QList<SymbolBox> existingBoxes;
 
         // Create collision rectangles for symbols already shown at smaller zoom
-        for (const auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
+        for (const auto &symbol : symbols) {
+            if (symbol.symbol.has_value() && symbol.minZoom.has_value()) {
                 existingBoxes.append(SymbolBox { computeSymbolRect(transform,
-                                                                   annotation.pos,
-                                                                   annotation.symbol.value()),
-                                                 annotation.symbol.value() });
+                                                                   symbol.pos,
+                                                                   symbol.symbol.value()),
+                                                 symbol.symbol.value() });
             }
         }
 
-        for (auto &annotation : annotations) {
-            if (!annotation.symbol.has_value()) {
+        for (auto &symbol : symbols) {
+            if (!symbol.symbol.has_value()) {
                 // This annotation has no actual symbol so we set minimum zoom
                 // to any zoom so that child labels can be shown. This is done
                 // to show label(s) for annotations without a symbol.
-                annotation.minZoom = 0;
+                symbol.minZoom = 0;
                 continue;
             }
 
-            if (annotation.minZoom.has_value()) {
+            if (symbol.minZoom.has_value()) {
                 // This annotation was already set to be shown at smaller zoom
                 continue;
             }
 
             SymbolBox symbolBox { computeSymbolRect(transform,
-                                                    annotation.pos,
-                                                    annotation.symbol.value()),
-                                  annotation.symbol.value() };
+                                                    symbol.pos,
+                                                    symbol.symbol.value()),
+                                  symbol.symbol.value() };
 
             bool collision = false;
 
-            if (annotation.collisionRule != CollisionRule::NoCheck) {
+            if (symbol.collisionRule != CollisionRule::NoCheck) {
                 for (const auto &other : existingBoxes) {
                     if (symbolBox.box.intersects(other.box)
-                        && (annotation.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
+                        && (symbol.collisionRule == CollisionRule::Always || other.symbol == symbolBox.symbol)) {
                         collision = true;
                         break;
                     }
@@ -86,21 +86,21 @@ void ZoomSweeper::calcAnnotations(QList<Annotation> &annotations)
             }
 
             if (!collision) {
-                annotation.minZoom = zoom;
+                symbol.minZoom = zoom;
                 existingBoxes.append(symbolBox);
             }
         }
     }
 }
 
-QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<Annotation> &annotations)
+QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<AnnotationSymbol> &symbols)
 {
     QList<AnnotationLabel> labels;
 
-    for (const Annotation &annotation : annotations) {
-        for (const AnnotationLabel &label : annotation.labels) {
+    for (const AnnotationSymbol &symbol : symbols) {
+        for (const AnnotationLabel &label : symbol.labels) {
             auto it = labels.emplace(labels.cend(), label);
-            it->parentMinZoom = annotation.minZoom;
+            it->parentMinZoom = symbol.minZoom;
         }
     }
 
@@ -109,10 +109,10 @@ QList<AnnotationLabel> ZoomSweeper::calcLabels(const QList<Annotation> &annotati
 
         QList<QRectF> boxes;
 
-        for (auto &annotation : annotations) {
-            if (annotation.symbol.has_value() && annotation.minZoom.has_value()) {
-                const auto pos = transform.map(annotation.pos) - annotation.symbol.value().center;
-                boxes.append(QRectF(pos, annotation.symbol.value().size));
+        for (auto &symbol : symbols) {
+            if (symbol.symbol.has_value() && symbol.minZoom.has_value()) {
+                const auto pos = transform.map(symbol.pos) - symbol.symbol.value().center;
+                boxes.append(QRectF(pos, symbol.symbol.value().size));
             }
         }
 

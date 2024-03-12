@@ -60,7 +60,7 @@ QString Annotater::getDepthString(float depth) const
 }
 
 template <typename T>
-QList<Annotation> Annotater::getAnnotations(
+QList<AnnotationSymbol> Annotater::getAnnotations(
     const typename capnp::List<T>::Reader &elements,
     function<optional<TextureSymbol>(const typename T::Reader &)> getSymbol,
     function<optional<ChartData::Position::Reader>(const typename T::Reader &)> getPosition,
@@ -71,7 +71,7 @@ QList<Annotation> Annotater::getAnnotations(
 {
     assert(getPosition);
 
-    QList<Annotation> annotations;
+    QList<AnnotationSymbol> symbols;
 
     for (const auto &element : elements) {
         const optional<ChartData::Position::Reader> maybePosition = getPosition(element);
@@ -109,7 +109,7 @@ QList<Annotation> Annotater::getAnnotations(
             labelOffset = QPointF(-labelBoundingBox.width() / 2, -labelBoundingBox.height() / 2);
         }
 
-        annotations.append(Annotation {
+        symbols.append(AnnotationSymbol {
             pos,
             symbol,
             nullopt,
@@ -122,12 +122,12 @@ QList<Annotation> Annotater::getAnnotations(
             collissionRule });
     }
 
-    return annotations;
+    return symbols;
 }
 
-QList<Annotation> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &charts)
+QList<AnnotationSymbol> Annotater::getAnnotations(const vector<shared_ptr<Chart>> &charts)
 {
-    QList<Annotation> annotations;
+    QList<AnnotationSymbol> annotations;
 
     const float soundingPointSize = 16;
     const float rockPointSize = 17;

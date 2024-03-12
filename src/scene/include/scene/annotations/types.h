@@ -65,7 +65,7 @@ struct AnnotationLabel
     std::optional<float> parentMinZoom;
 };
 
-struct Annotation
+struct AnnotationSymbol
 {
     QPointF pos;
     std::optional<TextureSymbol> symbol;
