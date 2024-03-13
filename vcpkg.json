@@ -9,5 +9,6 @@
         "features": ["zlib"]
     },
     "libpng",
-    "nlohmann-json"]
+    "nlohmann-json",
+    "quadtree"]
 }
