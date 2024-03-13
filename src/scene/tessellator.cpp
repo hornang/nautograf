@@ -525,6 +525,15 @@ QList<AnnotationNode::Vertex> getTextVertices(const vector<AnnotationLabel> &ann
     return list;
 }
 
+QRect getMercatorRegion(const GeoRect &tileRect)
+{
+    int left = Mercator::mercatorWidth(0, tileRect.left(), s_pixelsPerLon);
+    int right = Mercator::mercatorWidth(0, tileRect.right(), s_pixelsPerLon);
+    int top = Mercator::mercatorHeight(0, tileRect.top(), s_pixelsPerLon);
+    int bottom = Mercator::mercatorHeight(0, tileRect.bottom(), s_pixelsPerLon);
+    return QRect(left, top, right - left, bottom - top);
+}
+
 /*!
     Fetch data from the tilefactory and converts to vertex data
 */
@@ -550,7 +559,7 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
 
     float maxZoom = recipe.pixelsPerLongitude / s_pixelsPerLon;
 
-    ZoomSweeper zoomSweeper(maxZoom);
+    ZoomSweeper zoomSweeper(maxZoom, getMercatorRegion(recipe.rect));
     zoomSweeper.calcSymbols(annotations.symbols);
     zoomSweeper.calcLabels(annotations.symbols, annotations.labels);
 

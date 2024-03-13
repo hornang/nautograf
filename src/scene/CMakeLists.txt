@@ -3,6 +3,8 @@ find_package(Qt6
     REQUIRED
 )
 
+find_path(QUADTREE_INCLUDE_DIRS "quadtree/Box.h")
+
 if(NOT DEFINED SYMBOLS_DIR)
     message(FATAL_ERROR "SYMBOLS_DIR not defined")
 endif()
@@ -101,6 +103,8 @@ target_link_libraries(scene PRIVATE
     tilefactory
     cutlines
 )
+
+target_include_directories(scene PRIVATE ${QUADTREE_INCLUDE_DIRS})
 
 if(BUILD_TESTING)
     add_subdirectory(test)
