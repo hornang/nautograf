@@ -8,7 +8,7 @@ description: >
   source and runs with offline chart data. Nautograf only supports
   chart data from https://www.o-charts.org. Please visit the GitHub
   repository for more information: https://github.com/hornang/nautograf
-grade: devel
+grade: stable
 confinement: strict
 apps:
   nautograf:
