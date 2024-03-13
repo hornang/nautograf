@@ -24,7 +24,7 @@ ZoomSweeper::ZoomSweeper(float maxZoom)
     int i = 0;
 
     for (const auto &zoomExp : m_zoomRatios) {
-        const float zoom = maxZoom / pow(2, zoomExp / (std::size(m_zoomRatios) - 1));
+        const float zoom = maxZoom / pow(2, zoomExp / (static_cast<float>(std::size(m_zoomRatios)) - 1));
 
         QTransform transform;
         transform.scale(zoom, zoom);
