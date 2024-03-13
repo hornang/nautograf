@@ -16,5 +16,12 @@ public:
 
 private:
     static constexpr float m_zoomRatios[] = { 5, 4, 3, 2, 1, 0 };
-    QTransform m_transforms[std::size(m_zoomRatios)];
+
+    struct TestZoom
+    {
+        QTransform transform;
+        float zoom = 0;
+    };
+
+    TestZoom m_testZooms[std::size(m_zoomRatios)];
 };
