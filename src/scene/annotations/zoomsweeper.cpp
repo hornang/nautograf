@@ -28,7 +28,9 @@ ZoomSweeper::ZoomSweeper(float maxZoom)
 
         QTransform transform;
         transform.scale(zoom, zoom);
-        m_transforms[i++] = transform;
+        m_testZooms[i].transform = transform;
+        m_testZooms[i].zoom = zoom;
+        i++;
     }
 }
 
@@ -50,8 +52,9 @@ void ZoomSweeper::calcSymbols(vector<AnnotationSymbol> &symbols)
     });
 
     // Place symbols
-    for (const auto &transform : m_transforms) {
-        const auto zoom = transform.m11();
+    for (const TestZoom &testZoom : m_testZooms) {
+        const QTransform &transform = testZoom.transform;
+        const float zoom = testZoom.zoom;
 
         QList<SymbolBox> existingBoxes;
 
@@ -107,8 +110,9 @@ void ZoomSweeper::calcSymbols(vector<AnnotationSymbol> &symbols)
 void ZoomSweeper::calcLabels(const vector<AnnotationSymbol> &symbols,
                              vector<AnnotationLabel> &labels)
 {
-    for (const auto &transform : m_transforms) {
-        const auto zoom = transform.m11();
+    for (const TestZoom &testZoom : m_testZooms) {
+        const QTransform &transform = testZoom.transform;
+        const float zoom = testZoom.zoom;
 
         QList<QRectF> boxes;
 
