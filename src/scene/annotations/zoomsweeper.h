@@ -10,7 +10,7 @@ class ZoomSweeper
 
 public:
     ZoomSweeper(float maxZoom);
-    void calcSymbols(std::vector<AnnotationSymbol> &annotations);
+    void calcSymbols(std::vector<AnnotationSymbol> &symbols);
     void calcLabels(const std::vector<AnnotationSymbol> &symbols,
                     std::vector<AnnotationLabel> &labels);
 
