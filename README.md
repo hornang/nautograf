@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Nautograf is a viewer for marine vector charts. It is inspired by [OpenCPN](https://www.opencpn.org) which is the only nautical chart software that is open source and runs with offline chart data. The motivation with Nautograf is to provide an application similar to OpenCPN, but provide a smoother zooming and panning experience, better rendering quality and in general a more modern code base.
+Nautograf is a experimental viewer for marine vector charts. It is inspired by [OpenCPN](https://www.opencpn.org) which is the only nautical chart software that is open source and runs with offline chart data. The motivation with Nautograf is to provide an application similar to OpenCPN, but provide a smoother zooming and panning experience, better rendering quality and in general a more modern code base.
 
 Because getting chart data is not free for many geographic areas, Nautograf only supports oesu charts from [o-charts.org](https://www.o-charts.org). This format primarily adds some bells and whistles on top of the S-57 data model to support the OpenCPN and o-charts.org infrastructure.
 
@@ -39,12 +39,12 @@ Before tiles are rendered the source data in S-57 format is transformed to a [Ca
 
 ### Rendering
 
-At the start of the project the tiles were rendered on the CPU using [QPainter](https://doc.qt.io/qt-6/qpainter.html). Using QPainter provides high quality results, but is too slow for a proper pan/zoom experience. Therefore the render code is currently being re-implemented using [Qt's scene graph](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html).
+At the start of the project rendered was done using [QPainter](https://doc.qt.io/qt-6/qpainter.html). This provided good quality, but was too slow for a proper pan/zoom experience. Therefore the render code is now based on [The Qt Quick Scene Graph](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html). This approach is very similar to the approach used by WebGL based map applications.
 
 ## Background
 
-Electronic nautical charts have historically not been given much attention to by open source or web technology. Nautical navigation is indeed a niche for the average consumer that mostly navigates cities and roads. As a result nautical chart technology is lagging years behind well-known services such as Google Maps and OpenStreetMap.
+Nautical maps have historically not been given much attention to by open source or web technology. Nautical navigation is indeed a niche for the average consumer that mostly navigates cities and roads. As a result nautical chart technology is lagging years behind land based services such as Google Maps and OpenStreetMap.
 
-Access to free nautical chart data is also still quite limited and depends on authorities' willingness to provide map data to the public. The lack of free public nautical data creates a burden for non-profit research and innovation at sea.
+Access to free nautical map data is also still quite limited and depends on authorities' willingness to provide map data to the public. The lack of free public nautical data creates a burden for non-profit research and innovation at sea.
 
 The only fully featured open source navigation tool for nautical maps today is [OpenCPN](https://www.opencpn.org). To resolve the lack of map data OpenCPN vendors in 2013 created the o-charts.org store where you can buy charts in OpenCPN's custom charts format. o-charts receive data from hydrographic offices and adds an end user encryption that gets decrypted in the closed source part of the OpenCPN's plugin [o-charts_pi](https://github.com/bdbcat/o-charts_pi) (previously called oesenc_pi).
