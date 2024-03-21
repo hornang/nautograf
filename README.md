@@ -2,9 +2,9 @@
 
 ## Introduction
 
-Nautograf is a experimental viewer for marine vector charts. It is inspired by [OpenCPN](https://www.opencpn.org) which is the only nautical chart software that is open source and runs with offline chart data. The motivation with Nautograf is to provide an application similar to OpenCPN, but provide a smoother zooming and panning experience, better rendering quality and in general a more modern code base.
+Nautograf is an experimental viewer for marine vector charts. It is inspired by [OpenCPN](https://www.opencpn.org) which is the only nautical chart software that is open source and runs with offline chart data. The aim of Nautograf is to offer a user experience similar to OpenCPN but with better zooming and panning, better rendering quality, and a more modern codebase.
 
-Because getting chart data is not free for many geographic areas, Nautograf only supports oesu charts from [o-charts.org](https://www.o-charts.org). This format primarily adds some bells and whistles on top of the S-57 data model to support the OpenCPN and o-charts.org infrastructure.
+Nautograf is designed for vector charts. This kind of data is not open to the public for all areas. Therefore Nautograf currently only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org) where you can buy cheap charts for most areas. Support for S-57 charts, such as those provided by https://www.noaa.gov/ may be added in the future.
 
 ## Installing
 
@@ -25,7 +25,7 @@ Nonetheless, the current implementation can display the most prominent S-57 feat
 
 ![Screenshot of chart](https://store-images.s-microsoft.com/image/apps.39713.13722934716828675.f9abff29-8e4b-4550-8d49-482c93232558.849720b8-bbce-4b30-82d9-4b9f5afa86e4)
 
-Nautograf only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
+Nautograf currently only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
 
 ## Design
 
@@ -35,7 +35,7 @@ Because tile creation can take some time it runs in multiple threads. Each tile 
 
 ### Internal tile format
 
-Before tiles are rendered the source data in S-57 format is transformed to a [Cap'n Proto](https://capnproto.org/) based format. The internal format is defined in a [schema file](src/tilefactory/chartdata.capnp). As with most serialization frameworks for statically typed languages it is based on code generation. The schema defines C++ classes and most importantly the serialization/deserialization code. This provides both a way of caching data to disk and also an internal data model used when rendering. On windows you will find the cached tiles under `C:\Users\Username\AppData\Local\nautograf\cache\tiles`. There is no garbage collection so delete the data if it gets too large.
+Before tiles are rendered the source data format is transformed to a [Cap'n Proto](https://capnproto.org/) based format. The internal format is defined in a [schema file](src/tilefactory/chartdata.capnp). The schema defines C++ classes and serialization/deserialization code. This provides both a way of caching data to disk and also an internal data model used when rendering. On Windows you will find the cached tiles under `C:\Users\Username\AppData\Local\nautograf\cache\tiles`. There is no garbage collection so delete the data if it gets too large.
 
 ### Rendering
 
@@ -43,8 +43,8 @@ At the start of the project rendered was done using [QPainter](https://doc.qt.io
 
 ## Background
 
-Nautical maps have historically not been given much attention to by open source or web technology. Nautical navigation is indeed a niche for the average consumer that mostly navigates cities and roads. As a result nautical chart technology is lagging years behind land based services such as Google Maps and OpenStreetMap.
+Historically, electronic nautical charts have not received significant attention from open source or web technology communities. Nautical navigation, being a niche area compared to urban and road navigation, has led to a lag in technological advancements in nautical charting when compared to popular services like Google Maps and OpenStreetMap. 
 
-Access to free nautical map data is also still quite limited and depends on authorities' willingness to provide map data to the public. The lack of free public nautical data creates a burden for non-profit research and innovation at sea.
+Access to free nautical chart data remains limited, often relying on authorities' willingness to share map data with the public. This scarcity of freely available nautical data poses challenges for non-profit research and innovation within this area.
 
-The only fully featured open source navigation tool for nautical maps today is [OpenCPN](https://www.opencpn.org). To resolve the lack of map data OpenCPN vendors in 2013 created the o-charts.org store where you can buy charts in OpenCPN's custom charts format. o-charts receive data from hydrographic offices and adds an end user encryption that gets decrypted in the closed source part of the OpenCPN's plugin [o-charts_pi](https://github.com/bdbcat/o-charts_pi) (previously called oesenc_pi).
+Currently, the primary open source navigation tool for nautical maps is [OpenCPN](https://www.opencpn.org). To address the lack of readily available vector chart data, the creators of OpenCPN established the o-charts.org store in 2013. This store offers charts in OpenCPN's proprietary format, sourced from hydrographic offices. The o-charts incorporate end-user encryption that is decrypted within the closed-source component of OpenCPN's plugin, previously known as oesenc_pi and now as [o-charts_pi](https://github.com/bdbcat/o-charts_pi).
