@@ -25,6 +25,8 @@ public:
 
         Annotations &operator+=(const Annotations &other)
         {
+            size_t initialSymbolsSize = symbols.size();
+
             symbols.insert(symbols.end(),
                            other.symbols.begin(),
                            other.symbols.end());
@@ -35,7 +37,7 @@ public:
                           other.labels.begin(),
                           other.labels.end());
             for (int i = initialLabelsSize; i < labels.size(); i++) {
-                labels[i].parentSymbolIndex += initialLabelsSize;
+                labels[i].parentSymbolIndex += initialSymbolsSize;
             }
 
             return *this;
