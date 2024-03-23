@@ -104,21 +104,23 @@ Annotater::Annotations Annotater::getAnnotations(
 
         QPointF labelOffset;
 
+        optional<size_t> parentSymbolIndex;
+
         if (symbol.has_value()) {
             labelOffset = getLabelOffset(labelBoundingBox, symbol.value(), LabelPlacement::Below);
+            symbols.push_back(AnnotationSymbol { pos,
+                                                 symbol,
+                                                 nullopt,
+                                                 priority,
+                                                 collissionRule });
+            parentSymbolIndex = symbols.size() - 1;
         } else {
             labelOffset = QPointF(-labelBoundingBox.width() / 2, -labelBoundingBox.height() / 2);
         }
 
-        symbols.push_back(AnnotationSymbol { pos,
-                                             symbol,
-                                             nullopt,
-                                             priority,
-                                             collissionRule });
-
         labels.push_back(AnnotationLabel { label,
                                            pos,
-                                           symbols.size() - 1,
+                                           parentSymbolIndex,
                                            labelOffset,
                                            labelBoundingBox });
     }

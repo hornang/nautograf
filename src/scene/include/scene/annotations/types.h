@@ -59,7 +59,7 @@ struct AnnotationLabel
 {
     Label label;
     QPointF pos;
-    size_t parentSymbolIndex;
+    std::optional<size_t> parentSymbolIndex;
     QPointF offset;
     QRectF boundingBox;
     std::optional<float> minZoom;

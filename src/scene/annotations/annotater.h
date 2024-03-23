@@ -37,7 +37,9 @@ public:
                           other.labels.begin(),
                           other.labels.end());
             for (int i = initialLabelsSize; i < labels.size(); i++) {
-                labels[i].parentSymbolIndex += initialSymbolsSize;
+                if (labels[i].parentSymbolIndex.has_value()) {
+                    labels[i].parentSymbolIndex.value() += initialSymbolsSize;
+                }
             }
 
             return *this;

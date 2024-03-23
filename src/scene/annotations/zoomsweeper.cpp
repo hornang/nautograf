@@ -219,10 +219,12 @@ void ZoomSweeper::calcLabels(const vector<AnnotationSymbol> &symbols,
         }
 
         for (auto &label : labels) {
-            const AnnotationSymbol &parentSymbol = symbols[label.parentSymbolIndex];
+            if (label.parentSymbolIndex.has_value()) {
+                const AnnotationSymbol &parentSymbol = symbols[label.parentSymbolIndex.value()];
 
-            if (!parentSymbol.minZoom.has_value() || zoom < parentSymbol.minZoom.value()) {
-                continue;
+                if (!parentSymbol.minZoom.has_value() || zoom < parentSymbol.minZoom.value()) {
+                    continue;
+                }
             }
 
             const auto pos = transform.map(label.pos) + label.offset;
