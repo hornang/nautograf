@@ -51,12 +51,7 @@ QPointF Annotater::posToMercator(const ChartData::Position::Reader &pos) const
 
 QString Annotater::getDepthString(float depth) const
 {
-    int precision = 0;
-    if (depth < 30) {
-        precision = 1;
-    }
-
-    return m_locale.toString(depth, 'f', precision);
+    return m_locale.toString(depth);
 }
 
 template <typename T>
