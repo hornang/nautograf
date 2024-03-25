@@ -19,6 +19,7 @@ struct ChartData {
     coastLines @15: List(CoastLine);
     pontoons @16: List(Pontoon);
     depthContours @17: List(DepthContour);
+    shorelineConstructions @18: List(ShorelineConstruction);
 
     struct CoverageArea {
         polygons @0 :List(Polygon);
@@ -65,6 +66,12 @@ struct ChartData {
     }
 
     struct Pontoon {
+        name @0: Text;
+        polygons @1 :List(Polygon);
+        lines @2 :List(Line);
+    }
+
+    struct ShorelineConstruction {
         name @0: Text;
         polygons @1 :List(Polygon);
         lines @2 :List(Line);

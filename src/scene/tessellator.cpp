@@ -21,6 +21,7 @@ static const QColor pontoonColor = builtUpAreaColor.darker(120);
 static const QColor pontoonBorderColor = pontoonColor.darker(150);
 static const QColor roadColor = landAreaColor.darker(120);
 static const QColor roadColorBorder = roadColor.darker(150);
+static const QColor shorelineConstructionColor = QColor(80, 80, 80);
 static const QColor tilePlaceholderOutlineColor = QColor(200, 200, 200);
 static const QColor tilePlaceholderFillColor = QColor(240, 240, 240);
 
@@ -678,6 +679,12 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
             chart->coastLines(),
             [](const ChartData::CoastLine::Reader &coastLine) -> QColor {
                 return coastLineColor;
+            });
+
+        thickLines.vertices += drawLines<ChartData::ShorelineConstruction>(
+            chart->shorelineConstructions(),
+            [](const ChartData::ShorelineConstruction::Reader &item) -> QColor {
+                return shorelineConstructionColor;
             });
 
         geometryLayer.lineGroups.append(thinLines);
