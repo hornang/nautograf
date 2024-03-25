@@ -21,7 +21,7 @@ static const QColor pontoonColor = builtUpAreaColor.darker(120);
 static const QColor pontoonBorderColor = pontoonColor.darker(150);
 static const QColor roadColor = landAreaColor.darker(120);
 static const QColor roadColorBorder = roadColor.darker(150);
-static const QColor tilePlaceholderOutlineColor = QColor(224, 224, 224);
+static const QColor tilePlaceholderOutlineColor = QColor(200, 200, 200);
 static const QColor tilePlaceholderFillColor = QColor(240, 240, 240);
 
 // Arbitrary chosen conversion factor to transform lat/lon to an internal mercator
@@ -640,36 +640,49 @@ TileData fetchData(TileFactoryWrapper *tileFactory,
                 return pontoonColor;
             });
 
-        geometryLayer.lineVertices += strokePolygons<ChartData::Road>(
+        GeometryLayer::LineGroup thinLines;
+        thinLines.style.width = GeometryLayer::LineGroup::Style::Width::Thin;
+
+        GeometryLayer::LineGroup mediumLines;
+        mediumLines.style.width = GeometryLayer::LineGroup::Style::Width::Medium;
+
+        GeometryLayer::LineGroup thickLines;
+        thickLines.style.width = GeometryLayer::LineGroup::Style::Width::Thick;
+
+        thinLines.vertices += strokePolygons<ChartData::Road>(
             chart->roads(),
             [](const ChartData::Road::Reader &road) -> QColor {
                 return roadColorBorder;
             },
             lineClippingRect);
 
-        geometryLayer.lineVertices += drawLines<ChartData::DepthContour>(
+        thinLines.vertices += drawLines<ChartData::DepthContour>(
             chart->depthContours(),
             [](const ChartData::DepthContour::Reader &depthContour) -> QColor {
                 return depthContourColor;
             });
 
-        geometryLayer.lineVertices += drawLines<ChartData::Road>(
+        thickLines.vertices += drawLines<ChartData::Road>(
             chart->roads(),
             [](const ChartData::Road::Reader &road) -> QColor {
                 return roadColor;
             });
 
-        geometryLayer.lineVertices += drawLines<ChartData::Pontoon>(
+        thickLines.vertices += drawLines<ChartData::Pontoon>(
             chart->pontoons(),
             [](const ChartData::Pontoon::Reader &pontoon) -> QColor {
                 return pontoonColor;
             });
 
-        geometryLayer.lineVertices += drawLines<ChartData::CoastLine>(
+        mediumLines.vertices += drawLines<ChartData::CoastLine>(
             chart->coastLines(),
             [](const ChartData::CoastLine::Reader &coastLine) -> QColor {
                 return coastLineColor;
             });
+
+        geometryLayer.lineGroups.append(thinLines);
+        geometryLayer.lineGroups.append(mediumLines);
+        geometryLayer.lineGroups.append(thickLines);
 
         tileData.geometryLayers.append(geometryLayer);
     }
@@ -793,6 +806,10 @@ GeometryLayer Tessellator::createLoadingIndicatorLayer() const
         posToMercator(boundingBox.topLeft())
     };
 
-    geometryLayer.lineVertices = tessellateLine(linePoints, tilePlaceholderOutlineColor);
+    GeometryLayer::LineGroup lineGroup;
+    lineGroup.style.width = GeometryLayer::LineGroup::Style::Width::Thin;
+    lineGroup.vertices = tessellateLine(linePoints, tilePlaceholderOutlineColor);
+    geometryLayer.lineGroups.append(lineGroup);
+
     return geometryLayer;
 }

@@ -7,6 +7,7 @@ layout(std140, binding = 0) uniform buf {
     mat4 modelView;
     mat4 projection;
     float qt_Opacity;
+    float width;
 } ubuf;
 
 layout(location = 0) out vec4 fragColor;

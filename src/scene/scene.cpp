@@ -120,8 +120,11 @@ void updateGeometryLayers(const QString &tileId,
         geometryNode->appendChildNode(layerNode);
         layerNode->appendChildNode(new PolygonNode(materialCreator->opaquePolygonMaterial(),
                                                    layer.polygonVertices));
-        layerNode->appendChildNode(new LineNode(materialCreator->lineMaterial(),
-                                                layer.lineVertices));
+
+        for (const auto &lineGroup : layer.lineGroups) {
+            layerNode->appendChildNode(new LineNode(materialCreator->lineMaterial(lineGroup.style),
+                                                    lineGroup.vertices));
+        }
     }
 }
 
