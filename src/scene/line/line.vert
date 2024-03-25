@@ -11,13 +11,14 @@ layout(std140, binding = 0) uniform buf {
     mat4 modelView;
     mat4 projection;
     float qt_Opacity;
+    float width;
 } ubuf;
 
 out gl_PerVertex { vec4 gl_Position; };
 
 void main()
 {
-    float u_linewidth = 2.5;
+    float u_linewidth = ubuf.width;
     vec4 delta = vec4(0.5 * aNormal * u_linewidth, 0, 0);
     vec4 center = ubuf.modelView * vec4(aPos.x, aPos.y, 0.0, 1.0);
 

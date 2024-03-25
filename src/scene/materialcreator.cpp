@@ -2,6 +2,7 @@
 #include "annotations/annotationmaterial.h"
 #include "line/linematerial.h"
 #include "polygon/polygonmaterial.h"
+#include "tiledata.h"
 
 MaterialCreator::MaterialCreator(QSGTexture *symbolTexture,
                                  QSGTexture *fontTexture)
@@ -61,11 +62,25 @@ AnnotationMaterial *MaterialCreator::textMaterial()
     return m_textMaterial.get();
 }
 
-LineMaterial *MaterialCreator::lineMaterial()
+using LineStyle = GeometryLayer::LineGroup::Style;
+
+LineMaterial *MaterialCreator::lineMaterial(const LineStyle &style)
 {
-    if (!m_lineMaterial) {
-        m_lineMaterial = std::make_unique<LineMaterial>();
+    if (!m_lineMaterials.contains(style)) {
+        auto lineMaterial = std::make_unique<LineMaterial>();
+        switch (style.width) {
+        case LineStyle::Width::Thin:
+            lineMaterial->setWidth(1.5);
+            break;
+        case LineStyle::Width::Medium:
+            lineMaterial->setWidth(2.5);
+            break;
+        case LineStyle::Width::Thick:
+            lineMaterial->setWidth(4);
+            break;
+        }
+        m_lineMaterials[style] = std::move(lineMaterial);
     }
 
-    return m_lineMaterial.get();
+    return m_lineMaterials[style].get();
 }

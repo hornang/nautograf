@@ -6,8 +6,30 @@
 
 struct GeometryLayer
 {
+    struct LineGroup
+    {
+        struct Style
+        {
+            bool operator==(const Style &other) const
+            {
+                return width == other.width;
+            }
+
+            enum class Width {
+                Thin,
+                Medium,
+                Thick,
+            };
+
+            Width width = Width::Medium;
+        };
+
+        QList<LineNode::Vertex> vertices;
+        Style style = { Style::Width::Medium };
+    };
+
     QList<PolygonNode::Vertex> polygonVertices;
-    QList<LineNode::Vertex> lineVertices;
+    QList<LineGroup> lineGroups;
 };
 
 struct TileData
