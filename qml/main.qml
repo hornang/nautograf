@@ -18,6 +18,7 @@ ApplicationWindow {
     footer: StatusBar {
         id: statusBar
 
+        visible: root.visibility !== Window.FullScreen
         serverError: ChartModel.serverError
         catalogPath: ChartModel.dir
         catalogStatus: ChartModel.catalogType
