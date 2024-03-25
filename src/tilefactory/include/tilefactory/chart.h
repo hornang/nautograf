@@ -58,6 +58,7 @@ public:
     capnp::List<ChartData::UnderwaterRock>::Reader underwaterRocks() const { return root().getUnderwaterRocks(); }
     capnp::List<ChartData::BuoyLateral>::Reader lateralBuoys() const { return root().getLateralBuoys(); }
     capnp::List<ChartData::Pontoon>::Reader pontoons() const { return root().getPontoons(); }
+    capnp::List<ChartData::ShorelineConstruction>::Reader shorelineConstructions() const { return root().getShorelineConstructions(); }
     capnp::List<ChartData::Road>::Reader roads() const { return root().getRoads(); }
 
 private:

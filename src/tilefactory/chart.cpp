@@ -745,6 +745,24 @@ void loadPontoons(ChartData::Builder &root, const S57Vector &src)
     }
 }
 
+void loadShorelineConstructions(ChartData::Builder &root, const S57Vector &src)
+{
+    auto dst = root.initShorelineConstructions(static_cast<unsigned int>(src.size()));
+
+    unsigned int i = 0;
+    for (const oesenc::S57 *s57 : src) {
+        ChartData::ShorelineConstruction::Builder item = dst[i++];
+
+        auto name = s57->attribute<std::string>(oesenc::S57::Attribute::ObjectName);
+        if (name.has_value()) {
+            item.setName(name.value());
+        }
+
+        loadPolygonsFromS57<ChartData::ShorelineConstruction>(item, s57);
+        loadLinesFromS57<ChartData::ShorelineConstruction>(item, s57);
+    }
+}
+
 void loadRoads(ChartData::Builder &root, const S57Vector &src)
 {
     auto dst = root.initRoads(static_cast<unsigned int>(src.size()));
@@ -851,6 +869,7 @@ Chart::buildFromS57(const std::vector<oesenc::S57> &objects,
     loadUnderwaterRocks(root, sortedObjects[oesenc::S57::Type::UnderwaterRock]);
     loadBuoyLateral(root, sortedObjects[oesenc::S57::Type::BuoyLateral]);
     loadPontoons(root, sortedObjects[oesenc::S57::Type::Pontoon]);
+    loadShorelineConstructions(root, sortedObjects[oesenc::S57::Type::ShorelineConstruction]);
 
     return message;
 }
@@ -1077,6 +1096,16 @@ std::unique_ptr<capnp::MallocMessageBuilder> Chart::buildClipped(ChartClipper::C
             return root.initPontoons(length);
         },
         [](ChartData::Pontoon::Builder &dst, const ChartData::Pontoon::Reader &src) {
+            dst.setName(src.getName());
+        });
+
+    clipPolygonOrLineItems<ChartData::ShorelineConstruction>(
+        shorelineConstructions(),
+        config,
+        [&](unsigned int length) {
+            return root.initShorelineConstructions(length);
+        },
+        [](ChartData::ShorelineConstruction::Builder &dst, const ChartData::ShorelineConstruction::Reader &src) {
             dst.setName(src.getName());
         });
 
