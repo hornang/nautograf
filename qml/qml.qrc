@@ -4,8 +4,6 @@
         <file>About.qml</file>
         <file>FolderDialog.qml</file>
         <file>Viewer.qml</file>
-        <file>ViewerMenu.qml</file>
-        <file>ViewerMenuItem.qml</file>
         <file>ChartSelector.qml</file>
         <file>StatusBar.qml</file>
         <file>TileInfo.qml</file>
