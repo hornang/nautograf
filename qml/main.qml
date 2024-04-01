@@ -213,9 +213,9 @@ ApplicationWindow {
 
             active: x > -width
             width: 400
-            height: Math.max(600, parent.height - 100)
             anchors {
-                verticalCenter: parent.verticalCenter
+                top: parent.top
+                bottom: parent.bottom
                 right: parent.left
             }
 
@@ -257,9 +257,9 @@ ApplicationWindow {
 
             visible: x < root.width
             width: 400
-            height: Math.max(600, parent.height - 100)
             anchors {
-                verticalCenter: parent.verticalCenter
+                top: parent.top
+                bottom: parent.bottom
                 left: parent.right
             }
 
