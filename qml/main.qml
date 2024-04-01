@@ -126,7 +126,7 @@ ApplicationWindow {
             }
 
             onShowContextMenu: function(x, y) {
-                menu.open(x, y);
+                menu.popup(root);
             }
 
             onNewMousePos: function(lat, lon) {
@@ -135,49 +135,43 @@ ApplicationWindow {
             }
         }
 
-        ViewerMenu {
+        Menu {
             id: menu
 
-            onVisibleChanged: {
-                if (!visible) {
-                    viewer.focus = true;
-                }
-            }
-
-            ViewerMenuItem {
+            MenuItem {
                 text: qsTr("Select chart dir...")
                 onTriggered: folderDialog.visible = true
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Show chart selector")
                 checkable: true
                 checked: chartList.enabled
                 onTriggered: chartList.enabled = !chartList.enabled
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Tile info")
                 checkable: true
                 checked: tileInfoLoader.enabled
                 onTriggered: tileInfoLoader.enabled = !tileInfoLoader.enabled
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Fullscreen")
                 checkable: true
                 checked: root.visibility == Window.FullScreen;
                 onTriggered: toggleFullscreen();
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Legacy renderer")
                 checkable: true
                 checked: UserSettings.showLegacyRenderer
                 onTriggered: UserSettings.showLegacyRenderer = !UserSettings.showLegacyRenderer
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Legacy debug view")
                 checkable: true
                 enabled: UserSettings.showLegacyRenderer
@@ -185,12 +179,12 @@ ApplicationWindow {
                 onTriggered: UserSettings.showLegacyDebugView = !UserSettings.showLegacyDebugView
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("About")
                 onTriggered: aboutLoader.active = true
             }
 
-            ViewerMenuItem {
+            MenuItem  {
                 text: qsTr("Close")
                 onTriggered: Qt.quit()
             }
