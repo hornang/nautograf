@@ -97,7 +97,8 @@ Pane {
                     }
 
                     Button {
-                        text: "📋"
+                        icon.name: CanUseIconTheme ? "edit-copy" : ""
+                        text: !CanUseIconTheme ? "📋" : ""
                     }
                 }
 
