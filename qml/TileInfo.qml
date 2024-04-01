@@ -96,7 +96,19 @@ Pane {
 
                     }
 
+                    TextEdit {
+                        id: textEditForCopyToClipboard
+
+                        visible: false
+                    }
+
                     Button {
+                        onClicked: {
+                            textEditForCopyToClipboard.text = model.tileId;
+                            textEditForCopyToClipboard.selectAll();
+                            textEditForCopyToClipboard.copy();
+                        }
+
                         icon.name: CanUseIconTheme ? "edit-copy" : ""
                         text: !CanUseIconTheme ? "📋" : ""
                     }
