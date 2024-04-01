@@ -25,9 +25,10 @@ ToolBar {
         anchors.fill: parent
 
         ToolButton {
-            text: "📁"
-
             onClicked: root.openCatalogSelector()
+
+            icon.name: CanUseIconTheme ? "folder-open" : ""
+            text: !CanUseIconTheme ? "📁" : ""
         }
 
         Label  {

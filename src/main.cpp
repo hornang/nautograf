@@ -137,6 +137,13 @@ int main(int argc, char *argv[])
 #endif
     engine.rootContext()->setContextProperty("UseXdgFileDialog", useXdgFileDialog);
 
+#ifdef Q_OS_LINUX
+    constexpr bool canUseIconTheme = true;
+#else
+    constexpr bool canUseIconTheme = false;
+#endif
+    engine.rootContext()->setContextProperty("CanUseIconTheme", canUseIconTheme);
+
     engine.load(QStringLiteral(QML_DIR) + "/main.qml");
 
     int result = application.exec();
