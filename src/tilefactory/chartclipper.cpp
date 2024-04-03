@@ -103,6 +103,21 @@ std::vector<ChartClipper::Polygon> ChartClipper::clipPolygon(const ChartData::Po
         Clipper2Lib::Paths64 holeResults = Clipper2Lib::Intersect(holePaths,
                                                                   { mainAreas },
                                                                   Clipper2Lib::FillRule::EvenOdd);
+
+        // The holes should already be cut so that they do not intersect with
+        // the main contour. However, some investigation revealed that the
+        // triangulation algorithm in the scene library failed to triangulate
+        // in rare occasions, likely because it does not support holes that
+        // intersect or touch the parent contour.
+        //
+        // To address this issue, the following statement "deflates" all holes
+        // by one unit to ensure a minimum space from the parent area or contour.
+        static int holeDeflateAmount = -1;
+        holeResults = Clipper2Lib::InflatePaths(holeResults,
+                                                holeDeflateAmount,
+                                                Clipper2Lib::JoinType::Round,
+                                                Clipper2Lib::EndType::Polygon);
+
         for (const Clipper2Lib::Path64 &path : holeResults) {
             area.holes.push_back(toLine(path, geoRect, xRes, yRes));
         }
