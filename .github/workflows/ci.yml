@@ -36,9 +36,6 @@ jobs:
           arch: 'win64_msvc2019_64'
           modules: "qtshadertools"
 
-      - name: Install CMake
-        uses: lukka/get-cmake@latest
-
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
 
@@ -97,10 +94,15 @@ jobs:
           modules: 'qtshadertools'
 
       - name: Install dependencies
-        run: sudo apt-get install libglu1-mesa-dev libxmu-dev libxi-dev libgl-dev imagemagick librsvg2-bin
-
-      - name: Install CMake
-        uses: lukka/get-cmake@latest
+        run: >
+          sudo apt-get install
+          ninja-build
+          libglu1-mesa-dev
+          libxmu-dev
+          libxi-dev
+          libgl-dev
+          imagemagick
+          librsvg2-bin
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
