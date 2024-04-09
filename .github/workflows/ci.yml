@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - 'testbuild'
 
   pull_request:
     branches:
@@ -13,65 +15,6 @@ on:
     - cron: '30 10 * * 0'
 
 jobs:
-  windows:
-    name: 'Windows'
-    outputs:
-      package-name: ${{ steps.install-to-directory.outputs.package-name }}
-    runs-on: windows-latest
-    env:
-      SYSTEM_NAME: win64
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.6.1'
-          cache: true
-          arch: 'win64_msvc2019_64'
-          modules: "qtshadertools"
-
-      - name: Restore artifacts, or setup vcpkg (do not install any package)
-        uses: lukka/run-vcpkg@v11
-
-      - name: Install choco dependencies
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install chocolatey.config -y --no-progress
-
-      - name: Run CMake with vcpkg.json manifest
-        uses: lukka/run-cmake@v10
-        with:
-          configurePreset: 'ninja-release-vcpkg'
-          buildPreset: 'release'
-
-      - name: Install to directory
-        id: install-to-directory
-        shell: bash
-        run: >
-          cd "${{ github.workspace }}/builds/ninja-release-vcpkg";
-          PACKAGE_NAME=nautograf_$(cat version.txt)_$SYSTEM_NAME;
-          echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT;
-          cmake --install . --prefix "$(pwd)/install/$PACKAGE_NAME";
-          rm -r "$(pwd)/install/$PACKAGE_NAME/lib" "$(pwd)/install/$PACKAGE_NAME/include"
-
-      - name: Deploy Qt libraries to install dir
-        shell: bash
-        run: >
-          cmake -DEXECUTABLE_DIR="${{ github.workspace }}/builds/ninja-release-vcpkg/install/${{ steps.install-to-directory.outputs.package-name }}/bin"
-          -P "${{ github.workspace }}/builds/ninja-release-vcpkg/deploy-qt-windows.cmake"
-
-      - name: Upload package
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ steps.install-to-directory.outputs.package-name }}
-          path: ${{ github.workspace }}/builds/ninja-release-vcpkg/install
-
   ubuntu-20-04:
     name: 'Ubuntu 20.04'
     outputs:
@@ -92,6 +35,9 @@ jobs:
           version: '6.2.1'
           cache: 'true'
           modules: 'qtshadertools'
+
+      - name: CMake
+        run: cmake --version
 
       - name: Install dependencies
         run: >
@@ -129,56 +75,3 @@ jobs:
           name: ${{ steps.install-to-directory.outputs.package-name }}
           path: ${{ github.workspace }}/builds/ninja-release-vcpkg-static/install
 
-  ubuntu-snap:
-    name: 'Snapcraft core22'
-    outputs:
-      package-name: ${{ steps.snapcraft.outputs.snap }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-          fetch-depth: 0
-
-      - name: Build snap
-        id: snapcraft
-        uses: snapcore/action-build@v1
-        with:
-          snapcraft-args: '-v'
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ${{ steps.snapcraft.outputs.snap }}
-          path: ${{ github.workspace }}/${{ steps.snapcraft.outputs.snap }}
-
-  create-release:
-    if: startsWith(github.event.ref, 'refs/tags/v')
-    name: 'Draft release'
-    needs: [windows, ubuntu-20-04, ubuntu-snap]
-    runs-on: ubuntu-latest
-    permissions:
-      write-all
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.windows.outputs.package-name }}
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.ubuntu-20-04.outputs.package-name }}
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.ubuntu-snap.outputs.package-name }}
-
-      - name: zip ubuntu and win64 artifacts
-        run: >
-          zip -r ${{ needs.windows.outputs.package-name }}.zip ${{ needs.windows.outputs.package-name }};
-          zip -r ${{ needs.ubuntu-20-04.outputs.package-name }}.zip ${{ needs.ubuntu-20-04.outputs.package-name }}
-
-      - name: Draft release
-        uses: ncipollo/release-action@v1.13.0
-        with:
-          artifacts: '*.zip,*.snap'
-          draft: true
