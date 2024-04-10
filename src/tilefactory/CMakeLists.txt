@@ -1,9 +1,6 @@
 find_package(CapnProto CONFIG REQUIRED)
 install_license(FILE ${CapnProto_DIR}/copyright)
 
-find_package(Boost REQUIRED)
-install_license(FILE ${Boost_LIBRARY_DIRS}/../share/boost-geometry/copyright)
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Clipper2 REQUIRED IMPORTED_TARGET Clipper2)
 install_license(FILE ${Clipper2_INCLUDE_DIRS}/../share/clipper2/copyright)
@@ -53,11 +50,13 @@ target_include_directories(tilefactory
         ${EARCUT_HPP_INCLUDE_DIRS}
 )
 
+add_subdirectory(rust)
+
 target_link_libraries(tilefactory
     CapnProto::capnp
     PkgConfig::Clipper2
     oesenc
     cutlines
-    Boost::boost
     mercatortile
+    tilefactory-rust-bridge
 )
