@@ -5,11 +5,7 @@
 #include <sstream>
 #include <thread>
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/adapted/std_array.hpp>
-#include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/register/linestring.hpp>
-#include <boost/geometry/geometries/register/point.hpp>
+#include <tilefactory_rust/lib.rs.h>
 
 #include "filehelper.h"
 #include "oesenc/serverreader.h"
@@ -53,16 +49,6 @@ GeoRect OesencTileSource::fromOesencRect(const oesenc::Rect &src)
     return GeoRect(src.top(), src.bottom(), src.left(), src.right());
 }
 
-BOOST_GEOMETRY_REGISTER_POINT_2D_GET_SET(oesenc::Position,
-                                         double,
-                                         cs::cartesian,
-                                         latitude,
-                                         longitude,
-                                         setLatitude,
-                                         setLongitude)
-
-BOOST_GEOMETRY_REGISTER_LINESTRING(vector<oesenc::Position>)
-
 bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixelsPerLon)
 {
     std::string decimatedFileName = FileHelper::internalChartFileName(m_tileDir,
@@ -81,8 +67,29 @@ bool OesencTileSource::convertChartToInternalFormat(float lineEpsilon, int pixel
 
     oesenc::ChartFile::Config oesencConfig;
     oesencConfig.vectorEdgeDecimator = [=](const Line &line) -> Line {
+        if (line.size() < 2) {
+            return line;
+        }
+
+        ::rust::Vec<tilefactory_rust::Pos> input;
+        input.reserve(line.size());
+        for (const oesenc::Position &pos : line) {
+            input.push_back({ pos.latitude(), pos.longitude() });
+        }
+
+        ::rust::Vec<tilefactory_rust::Pos> simplified = tilefactory_rust::simplify(input, lineEpsilon);
+
+        for (const oesenc::Position &pos : line) {
+            input.push_back({ pos.latitude(), pos.longitude() });
+        }
+
         Line simplifiedLine;
-        boost::geometry::simplify(line, simplifiedLine, lineEpsilon);
+        simplifiedLine.reserve(simplified.size());
+
+        for (const tilefactory_rust::Pos &pos : simplified) {
+            simplifiedLine.push_back({ pos.x, pos.y });
+        }
+
         return simplifiedLine;
     };
 

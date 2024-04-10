@@ -40,6 +40,11 @@ jobs:
         with:
           cmakeVersion: "3.29.0"
 
+      # To ensure the right link.exe is found by cargo
+      - uses: TheMrMilchmann/setup-msvc-dev@v3
+        with:
+          arch: x64
+
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
 
@@ -110,6 +115,7 @@ jobs:
           libgl-dev
           imagemagick
           librsvg2-bin
+          libpthread-stubs0-dev
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
