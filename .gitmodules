@@ -22,3 +22,6 @@
 [submodule "external/msdf-atlas-read"]
 	path = external/msdf-atlas-read
 	url = https://github.com/hornang/msdf-atlas-read.git
+[submodule "external/slippy-map-tiles-rs/slippy-map-tiles-rs"]
+	path = external/slippy-map-tiles-rs/slippy-map-tiles-rs
+	url = https://github.com/amandasaurus/slippy-map-tiles-rs.git

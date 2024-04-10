@@ -64,6 +64,7 @@ parts:
       - tar
 
       - build-essential
+      - cargo
       - ninja-build
       - libglu1-mesa-dev
       - libxmu-dev

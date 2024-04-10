@@ -1,0 +1,17 @@
+[package]
+name = "wrapper"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["staticlib"]
+path = "lib.rs"
+
+[dependencies]
+slippy-map-tiles = { path = "../slippy-map-tiles-rs" }
+cxx = "1.0"
+geo = "0.28.0"
+
+[build-dependencies]
+cxx-build = "1.0"

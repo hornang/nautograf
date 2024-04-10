@@ -1,0 +1,4 @@
+[workspace]
+members = ["slippy-map-tiles-rs", "wrapper"]
+resolver = "2"
+
