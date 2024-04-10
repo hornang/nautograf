@@ -36,6 +36,10 @@ jobs:
           arch: 'win64_msvc2019_64'
           modules: "qtshadertools"
 
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "3.29.0"
+
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
 
@@ -93,10 +97,13 @@ jobs:
           cache: 'true'
           modules: 'qtshadertools'
 
+      - uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "3.29.0"
+
       - name: Install dependencies
         run: >
           sudo apt-get install
-          ninja-build
           libglu1-mesa-dev
           libxmu-dev
           libxi-dev
