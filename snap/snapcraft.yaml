@@ -19,11 +19,6 @@ apps:
     environment:
       QT_PLUGIN_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/qt6/plugins
       QML2_IMPORT_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/qt6/qml
-
-      # Disable wayland to get proper Gnome window borders.
-      # DISABLE_WAYLAND is picked up by the desktop-launch script in
-      # gnome content snap
-      DISABLE_WAYLAND: 1
     plugs:
       - home
 
