@@ -49,6 +49,8 @@ parts:
       craftctl set version=$(git describe --tags | sed 's/^v\?\(.*\)$/\1/')
     source: .
     plugin: cmake
+    build-environment:
+      - VCPKG_FORCE_SYSTEM_BINARIES: 1 # Must be set for building on arm
     cmake-parameters:
       - -DCMAKE_TOOLCHAIN_FILE=${CRAFT_PART_SRC}/vcpkg/scripts/buildsystems/vcpkg.cmake
       - -DBUILD_TESTING=off
