@@ -90,6 +90,7 @@ parts:
       - libqt6svg6
       - qt6-qpa-plugins
       - qt6-gtk-platformtheme
+      - qt6-wayland
       - qml6-module-qtquick-controls
       - qml6-module-qtquick-layouts
       - qml6-module-qtquick-window
