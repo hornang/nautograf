@@ -8,6 +8,10 @@
 #include <QString>
 #include <QThread>
 
+#ifdef Q_OS_LINUX
+#include <fontconfig/fontconfig.h>
+#endif
+
 #include "scene/annotations/fontimage.h"
 
 using namespace msdf_atlas;
@@ -312,17 +316,39 @@ QList<msdf_atlas_read::GlyphMapping> FontImage::glyphs(const QString &text,
 QString FontImage::locateFontFile(FontType type)
 {
 #ifdef Q_OS_LINUX
-    QDir dir("/usr/share/fonts/truetype/ubuntu");
-
-    QStringList fonts;
-    switch (type) {
-    case FontType::Normal:
-        fonts = dir.entryList({ "ubuntu-r*" });
-        break;
-    case FontType::Soundings:
-        fonts = dir.entryList({ "ubuntu-ri*" });
-        break;
+    FcPattern *pattern = FcPatternCreate();
+    if (!pattern) {
+        return {};
     }
+
+    int slant = FC_SLANT_ROMAN;
+
+    if (type == FontType::Soundings) {
+        slant = FC_SLANT_ITALIC;
+    }
+
+    static const char *fontFamily = "Ubuntu";
+
+    FcPatternAddInteger(pattern, FC_SLANT, slant);
+    FcPatternAddString(pattern, FC_FAMILY, (FcChar8 *)fontFamily);
+
+    FcConfigSubstitute(NULL, pattern, FcMatchPattern);
+    FcDefaultSubstitute(pattern);
+
+    FcResult result;
+    FcPattern *match = FcFontMatch(NULL, pattern, &result);
+
+    if (match && result == FcResultMatch) {
+        FcChar8 *file = nullptr;
+        if (FcPatternGetString(match, FC_FILE, 0, &file) == FcResultMatch) {
+            return QString(reinterpret_cast<char *>(file));
+        }
+
+        FcPatternDestroy(match);
+    }
+
+    FcPatternDestroy(pattern);
+    return {};
 #else
     QDir dir(R"(C:\Windows\Fonts)");
 
@@ -335,10 +361,11 @@ QString FontImage::locateFontFile(FontType type)
         fonts = dir.entryList({ "ariali*" });
         break;
     }
-#endif
+
     if (fonts.isEmpty()) {
         return {};
     }
 
     return dir.filePath(fonts.first());
+#endif
 }
