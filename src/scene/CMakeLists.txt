@@ -104,6 +104,12 @@ target_link_libraries(scene PRIVATE
     cutlines
 )
 
+if(UNIX)
+    target_link_libraries(scene PRIVATE
+        fontconfig
+    )
+endif()
+
 target_include_directories(scene PRIVATE ${QUADTREE_INCLUDE_DIRS})
 
 if(BUILD_TESTING)
