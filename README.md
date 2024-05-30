@@ -10,7 +10,7 @@ Nautograf is designed for vector charts. This kind of data is not open to the pu
 
 Releases are available from The Microsoft Store and the Snap Store:
 
-[<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="165"/>](https://apps.microsoft.com/detail/Nautograf/9NP97HF6LW08)
+[<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>](https://apps.microsoft.com/detail/Nautograf/9NP97HF6LW08)
 [![Get it from the snap store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/nautograf)
 
 The version in the Snap Store only supports unencrypted charts. Binaries are also available as artifacts in the releases page at GitHub.
