@@ -23,7 +23,7 @@ Nautograf is a spare time project so progress is varying and non-deterministic. 
 
 Nonetheless, the current implementation can display the most prominent S-57 features such as land areas, depth areas and depth numbers. Chart navigation works by using conventional _zoom to cursor_ or pinch zoom on touch capable devices.
 
-![Screenshot of chart](https://store-images.s-microsoft.com/image/apps.39713.13722934716828675.f9abff29-8e4b-4550-8d49-482c93232558.849720b8-bbce-4b30-82d9-4b9f5afa86e4)
+![Screenshot of chart](https://dashboard.snapcraft.io/site_media/appmedia/2024/05/apps.38393.13722934716828675.035bc3c5-f1f3-4e06-9b6a-e24c9982c4a1-1717097890.jpeg)
 
 Nautograf currently only supports _oesu_ charts from [o-charts.org](https://www.o-charts.org). Nautograf uses OpenCPN's decryption engine _oexserverd_ to decrypt the charts on the fly. You can read more about that in the [oesenc-export](https://github.com/hornang/oesenc-export) repository.
 
