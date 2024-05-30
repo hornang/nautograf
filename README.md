@@ -8,7 +8,7 @@ Nautograf is designed for vector charts. This kind of data is not open to the pu
 
 ## Installing
 
-Releases are available from The Microsoft Store and the Snap Store:
+Releases are available from The Microsoft Store and the Snap Store. Snap Store provides binaries for amd64, armhf and arm64.
 
 [<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>](https://apps.microsoft.com/detail/Nautograf/9NP97HF6LW08)
 [![Get it from the snap store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/nautograf)
