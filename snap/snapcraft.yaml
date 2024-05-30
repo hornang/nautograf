@@ -1,5 +1,9 @@
 name: nautograf
 base: core22
+architectures:
+  - build-on: [amd64]
+  - build-on: [arm64]
+  - build-on: [armhf]
 adopt-info: nautograf
 summary: Tile-based nautical chart viewer
 description: >
