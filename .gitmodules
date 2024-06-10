@@ -1,8 +1,8 @@
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/microsoft/vcpkg.git
-[submodule "oesenc"]
-	path = oesenc
+[submodule "external/oesenc"]
+	path = external/oesenc
 	url = https://github.com/hornang/oesenc.git
 [submodule "msdfgen"]
 	path = external/msdfgen

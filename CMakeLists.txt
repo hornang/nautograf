@@ -42,7 +42,6 @@ endif()
 
 add_subdirectory(cutlines)
 add_subdirectory(external)
-add_subdirectory(oesenc)
 
 add_subdirectory(MercatorTile)
 install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/MercatorTile/LICENSE)
