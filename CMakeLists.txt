@@ -40,7 +40,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(USE_XDG_FILE_DIALOG "Use xdg-file-dialog library when user selects chart catalog" OFF)
 endif()
 
-add_subdirectory(cutlines)
 add_subdirectory(external)
 
 add_subdirectory(MercatorTile)
