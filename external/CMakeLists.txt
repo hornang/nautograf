@@ -21,4 +21,8 @@ install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdf-atlas-gen/LICENSE.txt)
 
 add_subdirectory(cutlines)
 add_subdirectory(msdf-atlas-read)
+
+add_subdirectory(MercatorTile)
+install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/MercatorTile/LICENSE)
+
 add_subdirectory(oesenc)

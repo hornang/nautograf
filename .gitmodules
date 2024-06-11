@@ -11,7 +11,7 @@
 	path = external/cutlines
 	url = https://github.com/hornang/cutlines.git
 [submodule "MercatorTile"]
-	path = MercatorTile
+	path = external/MercatorTile
 	url = https://github.com/hornang/MercatorTile
 [submodule "external/xdg-file-dialog"]
 	path = external/xdg-file-dialog
