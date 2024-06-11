@@ -8,7 +8,7 @@
 	path = external/msdfgen
 	url = https://github.com/hornang/msdfgen.git
 [submodule "cutlines"]
-	path = cutlines
+	path = external/cutlines
 	url = https://github.com/hornang/cutlines.git
 [submodule "MercatorTile"]
 	path = MercatorTile

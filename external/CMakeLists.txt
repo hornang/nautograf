@@ -19,5 +19,6 @@ set(MSDF_ATLAS_DYNAMIC_RUNTIME ON)
 add_subdirectory(msdf-atlas-gen)
 install_license(FILE ${CMAKE_CURRENT_SOURCE_DIR}/msdf-atlas-gen/LICENSE.txt)
 
+add_subdirectory(cutlines)
 add_subdirectory(msdf-atlas-read)
 add_subdirectory(oesenc)
