@@ -87,7 +87,7 @@ jobs:
           -P "${{ github.workspace }}/builds/ninja-release-vcpkg/deploy-qt-windows.cmake"
 
       - name: Upload package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.install-to-directory.outputs.package-name }}
           path: ${{ github.workspace }}/builds/ninja-release-vcpkg/install
@@ -148,7 +148,7 @@ jobs:
           rm -r "$(pwd)/install/$PACKAGE_NAME/lib" "$(pwd)/install/$PACKAGE_NAME/include"
 
       - name: Upload package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.install-to-directory.outputs.package-name }}
           path: ${{ github.workspace }}/builds/ninja-release-vcpkg-static/install
@@ -171,7 +171,7 @@ jobs:
         with:
           snapcraft-args: '-v'
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.snapcraft.outputs.snap }}
           path: ${{ github.workspace }}/${{ steps.snapcraft.outputs.snap }}
@@ -184,15 +184,15 @@ jobs:
     permissions:
       write-all
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.windows.outputs.package-name }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.ubuntu-20-04.outputs.package-name }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.ubuntu-snap.outputs.package-name }}
 
