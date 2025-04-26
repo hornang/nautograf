@@ -92,13 +92,13 @@ jobs:
           name: ${{ steps.install-to-directory.outputs.package-name }}
           path: ${{ github.workspace }}/builds/ninja-release-vcpkg/install
 
-  ubuntu-20-04:
-    name: 'Ubuntu 20.04'
+  ubuntu-22-04:
+    name: 'Ubuntu 22.04'
     outputs:
       package-name: ${{ steps.install-to-directory.outputs.package-name }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
-      SYSTEM_NAME: ubuntu-20.04
+      SYSTEM_NAME: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
@@ -179,7 +179,7 @@ jobs:
   create-release:
     if: startsWith(github.event.ref, 'refs/tags/v')
     name: 'Draft release'
-    needs: [windows, ubuntu-20-04, ubuntu-snap]
+    needs: [windows, ubuntu-22-04, ubuntu-snap]
     runs-on: ubuntu-latest
     permissions:
       write-all
@@ -190,7 +190,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.ubuntu-20-04.outputs.package-name }}
+          name: ${{ needs.ubuntu-22-04.outputs.package-name }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -199,7 +199,7 @@ jobs:
       - name: zip ubuntu and win64 artifacts
         run: >
           zip -r ${{ needs.windows.outputs.package-name }}.zip ${{ needs.windows.outputs.package-name }};
-          zip -r ${{ needs.ubuntu-20-04.outputs.package-name }}.zip ${{ needs.ubuntu-20-04.outputs.package-name }}
+          zip -r ${{ needs.ubuntu-22-04.outputs.package-name }}.zip ${{ needs.ubuntu-22-04.outputs.package-name }}
 
       - name: Draft release
         uses: ncipollo/release-action@v1.13.0
