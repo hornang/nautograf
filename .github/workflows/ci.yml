@@ -165,6 +165,9 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      - name: Show Rust version
+        run: rustc --version
+
       - name: Build snap
         id: snapcraft
         uses: snapcore/action-build@v1
