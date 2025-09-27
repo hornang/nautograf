@@ -9,8 +9,8 @@ crate-type = ["staticlib"]
 path = "lib.rs"
 
 [dependencies]
-cxx = "1.0"
+cxx = "=1.0.173"
 geo = { version = "0.28.0", default-features = false }
 
 [build-dependencies]
-cxx-build = "1.0"
+cxx-build = "=1.0.173"
