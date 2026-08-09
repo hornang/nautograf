@@ -58,6 +58,8 @@ jobs:
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
+        env:
+          VCPKG_BINARY_SOURCES: 'clear'
 
       - name: Install choco dependencies
         uses: crazy-max/ghaction-chocolatey@v1
@@ -130,6 +132,8 @@ jobs:
 
       - name: Restore artifacts, or setup vcpkg (do not install any package)
         uses: lukka/run-vcpkg@v11
+        env:
+          VCPKG_BINARY_SOURCES: 'clear'
 
       - name: Run CMake with vcpkg.json manifest
         uses: lukka/run-cmake@v10
