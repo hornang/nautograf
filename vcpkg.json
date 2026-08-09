@@ -10,5 +10,8 @@
     },
     "libpng",
     "nlohmann-json",
-    "quadtree"]
+    "quadtree"],
+    "overrides": [
+        { "name": "clipper2", "version": "1.4.0" }
+    ]
 }
