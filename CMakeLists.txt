@@ -34,8 +34,6 @@ find_program(RSVG-CONVERT
     NAMES rsvg-convert
 )
 
-find_package(UnixCommands)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(USE_XDG_FILE_DIALOG "Use xdg-file-dialog library when user selects chart catalog" OFF)
 endif()
@@ -55,8 +53,7 @@ endif()
 
 add_subdirectory(src/scene)
 
-if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
-        AND NOT ${IMAGEMAGICK} STREQUAL "IMAGEMAGICK-NOTFOUND"
+if (NOT ${IMAGEMAGICK} STREQUAL "IMAGEMAGICK-NOTFOUND"
         AND NOT ${RSVG-CONVERT} STREQUAL "RSVG-CONVERT-NOTFOUND")
     configure_file(
         icon.rc.in
@@ -66,14 +63,31 @@ if (NOT ${BASH} STREQUAL "BASH-NOTFOUND"
     set(ICON_GENERATED TRUE)
     set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_BINARY_DIR}/icon.rc")
 
+    set(_ICON_WIDTHS 16 32 44 64 128 150 256)
+    set(_ICON_PNGS "")
+    set(_ICON_COMMANDS "")
+    foreach(_W IN LISTS _ICON_WIDTHS)
+        list(APPEND _ICON_PNGS "${CMAKE_BINARY_DIR}/logo_${_W}.png")
+        list(APPEND _ICON_COMMANDS
+            COMMAND ${RSVG-CONVERT} --output "${CMAKE_BINARY_DIR}/logo_${_W}.png" -w ${_W} "${CMAKE_CURRENT_SOURCE_DIR}/logo.svg"
+        )
+    endforeach()
+
+    if(IMAGEMAGICK MATCHES "convert$")
+        set(_MAGICK_CMD ${IMAGEMAGICK})
+    else()
+        set(_MAGICK_CMD ${IMAGEMAGICK} convert)
+    endif()
+
     add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/icon.ico
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/logo.svg ${CMAKE_CURRENT_SOURCE_DIR}/create_icon.sh
-        COMMAND ${BASH} "${CMAKE_CURRENT_SOURCE_DIR}/create_icon.sh" ${CMAKE_CURRENT_SOURCE_DIR}/logo.svg ${CMAKE_BINARY_DIR}/icon.ico "${IMAGEMAGICK}"
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/logo.svg
+        ${_ICON_COMMANDS}
+        COMMAND ${_MAGICK_CMD} ${_ICON_PNGS} "${CMAKE_BINARY_DIR}/icon.ico"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
 else()
-    message(WARNING "Cannot create application icon. Missing bash or imagemagick")
+    message(WARNING "Cannot create application icon. Missing imagemagick or rsvg-convert")
 endif()
 
 add_executable(nautograf WIN32
