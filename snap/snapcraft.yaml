@@ -48,18 +48,28 @@ parts:
       craftctl set version=$(git describe --tags | sed 's/^v\?\(.*\)$/\1/')
     source: .
     plugin: cmake
+    cmake-generator: Ninja
     build-environment:
       - VCPKG_FORCE_SYSTEM_BINARIES: 1 # Must be set for building on arm
+      - PATH: /root/.local/bin:$PATH
+    override-build: |
+      # Ubuntu 22.04 ships cmake 3.22 which lacks block() used by vcpkg's
+      # libpng port (added in cmake 3.25). Install a newer cmake via pip.
+      pip3 install cmake --quiet
+      craftctl default
     cmake-parameters:
       - -DCMAKE_TOOLCHAIN_FILE=${CRAFT_PART_SRC}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      - -DVCPKG_OVERLAY_TRIPLETS=${CRAFT_PART_SRC}/triplets
       - -DBUILD_TESTING=off
       - -DUSE_XDG_FILE_DIALOG=on
       - -DUSE_OEXSERVERD=off
       - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja
     build-packages:
       # curl, zip, unzip and tar is needed by vcpkg:
       # https://github.com/microsoft/vcpkg/blob/master/scripts/bootstrap.sh#L88-L91
       - curl
+      - python3-pip
       - zip
       - unzip
       - tar
