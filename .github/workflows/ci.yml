@@ -161,7 +161,7 @@ jobs:
     name: 'Snapcraft core22'
     outputs:
       package-name: ${{ steps.snapcraft.outputs.snap }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v3
